@@ -290,16 +290,36 @@
   }
 
   /* ==========================================================================
-     Tab Navigation
+     Tab Navigation & Mobile Drawer
      ========================================================================== */
+
+  function openMobileDrawer() {
+    $(".admin-sidebar")?.classList.add("open");
+    $("#admin-sidebar-overlay")?.classList.add("active");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeMobileDrawer() {
+    $(".admin-sidebar")?.classList.remove("open");
+    $("#admin-sidebar-overlay")?.classList.remove("active");
+    document.body.style.overflow = "";
+  }
 
   function switchTab(tabName) {
     currentTab = tabName;
 
-    // Update active nav button
+    // Update active nav button (desktop sidebar)
     $$(".admin-nav-btn").forEach(btn => {
       btn.classList.toggle("active", btn.dataset.tab === tabName);
     });
+
+    // Update active nav button (mobile bottom bar)
+    $$(".admin-bottom-btn[data-tab]").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.tab === tabName);
+    });
+
+    // Close mobile drawer if it was open
+    closeMobileDrawer();
 
     // Hide all view sections
     const views = ["overview", "pos", "inventory", "orders", "bills", "users"];
@@ -319,6 +339,9 @@
     };
     const titleEl = $("#admin-page-title");
     if (titleEl) titleEl.textContent = titles[tabName] || "Dashboard";
+
+    // Scroll workspace to top smoothly
+    window.scrollTo({ top: 0, behavior: "smooth" });
 
     // Load tab-specific data
     if (tabName === "overview") loadOverview();
@@ -1986,10 +2009,21 @@
     $("#admin-logout-btn")?.addEventListener("click", handleAdminLogout);
     setupForgotPassword();
 
-    // Sidebar navigation
+    // Sidebar navigation (Desktop)
     $$(".admin-nav-btn").forEach(btn => {
       btn.addEventListener("click", () => switchTab(btn.dataset.tab));
     });
+
+    // Mobile Bottom Navigation Bar Buttons
+    $$(".admin-bottom-btn[data-tab]").forEach(btn => {
+      btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+    });
+
+    // Mobile Hamburger & Drawer Toggles
+    $("#admin-mobile-menu-btn")?.addEventListener("click", openMobileDrawer);
+    $("#mobile-more-menu-btn")?.addEventListener("click", openMobileDrawer);
+    $("#admin-close-sidebar-btn")?.addEventListener("click", closeMobileDrawer);
+    $("#admin-sidebar-overlay")?.addEventListener("click", closeMobileDrawer);
 
     // Topbar quick shortcuts
     $("#topbar-new-pos-btn")?.addEventListener("click", () => switchTab("pos"));
