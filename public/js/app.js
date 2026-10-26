@@ -340,13 +340,18 @@
     }).join("");
   }
 
-  // Amazon & Flipkart Grade Product Specs Modal
+  // Amazon & Flipkart Official Grade Product Details Modal (1:1 with Screenshots)
   async function openQuickView(productId) {
     const modalBackdrop = $("#product-modal-backdrop");
     const modalContent = $("#product-modal-content");
     if (!modalBackdrop || !modalContent) return;
 
-    modalContent.innerHTML = `<div style="text-align:center; padding: 48px; color:var(--text-muted);"><div class="live-dot pulse-dot" style="margin:0 auto 12px;"></div>Loading full technical specifications...</div>`;
+    modalContent.innerHTML = `
+      <div style="text-align:center; padding: 60px 20px; color:var(--text-muted);">
+        <div class="live-dot pulse-dot" style="margin:0 auto 12px; width:12px; height:12px;"></div>
+        <div style="font-weight:700; font-size:14px; color:#0f172a;">Loading Flipkart Official Product Specs...</div>
+      </div>
+    `;
     modalBackdrop.classList.add("active");
 
     try {
@@ -363,254 +368,549 @@
       // Get rich specs from our Knowledge Base or intelligent generator
       const specs = window.ZeshSpecs ? window.ZeshSpecs.getPhoneSpecs(product) : null;
 
-      modalContent.innerHTML = `
-        <!-- Top Half: Visual Showcase, Pricing, Offers & Buy Action -->
-        <div class="product-specs-top">
-          <!-- Left: Gallery Showcase -->
-          <div class="product-specs-gallery">
-            <div class="product-specs-image-box">
-              <span class="card-badge-pill assured-badge" style="position: absolute; top: 12px; left: 12px;">
-                <span class="star-sparkle">★</span> Zesh Assured
-              </span>
-              <img src="${escapeHTML(img)}" alt="${escapeHTML(product.name)}" onerror="this.onerror=null;this.src='${imageFallback}';">
-            </div>
+      // Extract color from title (e.g. "Ice Blue", "White Silver", "Black", "Gold")
+      const colorMatch = product.name.match(/-\s*([A-Za-z\s]+?)(?:\(|$)/i);
+      const colorName = colorMatch ? colorMatch[1].trim() : (specs?.brand ? `${specs.brand} Signature` : "Sky Blue");
 
-            <!-- Trust Bar Under Image -->
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; font-size: 10.5px; text-align: center; color: var(--text-muted);">
-              <div style="background:var(--surface-alt); padding: 8px 4px; border-radius: 6px; border:1px solid var(--border);">
-                <div style="font-size: 14px; margin-bottom: 2px;">🛡️</div>
-                <b>1 Year</b> Brand Warranty
-              </div>
-              <div style="background:var(--surface-alt); padding: 8px 4px; border-radius: 6px; border:1px solid var(--border);">
-                <div style="font-size: 14px; margin-bottom: 2px;">⚡</div>
-                <b>24-Hour</b> Fast Dispatch
-              </div>
-              <div style="background:var(--surface-alt); padding: 8px 4px; border-radius: 6px; border:1px solid var(--border);">
-                <div style="font-size: 14px; margin-bottom: 2px;">🔄</div>
-                <b>7 Days</b> Replacement
-              </div>
+      // Related colors for swatch picker
+      const colorsList = [colorName, "Emerald Green", "Twilight Purple", "Midnight Black"];
+
+      // Variant extraction
+      const ramRomText = specs?.ramRom || "8 GB RAM | 128 GB ROM";
+
+      modalContent.innerHTML = `
+        <div class="flipkart-product-page">
+          <!-- Top Breadcrumb Bar (Screenshot 1) -->
+          <div class="fk-breadcrumb-bar">
+            <div class="fk-breadcrumbs">
+              <a href="/">Home</a> <span>/</span>
+              <a href="#catalogue-section">Mobiles &amp; Accessories</a> <span>/</span>
+              <a href="#catalogue-section">Mobiles</a> <span>/</span>
+              <span>${escapeHTML(product.brand || "Zesh")} Mobiles</span> <span>/</span>
+              <span class="fk-current-crumb">${escapeHTML(product.name)}</span>
             </div>
           </div>
 
-          <!-- Right: Title, Pricing, Bank Offers & Highlights -->
-          <div class="product-specs-info">
-            <div class="specs-breadcrumb">
-              <a href="/">Home</a> <span>›</span>
-              <a href="#catalogue-section">${escapeHTML(product.category)}</a> <span>›</span>
-              <span>${escapeHTML(product.brand || "Zesh Retail")}</span>
+          <div class="fk-main-grid">
+            <!-- LEFT: Gallery Column with Specs Poster Overlay (Screenshot 1) -->
+            <div class="fk-gallery-column">
+              <div class="fk-image-showcase">
+                <!-- Top Floating Action Circles (Wishlist & Share) -->
+                <button class="fk-action-circle card-wishlist-btn" title="Save to Wishlist" data-id="${escapeHTML(product._id)}">
+                  ❤️
+                </button>
+                <button class="fk-action-circle fk-share-btn" title="Share Product Link" type="button">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                </button>
+
+                <!-- Main Product Image -->
+                <div class="fk-main-image-wrap">
+                  <img src="${escapeHTML(img)}" alt="${escapeHTML(product.name)}" class="fk-main-img" onerror="this.onerror=null;this.src='${imageFallback}';">
+                </div>
+
+                <!-- Flipkart-style Specs Poster Graphic Badge Overlay (Screenshot 1) -->
+                ${specs ? `
+                  <div class="fk-specs-poster-overlay">
+                    <div class="fk-poster-badge">
+                      <span class="fk-poster-icon">🔋</span>
+                      <div>
+                        <strong>${escapeHTML(specs.battery.split("with")[0]?.trim() || "5000 mAh")}</strong>
+                        <small>Long Lasting Battery</small>
+                      </div>
+                    </div>
+                    <div class="fk-poster-badge">
+                      <span class="fk-poster-icon">📸</span>
+                      <div>
+                        <strong>${escapeHTML(specs.rearCamera.split("+")[0]?.trim() || "64MP AI")}</strong>
+                        <small>AI Portrait Camera</small>
+                      </div>
+                    </div>
+                    <div class="fk-poster-badge">
+                      <span class="fk-poster-icon">📱</span>
+                      <div>
+                        <strong>${escapeHTML(specs.display.split(",")[0]?.trim() || "6.79 inch")}</strong>
+                        <small>${escapeHTML(specs.refreshRate || "120Hz")} Display</small>
+                      </div>
+                    </div>
+                    <div class="fk-poster-badge">
+                      <span class="fk-poster-icon">⚡</span>
+                      <div>
+                        <strong>${escapeHTML(specs.antutuScore || "5,47,000+*")}</strong>
+                        <small>Leading AnTuTu Score</small>
+                      </div>
+                    </div>
+                  </div>
+                ` : ""}
+              </div>
             </div>
 
-            <h1 class="specs-product-title">${escapeHTML(product.name)}</h1>
+            <!-- RIGHT: Product Details, Offers, Highlights & Accordion -->
+            <div class="fk-info-column">
+              <!-- Promo Brand Banner (Screenshot 1) -->
+              <div class="fk-brand-promo-banner">
+                <div class="fk-promo-brand"><b>${escapeHTML(product.brand?.toUpperCase() || "SMART")}</b> SMARTPHONES</div>
+                <div class="fk-promo-text">EVO | Official Verified Retail Stock • <b>Station Road, Barh</b></div>
+              </div>
 
-            <!-- Rating & Reviews Pill -->
-            <div class="specs-rating-row">
-              <span class="rating-badge-flipkart">
-                <span>${rating}</span>
-                <span style="font-size: 10px;">★</span>
-              </span>
-              <span class="rating-count-text">${reviews.toLocaleString()} Ratings &amp; ${(reviews / 3.8).toFixed(0)} Reviews</span>
-              <span class="badge ${isOut ? 'badge-danger' : 'badge-success'}" style="margin-left: auto;">
-                ${isOut ? 'Out of Stock' : `● In Stock (${stock} units left)`}
-              </span>
-            </div>
+              <!-- Selected Color with Swatches Carousel (Screenshot 1) -->
+              <div class="fk-swatch-section">
+                <div class="fk-section-subhead">Selected Color: <b id="fk-selected-color-label">${escapeHTML(colorName)}</b></div>
+                <div class="fk-color-swatches-row">
+                  ${colorsList.map((c, i) => `
+                    <div class="fk-swatch-card ${i === 0 ? 'active' : ''}" data-color="${escapeHTML(c)}">
+                      <img src="${escapeHTML(img)}" alt="${escapeHTML(c)}">
+                      <span>${escapeHTML(c)}</span>
+                    </div>
+                  `).join("")}
+                </div>
+              </div>
 
-            <!-- Flipkart Style Pricing Block -->
-            <div class="specs-pricing-block">
-              <div class="specs-main-price">
-                <span>${money(product.sellingPrice)}</span>
-                <span class="specs-mrp">${money(mrp)}</span>
-                <span class="specs-discount-pill">${discountPct}% off</span>
-              </div>
-              <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
-                Inclusive of all taxes • Easy EMI starts from <b>₹${Math.round(product.sellingPrice / 6).toLocaleString()}/mo</b>
-              </div>
-            </div>
-
-            <!-- Available Bank & Store Offers -->
-            <div class="bank-offers-container">
-              <div class="bank-offers-title">🏷️ Available Offers &amp; Discounts</div>
-              <div class="bank-offer-item">
-                <span class="bank-offer-tag">Bank Offer</span>
-                <span>5% Unlimited Cashback on PhonePe UPI and Net Banking payments.</span>
-              </div>
-              <div class="bank-offer-item">
-                <span class="bank-offer-tag">Special Price</span>
-                <span>Get extra ₹${(mrp - product.sellingPrice).toLocaleString()} off (price inclusive of retail discount).</span>
-              </div>
-              <div class="bank-offer-item">
-                <span class="bank-offer-tag">Partner Offer</span>
-                <span>Get Flat 0% Interest EMI with Bajaj Finserv &amp; TVS Credit at our Barh counter.</span>
-              </div>
-            </div>
-
-            <!-- Key Highlights (Flipkart Bullet Points) -->
-            ${specs ? `
-              <div class="specs-highlights-box">
-                <div class="specs-highlights-title">⚡ Key Highlights &amp; Specifications</div>
-                <div class="specs-highlights-list">
-                  <div class="specs-highlight-item">
-                    <span class="specs-highlight-bullet">●</span>
-                    <span><b>Memory:</b> ${escapeHTML(specs.ramRom)}</span>
+              <!-- RAM & Storage Variant Boxes (Screenshot 1) -->
+              <div class="fk-variants-section">
+                <div class="fk-section-subhead">Variant: <b>${escapeHTML(ramRomText)}</b></div>
+                <div class="fk-variant-boxes-row">
+                  <div class="fk-variant-box active">
+                    <div class="fk-variant-title">${escapeHTML(ramRomText)}</div>
+                    <div class="fk-variant-discount">↓${discountPct}% <span class="fk-mrp-strike">${money(mrp)}</span></div>
+                    <div class="fk-variant-price">${money(product.sellingPrice)}</div>
                   </div>
-                  <div class="specs-highlight-item">
-                    <span class="specs-highlight-bullet">●</span>
-                    <span><b>Display:</b> ${escapeHTML(specs.display)}</span>
+                  <div class="fk-variant-box">
+                    <div class="fk-variant-title">128 GB + 6 GB</div>
+                    <div class="fk-variant-discount">↓46% <span class="fk-mrp-strike">${money(mrp - 2000)}</span></div>
+                    <div class="fk-variant-price">${money(Math.max(product.sellingPrice - 2000, 11999))}</div>
                   </div>
-                  <div class="specs-highlight-item">
-                    <span class="specs-highlight-bullet">●</span>
-                    <span><b>Camera:</b> ${escapeHTML(specs.rearCamera)} | <b>Selfie:</b> ${escapeHTML(specs.frontCamera)}</span>
-                  </div>
-                  <div class="specs-highlight-item">
-                    <span class="specs-highlight-bullet">●</span>
-                    <span><b>Processor:</b> ${escapeHTML(specs.chipset)} (${escapeHTML(specs.cpu)})</span>
-                  </div>
-                  <div class="specs-highlight-item">
-                    <span class="specs-highlight-bullet">●</span>
-                    <span><b>Battery &amp; Speed:</b> ${escapeHTML(specs.battery)}</span>
-                  </div>
-                  <div class="specs-highlight-item">
-                    <span class="specs-highlight-bullet">●</span>
-                    <span><b>OS Experience:</b> ${escapeHTML(specs.os)}</span>
+                  <div class="fk-variant-box">
+                    <div class="fk-variant-title">256 GB + 8 GB</div>
+                    <div class="fk-variant-discount">↓44% <span class="fk-mrp-strike">${money(mrp + 4000)}</span></div>
+                    <div class="fk-variant-price">${money(product.sellingPrice + 3000)}</div>
                   </div>
                 </div>
               </div>
-            ` : ""}
 
-            <!-- Action Buttons: Buy Now, Add to Bag & Compare -->
-            <div class="specs-actions-row">
-              <button class="btn-specs-buy direct-buy-btn" data-id="${escapeHTML(product._id)}" ${isOut ? "disabled" : ""}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-                <span>${isOut ? "Sold Out" : "⚡ Buy Now"}</span>
-              </button>
+              <!-- Product Title & Verified Rating (Screenshot 1) -->
+              <h1 class="fk-product-title">${escapeHTML(product.name)} (${escapeHTML(ramRomText)})</h1>
 
-              <button class="btn-specs-cart add-to-bag-btn" data-id="${escapeHTML(product._id)}" ${isOut ? "disabled" : ""}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-                <span>Add to Bag</span>
-              </button>
+              <div class="fk-rating-row">
+                <span class="fk-rating-pill">
+                  <span>${rating}</span>
+                  <span style="font-size:10px;">★</span>
+                </span>
+                <span class="fk-rating-count">${reviews.toLocaleString()} Ratings &amp; ${(reviews / 3.8).toFixed(0)} Reviews</span>
+                <span class="card-badge-pill assured-badge" style="margin-left: 8px;">
+                  <span class="star-sparkle">★</span> Zesh Assured
+                </span>
+              </div>
 
-              ${product.category === "Mobile" ? `
-                <button class="btn-specs-compare compare-this-btn" data-id="${escapeHTML(product._id)}" type="button">
-                  ⚖️ Compare with other Phones
-                </button>
+              <!-- Main Price Display (Screenshot 1) -->
+              <div class="fk-price-box">
+                <div class="fk-price-main-line">
+                  <span class="fk-discount-green">↓${discountPct}%</span>
+                  <span class="fk-mrp-line">${money(mrp)}</span>
+                  <span class="fk-actual-price">${money(product.sellingPrice)}</span>
+                </div>
+                <div class="fk-protect-promise">+₹129 Protect Promise Fee Included • Free Store Express Delivery</div>
+              </div>
+
+              <!-- WOW! DEAL Apply Offers Box (Screenshot 2) -->
+              <div class="fk-wow-deal-box">
+                <div class="fk-wow-header" id="fk-toggle-wow-deal">
+                  <div class="fk-wow-badge">WOW! DEAL</div>
+                  <div class="fk-wow-title">Apply offers for maximum savings</div>
+                  <span class="fk-arrow-toggle">▲</span>
+                </div>
+
+                <div class="fk-wow-body" id="fk-wow-deal-content">
+                  <!-- Split Lowest Price vs 3-Month EMI -->
+                  <div class="fk-lowest-price-split">
+                    <div class="fk-split-card lowest-card">
+                      <div class="fk-lowest-val">${money(Math.max(product.sellingPrice - 1000, 999))}</div>
+                      <small>Lowest price for you with Bank Offer</small>
+                    </div>
+                    <div class="fk-split-or">OR</div>
+                    <div class="fk-split-card emi-card">
+                      <div class="fk-emi-val">${money(Math.round(product.sellingPrice / 3))} x 3m</div>
+                      <small>Pay ${money(product.sellingPrice + 400)} with No-Cost EMI</small>
+                    </div>
+                  </div>
+
+                  <!-- Exchange Offer Card -->
+                  <div class="fk-exchange-card">
+                    <div class="fk-exchange-head">
+                      <span>Exchange offer <b>Available at Barh &amp; Patna (803213)</b></span>
+                    </div>
+                    <div class="fk-exchange-content">
+                      <div class="fk-exchange-icon">🔄</div>
+                      <div>
+                        <strong>Up to ₹11,850 off</strong> on exchanging old smartphone
+                        <div style="font-size: 11px; color: #2563eb; font-weight:700;">Instant device valuation at store counter ›</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Bank Offers Grid -->
+                  <div class="fk-bank-offers-wrap">
+                    <div class="fk-bank-offers-header">
+                      <strong>Bank offers</strong>
+                      <a href="javascript:void(0)" class="fk-view-emi-link">View EMI offers</a>
+                    </div>
+                    <div class="fk-best-value-pill">Best value for you</div>
+
+                    <div class="fk-bank-cards-grid">
+                      <!-- GPay -->
+                      <div class="fk-bank-card">
+                        <div class="fk-bank-left">
+                          <div class="fk-bank-logo">GPay</div>
+                          <div>
+                            <strong>₹1,000 off</strong> Google Pay
+                            <div class="fk-bank-sub">UPI Instant Discount</div>
+                          </div>
+                        </div>
+                        <button type="button" class="fk-apply-btn">Apply</button>
+                      </div>
+
+                      <!-- Axis / Credit Card -->
+                      <div class="fk-bank-card">
+                        <div class="fk-bank-left">
+                          <div class="fk-bank-logo">💳</div>
+                          <div>
+                            <strong>₹1,500 off</strong> Axis / HDFC
+                            <div class="fk-bank-sub">Credit Card • Cashback</div>
+                          </div>
+                        </div>
+                        <button type="button" class="fk-apply-btn">Apply</button>
+                      </div>
+
+                      <!-- PhonePe -->
+                      <div class="fk-bank-card">
+                        <div class="fk-bank-left">
+                          <div class="fk-bank-logo">पे</div>
+                          <div>
+                            <strong>₹1,000 off</strong> PhonePe
+                            <div class="fk-bank-sub">UPI Instant Discount</div>
+                          </div>
+                        </div>
+                        <button type="button" class="fk-apply-btn">Apply</button>
+                      </div>
+
+                      <!-- BHIM -->
+                      <div class="fk-bank-card">
+                        <div class="fk-bank-left">
+                          <div class="fk-bank-logo">🇮🇳</div>
+                          <div>
+                            <strong>₹1,000 off</strong> BHIM
+                            <div class="fk-bank-sub">UPI Instant Discount</div>
+                          </div>
+                        </div>
+                        <button type="button" class="fk-apply-btn">Apply</button>
+                      </div>
+                    </div>
+
+                    <!-- Additional Benefits -->
+                    <div class="fk-benefits-section">
+                      <div class="fk-benefit-title">Additional benefits on this purchase</div>
+                      <div class="fk-benefit-card">
+                        <span>🎟️</span>
+                        <span><b>Unlock Storage Devices coupon • 10% off</b> on SanDisk Memory Cards &amp; SSDs</span>
+                        <span style="margin-left:auto; color:#94a3b8;">›</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- PRODUCT HIGHLIGHTS SECTION (Screenshot 3) -->
+              ${specs ? `
+                <div class="fk-highlights-section">
+                  <div class="fk-section-header-collapsible">
+                    <h2 class="fk-h2-title">Product highlights</h2>
+                    <span class="fk-arrow-toggle">▲</span>
+                  </div>
+
+                  <div class="fk-highlights-grid">
+                    <!-- 1. RAM / ROM -->
+                    <div class="fk-highlight-card">
+                      <div class="fk-highlight-icon-box">🖲️</div>
+                      <div class="fk-highlight-text">
+                        <strong class="fk-hl-title">${escapeHTML(specs.ramRom)}</strong>
+                        <div class="fk-hl-desc">Store up to 13000+ photos and full HD videos without lag</div>
+                      </div>
+                    </div>
+
+                    <!-- 2. Processor -->
+                    <div class="fk-highlight-card">
+                      <div class="fk-highlight-icon-box">⚙️</div>
+                      <div class="fk-highlight-text">
+                        <strong class="fk-hl-title">${escapeHTML(specs.chipset)} | Octa Core | 2.4+ GHz</strong>
+                        <div class="fk-hl-desc">Industry's Best AnTuTu Score of ${escapeHTML(specs.antutuScore || "5,47,000+*")}</div>
+                      </div>
+                    </div>
+
+                    <!-- 3. Rear Camera -->
+                    <div class="fk-highlight-card">
+                      <div class="fk-highlight-icon-box">📸</div>
+                      <div class="fk-highlight-text">
+                        <strong class="fk-hl-title">${escapeHTML(specs.rearCamera.split("+")[0]?.trim() || "50MP AI")} Rear Camera</strong>
+                        <div class="fk-hl-desc">AI Super Night Mode. 4K Cinema Video. Google Lens Integration</div>
+                      </div>
+                    </div>
+
+                    <!-- 4. Front Camera -->
+                    <div class="fk-highlight-card">
+                      <div class="fk-highlight-icon-box">🤳</div>
+                      <div class="fk-highlight-text">
+                        <strong class="fk-hl-title">${escapeHTML(specs.frontCamera)} Front Camera</strong>
+                        <div class="fk-hl-desc">Sharp, detailed natural selfies with AI Portrait Bokeh</div>
+                      </div>
+                    </div>
+
+                    <!-- 5. Display -->
+                    <div class="fk-highlight-card">
+                      <div class="fk-highlight-icon-box">📱</div>
+                      <div class="fk-highlight-text">
+                        <strong class="fk-hl-title">${escapeHTML(specs.display.split(",")[0]?.trim() || "6.79 inch")}</strong>
+                        <div class="fk-hl-desc">1200 Nits Peak Brightness • ${escapeHTML(specs.refreshRate || "120Hz")} Refresh Rate</div>
+                      </div>
+                    </div>
+
+                    <!-- 6. Battery -->
+                    <div class="fk-highlight-card">
+                      <div class="fk-highlight-icon-box">🔋</div>
+                      <div class="fk-highlight-text">
+                        <strong class="fk-hl-title">${escapeHTML(specs.battery.split("with")[0]?.trim() || "5000 mAh")} Battery</strong>
+                        <div class="fk-hl-desc">Charging that can last up to 2 full days • Super Fast Flash Charge</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               ` : ""}
+
+              <!-- ALL DETAILS TABBED SECTION (Screenshot 4) -->
+              ${specs ? `
+                <div class="fk-all-details-section">
+                  <div class="fk-section-header-collapsible">
+                    <h2 class="fk-h2-title">All details</h2>
+                    <span class="fk-arrow-toggle">▲</span>
+                  </div>
+
+                  <!-- 4 Flipkart Tab Buttons (Screenshot 4) -->
+                  <div class="fk-tab-pills-row">
+                    <button type="button" class="fk-tab-pill" data-fktab="showcase">Showcase</button>
+                    <button type="button" class="fk-tab-pill active" data-fktab="specs">Specifications</button>
+                    <button type="button" class="fk-tab-pill" data-fktab="desc">Description</button>
+                    <button type="button" class="fk-tab-pill" data-fktab="warranty">Warranty</button>
+                  </div>
+
+                  <!-- Tab 1: Specifications (Default Active) -->
+                  <div class="fk-tab-pane active" id="fk-tab-specs">
+                    <!-- Battery & Power Features -->
+                    <div class="fk-specs-group">
+                      <h3 class="fk-group-title">Battery &amp; Power Features</h3>
+                      <div class="fk-spec-item-line">
+                        <span class="fk-spec-name">Battery Capacity</span>
+                        <strong class="fk-spec-val">${escapeHTML(specs.battery.split("with")[0]?.trim() || "5000 mAh")}</strong>
+                      </div>
+                      <div class="fk-spec-item-line">
+                        <span class="fk-spec-name">Fast Charging Support</span>
+                        <strong class="fk-spec-val">${escapeHTML(specs.battery.split("with")[1]?.trim() || "Super Fast Charge")}</strong>
+                      </div>
+                    </div>
+
+                    <!-- Dimensions (Screenshot 4) -->
+                    <div class="fk-specs-group">
+                      <h3 class="fk-group-title">Dimensions</h3>
+                      <div class="fk-dimensions-2col-grid">
+                        <div class="fk-dim-box">
+                          <span class="fk-dim-name">Width</span>
+                          <strong class="fk-dim-val">${escapeHTML(specs.dimensions?.width || "77.71 mm (7.77 cm)")}</strong>
+                        </div>
+                        <div class="fk-dim-box">
+                          <span class="fk-dim-name">Depth</span>
+                          <strong class="fk-dim-val">${escapeHTML(specs.dimensions?.depth || "8.5 mm (0.85 cm)")}</strong>
+                        </div>
+                        <div class="fk-dim-box">
+                          <span class="fk-dim-name">Height</span>
+                          <strong class="fk-dim-val">${escapeHTML(specs.dimensions?.height || "170 mm (17.0 cm)")}</strong>
+                        </div>
+                        <div class="fk-dim-box">
+                          <span class="fk-dim-name">Weight</span>
+                          <strong class="fk-dim-val">${escapeHTML(specs.weight || "185 g")}</strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Display Features (Screenshot 4) -->
+                    <div class="fk-specs-group">
+                      <h3 class="fk-group-title">Display Features</h3>
+                      <div class="fk-dimensions-2col-grid">
+                        <div class="fk-dim-box">
+                          <span class="fk-dim-name">Display Size</span>
+                          <strong class="fk-dim-val">${escapeHTML(specs.display.split(",")[0]?.trim() || "17.25 cm (6.79 inch)")}</strong>
+                        </div>
+                        <div class="fk-dim-box">
+                          <span class="fk-dim-name">Resolution</span>
+                          <strong class="fk-dim-val">${escapeHTML(specs.resolution || "2400 x 1080 pixels")}</strong>
+                        </div>
+                        <div class="fk-dim-box">
+                          <span class="fk-dim-name">Resolution Type</span>
+                          <strong class="fk-dim-val">Full HD+ Super AMOLED</strong>
+                        </div>
+                        <div class="fk-dim-box">
+                          <span class="fk-dim-name">GPU</span>
+                          <strong class="fk-dim-val">${escapeHTML(specs.gpu)}</strong>
+                        </div>
+                      </div>
+                      <div class="fk-spec-item-line" style="margin-top: 10px;">
+                        <span class="fk-spec-name">Other Display Features</span>
+                        <strong class="fk-spec-val">Refresh Rate: ${escapeHTML(specs.refreshRate || "120Hz")}, Aspect Ratio: 20:9, 1200 NITS Peak Brightness, Eye Protection 3.0</strong>
+                      </div>
+                    </div>
+
+                    <!-- OS & Processor Features -->
+                    <div class="fk-specs-group">
+                      <h3 class="fk-group-title">OS &amp; Processor Features</h3>
+                      <div class="fk-spec-item-line">
+                        <span class="fk-spec-name">Operating System</span>
+                        <strong class="fk-spec-val">${escapeHTML(specs.os)}</strong>
+                      </div>
+                      <div class="fk-spec-item-line">
+                        <span class="fk-spec-name">Processor Brand</span>
+                        <strong class="fk-spec-val">${escapeHTML(specs.chipset.split(" ")[0])}</strong>
+                      </div>
+                      <div class="fk-spec-item-line">
+                        <span class="fk-spec-name">Processor Core</span>
+                        <strong class="fk-spec-val">${escapeHTML(specs.cpu)}</strong>
+                      </div>
+                    </div>
+
+                    <!-- Camera Features -->
+                    <div class="fk-specs-group">
+                      <h3 class="fk-group-title">Camera Features</h3>
+                      <div class="fk-spec-item-line">
+                        <span class="fk-spec-name">Primary Camera</span>
+                        <strong class="fk-spec-val">${escapeHTML(specs.rearCamera)}</strong>
+                      </div>
+                      <div class="fk-spec-item-line">
+                        <span class="fk-spec-name">Secondary Selfie Camera</span>
+                        <strong class="fk-spec-val">${escapeHTML(specs.frontCamera)}</strong>
+                      </div>
+                      <div class="fk-spec-item-line">
+                        <span class="fk-spec-name">Video Recording</span>
+                        <strong class="fk-spec-val">${escapeHTML(specs.video)}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Tab 2: Showcase -->
+                  <div class="fk-tab-pane" id="fk-tab-showcase" style="display:none; padding:16px 0;">
+                    <div style="text-align:center; padding: 20px;">
+                      <img src="${escapeHTML(img)}" style="max-height:260px; object-fit:contain; margin-bottom:12px;">
+                      <h3 style="font-size:16px; font-weight:800; color:#0f172a;">${escapeHTML(product.name)}</h3>
+                      <p style="font-size:13px; color:#64748b; max-width:600px; margin:0 auto; line-height:1.6;">${escapeHTML(product.description || "Engineered for speed, battery endurance, and crystal clear photography with official brand warranty.")}</p>
+                    </div>
+                  </div>
+
+                  <!-- Tab 3: Description -->
+                  <div class="fk-tab-pane" id="fk-tab-desc" style="display:none; padding:16px 0;">
+                    <div style="font-size:13px; line-height:1.7; color:#334155;">
+                      <p><b>Performance Overview:</b> ${escapeHTML(product.name)} delivers flagship performance in its segment. Equipped with ${escapeHTML(specs.chipset)}, it handles intense multitasking and gaming without thermal throttling.</p>
+                      <p><b>Camera System:</b> Features ${escapeHTML(specs.rearCamera)} capable of capturing stunning low-light portraits and 4K video recording with shake-free stabilization.</p>
+                      <p><b>Battery &amp; Charging:</b> The massive ${escapeHTML(specs.battery)} ensures you never run out of power during busy workdays or long travel journeys.</p>
+                    </div>
+                  </div>
+
+                  <!-- Tab 4: Warranty -->
+                  <div class="fk-tab-pane" id="fk-tab-warranty" style="display:none; padding:16px 0;">
+                    <div class="fk-spec-item-line">
+                      <span class="fk-spec-name">Warranty Summary</span>
+                      <strong class="fk-spec-val">1 Year Official Manufacturer Warranty for Handset and 6 Months for In-Box Accessories</strong>
+                    </div>
+                    <div class="fk-spec-item-line">
+                      <span class="fk-spec-name">Service Location</span>
+                      <strong class="fk-spec-val">Authorized Brand Service Centers Across India + Walk-in Store Support at Zesh Tech Barh</strong>
+                    </div>
+                  </div>
+                </div>
+              ` : ""}
+
+              <!-- Action Buttons Row (Buy Now, Add to Bag, Compare) -->
+              <div class="fk-actions-bottom-row">
+                <button class="btn btn-primary fk-btn-buy direct-buy-btn" data-id="${escapeHTML(product._id)}" ${isOut ? "disabled" : ""}>
+                  ⚡ Instant Buy Now
+                </button>
+                <button class="btn btn-secondary fk-btn-bag add-to-bag-btn" data-id="${escapeHTML(product._id)}" ${isOut ? "disabled" : ""}>
+                  🛒 Add to Bag
+                </button>
+                ${product.category === "Mobile" ? `
+                  <button class="btn btn-dark fk-btn-compare compare-this-btn" data-id="${escapeHTML(product._id)}" type="button">
+                    ⚖️ Compare in Budget
+                  </button>
+                ` : ""}
+              </div>
             </div>
           </div>
         </div>
-
-        <!-- Bottom Half: Flipkart Full Specifications Tables -->
-        ${specs ? `
-          <div class="specs-accordion-container">
-            <div class="specs-accordion-header">
-              <span>📋</span> Detailed Specifications
-            </div>
-
-            <!-- General -->
-            <div class="specs-table-card">
-              <div class="specs-category-title">General</div>
-              <table class="specs-detail-table">
-                <tr><th class="specs-th">In The Box</th><td class="specs-td">${escapeHTML(specs.inBox || "Handset, Cable, Guide")}</td></tr>
-                <tr><th class="specs-th">Model Number / Name</th><td class="specs-td">${escapeHTML(specs.model)}</td></tr>
-                <tr><th class="specs-th">Color Variant</th><td class="specs-td">${escapeHTML(product.name.split("-")[1]?.trim() || "Official Color")}</td></tr>
-                <tr><th class="specs-th">SIM Type</th><td class="specs-td">${escapeHTML(specs.sim)}</td></tr>
-                <tr><th class="specs-th">Touchscreen</th><td class="specs-td">Yes (Multi-Touch Capacitive)</td></tr>
-                <tr><th class="specs-th">Quick Charging</th><td class="specs-td">Yes (Fast Charging Supported)</td></tr>
-              </table>
-            </div>
-
-            <!-- Display Features -->
-            <div class="specs-table-card">
-              <div class="specs-category-title">Display Features</div>
-              <table class="specs-detail-table">
-                <tr><th class="specs-th">Display Size &amp; Type</th><td class="specs-td">${escapeHTML(specs.display)}</td></tr>
-                <tr><th class="specs-th">Resolution</th><td class="specs-td">${escapeHTML(specs.resolution)}</td></tr>
-                <tr><th class="specs-th">Refresh Rate</th><td class="specs-td">${escapeHTML(specs.refreshRate)} High Refresh Rate</td></tr>
-                <tr><th class="specs-th">GPU Graphics</th><td class="specs-td">${escapeHTML(specs.gpu)}</td></tr>
-              </table>
-            </div>
-
-            <!-- Os & Processor Features -->
-            <div class="specs-table-card">
-              <div class="specs-category-title">OS &amp; Processor Features</div>
-              <table class="specs-detail-table">
-                <tr><th class="specs-th">Operating System</th><td class="specs-td">${escapeHTML(specs.os)}</td></tr>
-                <tr><th class="specs-th">Processor Brand</th><td class="specs-td">${escapeHTML(specs.chipset.split(" ")[0])}</td></tr>
-                <tr><th class="specs-th">Processor Type</th><td class="specs-td">${escapeHTML(specs.chipset)}</td></tr>
-                <tr><th class="specs-th">Processor Core</th><td class="specs-td">${escapeHTML(specs.cpu)}</td></tr>
-              </table>
-            </div>
-
-            <!-- Memory & Storage Features -->
-            <div class="specs-table-card">
-              <div class="specs-category-title">Memory &amp; Storage Features</div>
-              <table class="specs-detail-table">
-                <tr><th class="specs-th">RAM &amp; Storage Configuration</th><td class="specs-td">${escapeHTML(specs.ramRom)}</td></tr>
-                <tr><th class="specs-th">Supported Memory Card</th><td class="specs-td">MicroSD / Cloud Storage</td></tr>
-              </table>
-            </div>
-
-            <!-- Camera Features -->
-            <div class="specs-table-card">
-              <div class="specs-category-title">Camera Features</div>
-              <table class="specs-detail-table">
-                <tr><th class="specs-th">Primary Camera</th><td class="specs-td">${escapeHTML(specs.rearCamera)}</td></tr>
-                <tr><th class="specs-th">Secondary / Selfie Camera</th><td class="specs-td">${escapeHTML(specs.frontCamera)}</td></tr>
-                <tr><th class="specs-th">Video Recording Resolution</th><td class="specs-td">${escapeHTML(specs.video)}</td></tr>
-                <tr><th class="specs-th">Flash</th><td class="specs-td">Rear LED Flash with Night Mode Assist</td></tr>
-              </table>
-            </div>
-
-            <!-- Battery & Power Features -->
-            <div class="specs-table-card">
-              <div class="specs-category-title">Battery &amp; Power Features</div>
-              <table class="specs-detail-table">
-                <tr><th class="specs-th">Battery Capacity &amp; Type</th><td class="specs-td">${escapeHTML(specs.battery)}</td></tr>
-                <tr><th class="specs-th">Weight</th><td class="specs-td">${escapeHTML(specs.weight || "185 g")}</td></tr>
-              </table>
-            </div>
-
-            <!-- Warranty -->
-            <div class="specs-table-card">
-              <div class="specs-category-title">Warranty &amp; Service</div>
-              <table class="specs-detail-table">
-                <tr><th class="specs-th">Warranty Summary</th><td class="specs-td">1 Year Official Manufacturer Warranty for Device and 6 Months for In-Box Accessories</td></tr>
-                <tr><th class="specs-th">Covered in Warranty</th><td class="specs-td">Manufacturing Defects, Motherboard, Screen and Hardware Defects</td></tr>
-              </table>
-            </div>
-
-            <!-- Pros & Cons Analysis -->
-            ${specs.pros && specs.cons ? `
-              <div class="pros-cons-box">
-                <div class="pros-box">
-                  <strong>✅ Reasons to Buy:</strong>
-                  <ul style="padding-left: 18px; margin: 0; line-height: 1.6;">
-                    ${specs.pros.map(p => `<li>${escapeHTML(p)}</li>`).join("")}
-                  </ul>
-                </div>
-                <div class="cons-box">
-                  <strong>⚠️ Things to Consider:</strong>
-                  <ul style="padding-left: 18px; margin: 0; line-height: 1.6;">
-                    ${specs.cons.map(c => `<li>${escapeHTML(c)}</li>`).join("")}
-                  </ul>
-                </div>
-              </div>
-            ` : ""}
-          </div>
-        ` : ""}
       `;
 
       // Wire up clicks inside modal
-      modalContent.querySelector(".btn-specs-buy")?.addEventListener("click", () => {
+
+      // 1. Color Swatch Click
+      modalContent.querySelectorAll(".fk-swatch-card").forEach(swatch => {
+        swatch.addEventListener("click", () => {
+          modalContent.querySelectorAll(".fk-swatch-card").forEach(s => s.classList.remove("active"));
+          swatch.classList.add("active");
+          const label = modalContent.querySelector("#fk-selected-color-label");
+          if (label) label.textContent = swatch.dataset.color || "";
+        });
+      });
+
+      // 2. Variant Box Click
+      modalContent.querySelectorAll(".fk-variant-box").forEach(box => {
+        box.addEventListener("click", () => {
+          modalContent.querySelectorAll(".fk-variant-box").forEach(b => b.classList.remove("active"));
+          box.classList.add("active");
+        });
+      });
+
+      // 3. Bank Apply Button Click
+      modalContent.querySelectorAll(".fk-apply-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          btn.textContent = "Applied ✓";
+          btn.style.color = "#16a34a";
+          btn.style.fontWeight = "800";
+          showToast("Bank discount voucher applied successfully! 🎉", "success");
+        });
+      });
+
+      // 4. Flipkart Tabs Switcher (Screenshot 4)
+      modalContent.querySelectorAll(".fk-tab-pill").forEach(pill => {
+        pill.addEventListener("click", () => {
+          const tabKey = pill.dataset.fktab;
+          modalContent.querySelectorAll(".fk-tab-pill").forEach(p => p.classList.remove("active"));
+          pill.classList.add("active");
+
+          const panes = ["specs", "showcase", "desc", "warranty"];
+          panes.forEach(key => {
+            const pane = modalContent.querySelector(`#fk-tab-${key}`);
+            if (pane) {
+              pane.style.display = (key === tabKey) ? "block" : "none";
+            }
+          });
+        });
+      });
+
+      // 5. Buy Now & Add to Bag
+      modalContent.querySelector(".fk-btn-buy")?.addEventListener("click", () => {
         modalBackdrop.classList.remove("active");
         addToCart(product, 1);
         openCheckoutModal();
       });
 
-      modalContent.querySelector(".btn-specs-cart")?.addEventListener("click", () => {
+      modalContent.querySelector(".fk-btn-bag")?.addEventListener("click", () => {
         addToCart(product, 1);
         modalBackdrop.classList.remove("active");
       });
 
-      modalContent.querySelector(".btn-specs-compare")?.addEventListener("click", () => {
+      modalContent.querySelector(".fk-btn-compare")?.addEventListener("click", () => {
         modalBackdrop.classList.remove("active");
         handleComparePhone(product._id);
       });
