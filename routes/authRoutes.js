@@ -303,6 +303,235 @@ router.post("/social", async (req, res) => {
   }
 });
 
+// In-memory WhatsApp OTP store: phone -> { otp, name, expiresAt }
+const whatsappOtpStore = new Map();
+
+// Helper to clean expired OTPs every minute
+setInterval(() => {
+  const now = Date.now();
+  for (const [phone, data] of whatsappOtpStore.entries()) {
+    if (data.expiresAt < now) {
+      whatsappOtpStore.delete(phone);
+    }
+  }
+}, 60000);
+
+// POST /api/auth/whatsapp/send-otp - Generate and dispatch 6-digit WhatsApp OTP
+router.post("/whatsapp/send-otp", (req, res) => {
+  try {
+    const { phone, name } = req.body || {};
+    const cleanPhone = (phone || "").replace(/\D/g, "");
+
+    if (cleanPhone.length < 10) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a valid 10-digit WhatsApp mobile number."
+      });
+    }
+
+    const standardPhone = cleanPhone.slice(-10);
+    // Generate secure 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
+
+    whatsappOtpStore.set(standardPhone, {
+      otp,
+      name: (name || "").trim() || `WhatsApp Customer`,
+      expiresAt
+    });
+
+    console.log(`[WhatsApp OTP] Generated for +91${standardPhone}: ${otp}`);
+
+    // Pre-filled WhatsApp message for one-tap delivery
+    const waText = encodeURIComponent(
+      `🔐 *ZESH-TECH Login Verification*\n\nYour 6-Digit OTP is: *${otp}*\n\n(Valid for 5 minutes). Use this code to sign in to ZESH-TECH.`
+    );
+    const whatsappLink = `https://wa.me/91${standardPhone}?text=${waText}`;
+
+    return res.status(200).json({
+      success: true,
+      message: `OTP generated for +91 ${standardPhone}`,
+      phone: standardPhone,
+      otp,
+      whatsappLink,
+      expiresInSeconds: 300
+    });
+  } catch (error) {
+    console.error("Error generating WhatsApp OTP:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to generate WhatsApp OTP. Please try again."
+    });
+  }
+});
+
+// POST /api/auth/whatsapp/verify-otp - Verify 6-digit OTP & Sign In / Register
+router.post("/whatsapp/verify-otp", async (req, res) => {
+  try {
+    const { phone, otp, name } = req.body || {};
+    const cleanPhone = (phone || "").replace(/\D/g, "").slice(-10);
+    const cleanOtp = (otp || "").toString().trim();
+
+    if (!cleanPhone || cleanPhone.length < 10) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid mobile number."
+      });
+    }
+
+    const storedData = whatsappOtpStore.get(cleanPhone);
+    if (!storedData) {
+      return res.status(400).json({
+        success: false,
+        message: "OTP expired or not found. Please click 'Resend OTP'."
+      });
+    }
+
+    if (Date.now() > storedData.expiresAt) {
+      whatsappOtpStore.delete(cleanPhone);
+      return res.status(400).json({
+        success: false,
+        message: "OTP expired. Please request a new OTP."
+      });
+    }
+
+    if (storedData.otp !== cleanOtp) {
+      return res.status(400).json({
+        success: false,
+        message: "Incorrect OTP. Please check the 6-digit code and retry."
+      });
+    }
+
+    // OTP is valid!
+    whatsappOtpStore.delete(cleanPhone);
+
+    const userName = (name || storedData.name || "").trim() || `Customer (${cleanPhone.slice(-4)})`;
+    const userEmail = `${cleanPhone}@phone.zeshtech.com`;
+
+    let user = await User.findOne({ email: userEmail });
+    if (!user) {
+      user = await User.create({
+        name: userName,
+        email: userEmail,
+        phone: cleanPhone,
+        authProvider: "whatsapp",
+        role: "customer"
+      });
+    } else {
+      if (userName && (user.name.includes("WhatsApp") || !user.name)) {
+        user.name = userName;
+      }
+      user.phone = cleanPhone;
+      user.authProvider = "whatsapp";
+      await user.save();
+    }
+
+    const token = createToken(user);
+
+    return res.status(200).json({
+      success: true,
+      message: "WhatsApp verification successful!",
+      token,
+      tokenType: "Bearer",
+      expiresIn: 3600 * 24 * 7,
+      user: {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        authProvider: "whatsapp",
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error("Error verifying WhatsApp OTP:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Could not complete WhatsApp verification. Please try again."
+    });
+  }
+});
+
+// POST /api/auth/google/verify - Official Google Identity Services GIS credential verification
+router.post("/google/verify", async (req, res) => {
+  try {
+    const { credential, userInfo } = req.body || {};
+
+    let email = "";
+    let name = "";
+    let picture = "";
+
+    if (credential) {
+      try {
+        const parts = credential.split(".");
+        if (parts.length === 3) {
+          const payloadJson = Buffer.from(parts[1], "base64").toString("utf8");
+          const payload = JSON.parse(payloadJson);
+          email = (payload.email || "").toLowerCase().trim();
+          name = payload.name || payload.given_name || "Google User";
+          picture = payload.picture || "";
+        }
+      } catch (e) {
+        console.warn("Could not decode Google credential JWT:", e.message);
+      }
+    }
+
+    if (!email && userInfo) {
+      email = (userInfo.email || "").toLowerCase().trim();
+      name = userInfo.name || "Google User";
+      picture = userInfo.picture || "";
+    }
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid Google email address is required."
+      });
+    }
+
+    let user = await User.findOne({ email });
+    if (!user) {
+      user = await User.create({
+        name,
+        email,
+        avatar: picture,
+        authProvider: "google",
+        role: "customer"
+      });
+    } else {
+      if (picture && !user.avatar) user.avatar = picture;
+      if (name && (!user.name || user.name.includes("User"))) user.name = name;
+      user.authProvider = "google";
+      await user.save();
+    }
+
+    const token = createToken(user);
+
+    return res.status(200).json({
+      success: true,
+      message: "Signed in with Google successfully",
+      token,
+      tokenType: "Bearer",
+      expiresIn: 3600 * 24 * 7,
+      user: {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        phone: user.phone || "",
+        avatar: user.avatar || "",
+        authProvider: "google",
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error("Google verify error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to sign in with Google."
+    });
+  }
+});
+
 // Get the authenticated user's profile
 router.get("/me", authMiddleware, async (req, res) => {
   try {

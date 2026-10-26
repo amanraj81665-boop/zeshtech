@@ -324,6 +324,43 @@ const customerAPI = {
     return data.user;
   },
 
+  // WhatsApp OTP Authentication
+  async sendWhatsAppOtp(phone, name = "") {
+    return await this.request("/auth/whatsapp/send-otp", {
+      method: "POST",
+      body: JSON.stringify({ phone, name })
+    });
+  },
+
+  async verifyWhatsAppOtp(phone, otp, name = "") {
+    const data = await this.request("/auth/whatsapp/verify-otp", {
+      method: "POST",
+      body: JSON.stringify({ phone, otp, name })
+    });
+
+    if (!data.token) {
+      throw new Error("WhatsApp verification failed: No token received.");
+    }
+
+    this.setAuth(data.token, data.user, true);
+    return data.user;
+  },
+
+  // Google Identity Services (GIS) Verification
+  async verifyGoogleAuth(credential, userInfo = null) {
+    const data = await this.request("/auth/google/verify", {
+      method: "POST",
+      body: JSON.stringify({ credential, userInfo })
+    });
+
+    if (!data.token) {
+      throw new Error("Google authentication failed.");
+    }
+
+    this.setAuth(data.token, data.user, true);
+    return data.user;
+  },
+
   // Profile
   async getProfile() {
     const data = await this.request("/auth/me");
