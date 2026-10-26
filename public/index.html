@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#06090e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="ZESH-TECH — Premium Electronics, Smartphones, Audio, and Smart Technology Retail Store in Barh, Patna.">
+  <title>ZESH-TECH | Live The Future — Smartphones &amp; Electronics</title>
+
+  <!-- PWA & App Icons -->
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="/images/logo.png">
+  <link rel="apple-touch-icon" href="/images/logo.png">
+
+  <!-- Typography: DM Sans & Manrope -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..800;1,9..40,400..800&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <!-- Top Announcement Bar -->
+  <div class="announcement-bar">
+    <div class="announcement-content">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="live-dot pulse-dot"></span>
+        <span><b>Official Store</b> — Station Road, Bazidpur, Barh | 0% Easy EMI (Bajaj / TVS / DMI / HDB) | Ph: <b>7903746116</b></span>
+      </div>
+      <div class="announcement-links">
+        <a href="https://share.google/5sR85hrQG78dC3ixo" target="_blank" rel="noopener">📍 Google Maps</a>
+        <a href="https://wa.me/917903746116" target="_blank" rel="noopener" style="color:#22c55e;">💬 WhatsApp Support</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Storefront Header -->
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a href="/" class="brand" aria-label="ZESH-TECH Home">
+        <img src="/images/logo.png" alt="ZESH TECH Logo" class="brand-logo-img">
+        <div class="brand-text">
+          <div class="brand-name">ZESH<span> TECH</span></div>
+          <span class="brand-tag">LIVE THE FUTURE</span>
+        </div>
+      </a>
+
+      <nav class="main-nav" aria-label="Main Navigation">
+        <a href="#catalogue-section" class="nav-link active" data-cat="All">All Tech</a>
+        <a href="#catalogue-section" class="nav-link" data-cat="Mobile">Smartphones</a>
+        <a href="#catalogue-section" class="nav-link" data-cat="Television">Smart TV</a>
+        <a href="#catalogue-section" class="nav-link" data-cat="Appliances">Appliances</a>
+        <a href="#catalogue-section" class="nav-link" data-cat="Audio">Audio</a>
+        <a href="#catalogue-section" class="nav-link" data-cat="Charger">Chargers</a>
+        <a href="#catalogue-section" class="nav-link" data-cat="Accessories">Accessories</a>
+      </nav>
+
+      <div class="header-actions">
+        <!-- Customer Account / Auth Pill -->
+        <div id="auth-header-container">
+          <button class="btn btn-secondary btn-small" id="open-auth-btn" type="button">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span>Sign In</span>
+          </button>
+        </div>
+
+        <!-- Cart Trigger Button -->
+        <button class="cart-trigger" id="open-cart-btn" aria-label="Open Shopping Bag">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+          <span>Bag</span>
+          <span class="cart-badge" id="header-cart-count">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="wrap hero-grid">
+      <div class="hero-content">
+        <div class="eyebrow">
+          <span class="live-dot pulse-dot"></span> NEXT-GEN ELECTRONICS &amp; GEAR
+        </div>
+        <h1>Engineered for performance.<br>Crafted for <span>everyday.</span></h1>
+        <p class="hero-description">
+          Explore flagship smartphones, studio acoustics, high-speed charging stations, and premium mobile essentials backed by verified warranty.
+        </p>
+        <div class="hero-actions">
+          <a href="#catalogue-section" class="btn btn-primary btn-large">
+            <span>Explore Collection</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </a>
+          <a href="https://wa.me/917903746116?text=Hello%20ZeshTech%2C%20I%20want%20to%20inquire%20about%20smartphones%20and%20electronics" target="_blank" rel="noopener" class="btn btn-secondary btn-large">
+            <span>💬 WhatsApp Inquiry</span>
+          </a>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat-item">
+            <strong>100%</strong>
+            <span>Genuine Brands</span>
+          </div>
+          <div class="hero-stat-item">
+            <strong>24h</strong>
+            <span>Express Dispatch</span>
+          </div>
+          <div class="hero-stat-item">
+            <strong>COD</strong>
+            <span>Cash on Delivery</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-visual-frame">
+        <div class="hero-backdrop-glow"></div>
+        <div class="hero-card">
+          <div class="hero-image-wrap">
+            <img src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=800&q=85" alt="Flagship Smartphone" id="hero-banner-img">
+          </div>
+          <div class="hero-floating-pill">
+            <span style="color: #60a5fa; font-size: 16px;">✦</span>
+            <div>
+              <strong style="display:block; font-size:12px;">Curated Flagship Tech</strong>
+              <small style="color: #94a3b8; font-size:10px;">Smartphones · Audio · Power</small>
+            </div>
+          </div>
+          <div class="hero-floating-pill-right">
+            <span class="live-dot"></span>
+            <div>
+              <strong style="display:block; font-size:11px;">Verified Stock</strong>
+              <small style="color: #10b981; font-weight:700; font-size:10px;">Live from MongoDB</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Trust Strip -->
+  <section class="trust-strip">
+    <div class="wrap trust-grid">
+      <div class="trust-item">
+        <div class="trust-icon-box">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>
+        </div>
+        <div>
+          <strong>Official Warranty</strong>
+          <small>1-Year Brand Protection</small>
+        </div>
+      </div>
+
+      <div class="trust-item">
+        <div class="trust-icon-box">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 18H3c-.6 0-1-.4-1-1V7c0-.6.4-1 1-1h10c.6 0 1 .4 1 1v11"/><path d="M14 9h4l4 4v4c0 .6-.4 1-1 1h-2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>
+        </div>
+        <div>
+          <strong>Express Delivery</strong>
+          <small>Free on orders over ₹999</small>
+        </div>
+      </div>
+
+      <div class="trust-item">
+        <div class="trust-icon-box">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+        </div>
+        <div>
+          <strong>Cash on Delivery</strong>
+          <small>Inspect upon arrival</small>
+        </div>
+      </div>
+
+      <div class="trust-item">
+        <div class="trust-icon-box">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        </div>
+        <div>
+          <strong>Retail Support</strong>
+          <small>Direct store assistance</small>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Product Catalogue Section -->
+  <main class="wrap" id="catalogue-section" style="padding-bottom: 60px;">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">OUR CURATED COLLECTION</div>
+        <h2 class="section-title">Explore Smart Tech</h2>
+        <p class="section-subtitle">Real-time inventory verified directly with our retail warehouse.</p>
+      </div>
+
+      <div class="sort-select-wrap">
+        <label for="sort-select">Sort By:</label>
+        <select id="sort-select">
+          <option value="newest">Newest Arrivals</option>
+          <option value="priceLow">Price: Low to High</option>
+          <option value="priceHigh">Price: High to Low</option>
+          <option value="name">Product Name (A-Z)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Category Filter Chips Slider -->
+    <div class="category-slider" id="category-chips">
+      <button class="category-chip active" data-category="All">All Products</button>
+      <button class="category-chip" data-category="Mobile">Smartphones</button>
+      <button class="category-chip" data-category="Television">Smart TVs</button>
+      <button class="category-chip" data-category="Appliances">Home Appliances</button>
+      <button class="category-chip" data-category="Audio">Headphones &amp; Audio</button>
+      <button class="category-chip" data-category="Charger">Chargers &amp; Adapters</button>
+      <button class="category-chip" data-category="Cable">High-Speed Cables</button>
+      <button class="category-chip" data-category="Power Bank">Power Banks</button>
+      <button class="category-chip" data-category="Smartwatch">Smartwatches</button>
+      <button class="category-chip" data-category="Accessories">Accessories</button>
+    </div>
+
+    <!-- Catalogue Search & Availability Bar -->
+    <div class="catalogue-toolbar">
+      <div class="search-input-wrap">
+        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="search" id="product-search-input" placeholder="Search by model, brand, or name..." aria-label="Search Products">
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; cursor: pointer;">
+          <input type="checkbox" id="in-stock-only-checkbox" style="width: 16px; height: 16px; accent-color: var(--primary);">
+          <span>In-Stock Only</span>
+        </label>
+        <span id="product-count-badge" class="badge badge-neutral">Loading catalogue...</span>
+      </div>
+    </div>
+
+    <!-- Product Cards Grid -->
+    <div class="product-grid" id="products-container">
+      <!-- Injected via JavaScript -->
+    </div>
+
+    <!-- Empty State -->
+    <div id="no-products-view" class="hidden" style="text-align: center; padding: 60px 20px; background: white; border-radius: var(--radius-lg); border: 1px solid var(--border);">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" style="margin: 0 auto 16px;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <h3 style="font-size: 18px; margin-bottom: 8px;">No matching tech found</h3>
+      <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">Try adjusting your keyword or reset filters to see all available products.</p>
+      <button class="btn btn-secondary" id="reset-filters-btn">Reset All Filters</button>
+    </div>
+  </main>
+
+  <!-- Slide-Over Shopping Bag Drawer -->
+  <div class="drawer-overlay" id="cart-drawer-overlay"></div>
+  <aside class="cart-drawer" id="cart-drawer" aria-label="Shopping Bag">
+    <div class="drawer-header">
+      <h2>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        <span>Your Shopping Bag</span>
+        <span class="badge badge-neutral" id="drawer-item-count">0 items</span>
+      </h2>
+      <button class="icon-btn" id="close-cart-btn" aria-label="Close Bag">✕</button>
+    </div>
+
+    <!-- Free Delivery Progress Bar -->
+    <div class="free-shipping-tracker">
+      <div style="display: flex; justify-content: space-between;">
+        <span id="shipping-tracker-text">Add items for Free Express Shipping</span>
+        <b id="shipping-tracker-amount">₹999</b>
+      </div>
+      <div class="tracker-bar">
+        <div class="tracker-fill" id="shipping-tracker-fill" style="width: 0%;"></div>
+      </div>
+    </div>
+
+    <!-- Bag Line Items -->
+    <div class="drawer-items-list" id="cart-items-container">
+      <!-- Injected via JavaScript -->
+    </div>
+
+    <!-- Empty Cart State -->
+    <div id="cart-empty-view" class="hidden" style="flex: 1; display: grid; place-items: center; padding: 40px 24px; text-align: center;">
+      <div>
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" style="margin: 0 auto 16px;"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        <h4 style="font-size: 16px; margin-bottom: 6px;">Your bag is empty</h4>
+        <p style="color: var(--text-muted); font-size: 12px; margin-bottom: 18px;">Discover our smartphones, chargers and accessories to add items.</p>
+        <button class="btn btn-primary btn-small" id="drawer-shop-now-btn">Start Shopping</button>
+      </div>
+    </div>
+
+    <!-- Drawer Summary & Checkout CTA -->
+    <div class="drawer-footer" id="cart-footer-box">
+      <div class="summary-row">
+        <span>Bag Subtotal</span>
+        <b id="cart-subtotal-val">₹0.00</b>
+      </div>
+      <div class="summary-row">
+        <span>Delivery Fee</span>
+        <span id="cart-delivery-val" class="badge badge-success">FREE</span>
+      </div>
+      <div class="summary-row total-row">
+        <span>Grand Total (Incl. GST)</span>
+        <span id="cart-total-val" style="color: var(--primary);">₹0.00</span>
+      </div>
+      <button class="btn btn-primary btn-full btn-large" id="proceed-checkout-btn">
+        <span>Proceed to Checkout</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      </button>
+      <p style="text-align: center; color: var(--text-light); font-size: 11px; margin-top: 10px;">
+        🔒 Guaranteed Safe &amp; Secure Checkout • Cash on Delivery
+      </p>
+    </div>
+  </aside>
+
+  <!-- Product Details Quick-View Modal -->
+  <div class="modal-backdrop" id="product-modal-backdrop">
+    <div class="modal-dialog modal-dialog-large">
+      <button class="modal-close-btn" id="close-product-modal-btn">✕</button>
+      <div class="modal-body" id="product-modal-content">
+        <!-- Injected via JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Secure Checkout Modal -->
+  <div class="modal-backdrop" id="checkout-modal-backdrop">
+    <div class="modal-dialog modal-dialog-large">
+      <button class="modal-close-btn" id="close-checkout-modal-btn">✕</button>
+      <div class="modal-body">
+        <div class="eyebrow">FINAL STEP • DISPATCH DETAILS</div>
+        <h2 style="font-size: 22px; margin-bottom: 4px;">Confirm Your Order</h2>
+        <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 24px;">Please provide your delivery information for Cash on Delivery shipment.</p>
+
+        <form id="checkout-form">
+          <div class="form-row">
+            <div class="field">
+              <label>Full Name *</label>
+              <input type="text" name="customerName" id="checkout-name" required placeholder="e.g. Aman Raj">
+            </div>
+            <div class="field">
+              <label>Phone Number *</label>
+              <input type="tel" name="customerPhone" id="checkout-phone" required placeholder="10-digit mobile number">
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Delivery Address *</label>
+            <input type="text" name="shippingAddress" id="checkout-address" required placeholder="House/Flat number, Street, Landmark">
+          </div>
+
+          <div class="form-row-3">
+            <div class="field">
+              <label>City *</label>
+              <input type="text" name="shippingCity" id="checkout-city" required placeholder="e.g. New Delhi">
+            </div>
+            <div class="field">
+              <label>State *</label>
+              <input type="text" name="shippingState" id="checkout-state" required placeholder="e.g. Delhi">
+            </div>
+            <div class="field">
+              <label>Pincode *</label>
+              <input type="text" name="shippingPincode" id="checkout-pincode" required placeholder="e.g. 110001">
+            </div>
+          </div>
+
+          <!-- Payment Method Choice (COD, Finance / Loan, UPI) -->
+          <div style="background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px; margin-bottom: 20px;">
+            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px;">Select Payment &amp; Financing Option:</div>
+            
+            <!-- PhonePe / Google Pay / UPI (Recommended) -->
+            <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; padding: 10px 12px; border: 1.5px solid #22c55e; border-radius: var(--radius-md); background: rgba(34, 197, 94, 0.04); margin-bottom: 8px;">
+              <input type="radio" name="paymentMethod" value="PhonePe / Google Pay (UPI)" checked style="width: 17px; height: 17px; accent-color: #22c55e; margin-top: 2px;">
+              <div style="width: 100%;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                  <strong style="font-size: 13.5px; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+                    <span>PhonePe / Google Pay / UPI</span>
+                  </strong>
+                  <span class="badge badge-success" style="font-size: 9.5px; padding: 2px 6px;">INSTANT QR &amp; INTENT</span>
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Pay with 1-Tap PhonePe, Google Pay, Paytm, or scan PhonePe QR.</div>
+                <div style="font-size: 10.5px; font-family: var(--font-mono); color: #16a34a; font-weight: 700; background: rgba(34, 197, 94, 0.1); display: inline-block; padding: 2px 6px; border-radius: 4px;">
+                  UPI ID: 9122846271-5@ybl
+                </div>
+              </div>
+            </label>
+
+            <!-- Cash on Delivery -->
+            <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; padding: 8px 10px; border-bottom: 1px solid var(--border);">
+              <input type="radio" name="paymentMethod" value="Cash on Delivery" style="width: 17px; height: 17px; accent-color: var(--primary); margin-top: 2px;">
+              <div>
+                <strong style="display: block; font-size: 13px;">Cash on Delivery (COD)</strong>
+                <small style="color: var(--text-muted); font-size: 11px;">Pay securely in cash or UPI when delivered.</small>
+              </div>
+            </label>
+
+            <!-- Finance / Easy EMI -->
+            <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; padding: 8px 10px;">
+              <input type="radio" name="paymentMethod" value="Finance / Loan" id="pay-method-finance" style="width: 17px; height: 17px; accent-color: var(--primary); margin-top: 2px;">
+              <div>
+                <strong style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
+                  <span>0% Easy EMI / Finance</span>
+                  <span class="badge badge-neutral" style="font-size: 9px;">Bajaj / TVS / DMI / HDB</span>
+                </strong>
+                <small style="color: var(--text-muted); font-size: 11px;">Instant paperless loan approval. Store team will assist on WhatsApp/Call.</small>
+              </div>
+            </label>
+
+            <div id="finance-provider-subbox" class="hidden" style="margin-top: 8px; padding: 8px 10px; background: white; border: 1px solid var(--border); border-radius: 6px;">
+              <label style="font-size: 11px; font-weight: 600; display: block; margin-bottom: 4px;">Choose Financing Partner:</label>
+              <select id="checkout-finance-provider" style="width: 100%; padding: 6px 8px; font-size: 12px; border: 1px solid var(--border); border-radius: 4px;">
+                <option value="Bajaj Finserv">Bajaj Finserv (No Cost EMI)</option>
+                <option value="TVS Credit">TVS Credit Mobile Finance</option>
+                <option value="DMI Finance">DMI Finance</option>
+                <option value="HDB Financial">HDB Financial Services</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Checkout Order Review Summary -->
+          <div style="background: white; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; margin-bottom: 24px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
+              <span>Items Total (<span id="checkout-items-qty">0</span> items)</span>
+              <strong id="checkout-subtotal-val">₹0.00</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
+              <span>Express Shipping</span>
+              <span class="badge badge-success">FREE</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 16px; font-weight: 800; border-top: 1px dashed var(--border); padding-top: 10px; margin-top: 8px;">
+              <span>Total Payable</span>
+              <span id="checkout-grand-total-val" style="color: var(--primary);">₹0.00</span>
+            </div>
+          </div>
+
+          <div id="checkout-error-msg" class="badge badge-danger hidden" style="width: 100%; padding: 10px; margin-bottom: 16px; border-radius: var(--radius-md);"></div>
+
+          <button type="submit" class="btn btn-primary btn-full btn-large" id="submit-order-btn">
+            <span>Confirm &amp; Place Order</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- PhonePe & Google Pay (UPI) Payment Portal Modal -->
+  <div class="modal-backdrop" id="upi-payment-modal-backdrop">
+    <div class="modal-dialog" style="max-width: 460px; padding: 0; overflow: hidden; border-radius: 18px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 25px 50px rgba(0,0,0,0.5);">
+      <!-- Header with PhonePe Gradient -->
+      <div style="background: linear-gradient(135deg, #5f259f 0%, #3b1464 100%); color: white; padding: 22px 24px; position: relative;">
+        <button class="modal-close-btn" id="close-upi-modal-btn" style="color: white; top: 16px; right: 16px;">✕</button>
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+          <div style="background: white; border-radius: 50%; width: 38px; height: 38px; display: grid; place-items: center; font-weight: 900; color: #5f259f; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+            पे
+          </div>
+          <div>
+            <h3 style="font-size: 18px; font-weight: 800; color: white; margin: 0; line-height: 1.2;">PhonePe &amp; Google Pay UPI</h3>
+            <span style="font-size: 11px; opacity: 0.85;">Official Store Gateway — ZESH TECH</span>
+          </div>
+        </div>
+        <div style="margin-top: 12px; background: rgba(255,255,255,0.12); padding: 10px 14px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 12px; font-weight: 600;">Total Amount to Pay:</span>
+          <strong id="upi-modal-amount" style="font-size: 22px; font-weight: 900; color: #4ade80;">₹0.00</strong>
+        </div>
+      </div>
+
+      <div class="modal-body" style="padding: 22px; background: #0b101d; color: white;">
+        
+        <!-- Mobile 1-Tap App Launcher Buttons (Visible on Mobile & Quick Desktop) -->
+        <div style="margin-bottom: 18px;">
+          <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px;">
+            ⚡ 1-Tap Instant Payment (Mobile Apps):
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">
+            <a href="#" id="upi-intent-phonepe" class="btn" style="background: #5f259f; color: white; font-weight: 700; font-size: 12px; padding: 11px; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 8px;">
+              <span>🟣 Pay via PhonePe</span>
+            </a>
+            <a href="#" id="upi-intent-gpay" class="btn" style="background: #1a73e8; color: white; font-weight: 700; font-size: 12px; padding: 11px; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 8px;">
+              <span>🔵 Pay via GPay</span>
+            </a>
+          </div>
+          <a href="#" id="upi-intent-any" class="btn btn-full" style="background: #0284c7; color: white; font-weight: 700; font-size: 12px; padding: 10px; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 8px;">
+            <span>🟢 Pay via Any UPI App (Paytm / BHIM)</span>
+          </a>
+        </div>
+
+        <!-- PhonePe QR Code & VPA Display Section -->
+        <div style="background: #131b2e; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px; text-align: center; margin-bottom: 18px;">
+          <div style="font-size: 12px; font-weight: 700; color: #e2e8f0; margin-bottom: 10px;">
+            Or Scan Official PhonePe QR Code:
+          </div>
+          
+          <div style="background: white; padding: 10px; border-radius: 12px; display: inline-block; margin-bottom: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+            <img src="/images/phonepe_qr.png" alt="PhonePe QR Code" style="width: 190px; height: 190px; object-fit: contain; display: block;">
+          </div>
+
+          <!-- UPI ID Copy Box -->
+          <div style="display: flex; align-items: center; justify-content: center; gap: 8px; background: #090d16; padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+            <span style="font-size: 11px; color: #94a3b8;">UPI ID:</span>
+            <strong id="upi-id-text" style="font-family: var(--font-mono); font-size: 13px; color: #38bdf8;">9122846271-5@ybl</strong>
+            <button type="button" id="copy-upi-btn" style="background: #1e293b; color: white; border: 1px solid rgba(255,255,255,0.2); font-size: 11px; padding: 3px 8px; border-radius: 4px; cursor: pointer;">
+              Copy
+            </button>
+          </div>
+          <small style="color: #64748b; font-size: 11px; display: block; margin-top: 6px;">Merchant: ZESH TECH | Ph: 9122846271</small>
+        </div>
+
+        <!-- UTR / Reference Verification Form -->
+        <form id="upi-verification-form">
+          <div style="margin-bottom: 14px;">
+            <label style="font-size: 12px; font-weight: 700; color: #e2e8f0; display: block; margin-bottom: 6px;">
+              Enter 12-Digit UPI Reference / UTR Number: *
+            </label>
+            <input type="text" id="upi-utr-input" placeholder="e.g. 408923489123 (from PhonePe / GPay receipt)" required maxlength="22" style="background: #090d16; border: 1.5px solid #334155; color: white; font-family: var(--font-mono); font-weight: 700; font-size: 13px; width: 100%; padding: 10px 12px; border-radius: 8px;">
+            <small style="color: #94a3b8; font-size: 11px; display: block; margin-top: 4px;">Payment hone ke baad PhonePe / GPay receipt me 12-digit UTR / Ref No milta hai.</small>
+          </div>
+
+          <div id="upi-error-msg" class="badge badge-danger hidden" style="width: 100%; padding: 8px; margin-bottom: 12px; border-radius: 6px;"></div>
+
+          <button type="submit" class="btn btn-full btn-large" id="confirm-upi-payment-btn" style="background: #22c55e; color: white; font-weight: 800; font-size: 14px; padding: 14px; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span>✓ I Have Paid — Confirm Order</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
+          </button>
+        </form>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Order Confirmation Modal -->
+  <div class="modal-backdrop" id="confirmation-modal-backdrop">
+    <div class="modal-dialog modal-dialog-small" style="text-align: center;">
+      <button class="modal-close-btn" id="close-confirmation-btn">✕</button>
+      <div class="modal-body" style="padding: 32px 22px;">
+        <div style="width: 56px; height: 56px; border-radius: 50%; background: var(--success-bg); color: var(--success); display: grid; place-items: center; margin: 0 auto 14px;">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
+        </div>
+        <div class="eyebrow" style="color: var(--success);">SUCCESSFULLY PLACED</div>
+        <h2 style="font-size: 22px; margin-bottom: 6px;">Order Confirmed!</h2>
+        <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px;">
+          Thank you for choosing ZESH-TECH. Your order has been registered in the database.
+        </p>
+        <div style="background: var(--surface-alt); padding: 10px; border-radius: var(--radius-md); font-family: var(--font-mono); font-size: 13px; font-weight: 700; margin-bottom: 16px;">
+          Order ID: <span id="confirmed-order-number" style="color: var(--primary);">ZT-XXXXXXXXXX</span>
+        </div>
+
+        <!-- WhatsApp Owner Alert CTA -->
+        <a href="#" id="confirmed-whatsapp-btn" target="_blank" rel="noopener" class="btn btn-full" style="background: #25D366; color: white; font-weight: 700; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; padding: 12px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          <span>Confirm on WhatsApp (7903746116)</span>
+        </a>
+
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <button class="btn btn-secondary btn-full btn-small" id="view-orders-after-confirm-btn">View My Orders</button>
+          <button class="btn btn-outline btn-full btn-small" id="continue-shopping-btn">Continue Shopping</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Customer "My Orders" & Profile Modal -->
+  <div class="modal-backdrop" id="customer-portal-backdrop">
+    <div class="modal-dialog modal-dialog-large">
+      <button class="modal-close-btn" id="close-customer-portal-btn">✕</button>
+      <div class="modal-body">
+        <div class="eyebrow">CUSTOMER ACCOUNT</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+          <h2 style="font-size: 22px;" id="customer-portal-title">My Orders &amp; Profile</h2>
+          <button class="btn btn-outline btn-small" id="customer-logout-btn">Sign Out</button>
+        </div>
+
+        <!-- Portal Tabs -->
+        <div style="display: flex; gap: 10px; border-bottom: 1px solid var(--border); margin-bottom: 20px;">
+          <button class="category-chip active" id="tab-btn-orders">Order History</button>
+          <button class="category-chip" id="tab-btn-profile">Account Profile</button>
+        </div>
+
+        <!-- Orders List Tab -->
+        <div id="customer-orders-tab">
+          <div id="customer-orders-list" style="display: flex; flex-direction: column; gap: 16px;">
+            <!-- Loaded dynamically from /api/orders/my -->
+          </div>
+        </div>
+
+        <!-- Profile Tab -->
+        <div id="customer-profile-tab" class="hidden">
+          <form id="customer-profile-form">
+            <div class="field">
+              <label>Full Name</label>
+              <input type="text" id="profile-name-input" required minlength="2">
+            </div>
+            <div class="field">
+              <label>Registered Email</label>
+              <input type="email" id="profile-email-input" disabled style="background-color: var(--surface-alt);">
+            </div>
+            <div class="form-row">
+              <div class="field">
+                <label>Current Password (optional)</label>
+                <input type="password" id="profile-current-pwd" placeholder="Enter if changing password">
+              </div>
+              <div class="field">
+                <label>New Password (min 8 chars)</label>
+                <input type="password" id="profile-new-pwd" placeholder="New password">
+              </div>
+            </div>
+            <div id="profile-feedback-msg" class="hidden badge badge-success" style="margin-bottom: 14px; padding: 10px; width: 100%;"></div>
+            <button type="submit" class="btn btn-primary" id="save-profile-btn">Save Profile Changes</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Customer Auth Modal (Sign In / Register) -->
+  <div class="modal-backdrop" id="auth-modal-backdrop">
+    <div class="modal-dialog modal-dialog-small">
+      <button class="modal-close-btn" id="close-auth-modal-btn">✕</button>
+      <div class="modal-body" style="padding: 30px;">
+        <div class="eyebrow" id="auth-modal-eyebrow">WELCOME TO ZESH-TECH</div>
+        <h2 style="font-size: 22px; margin-bottom: 6px;" id="auth-modal-heading">Sign In to Your Account</h2>
+        <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;" id="auth-modal-subtext">Access your orders, tracking, and warranty details.</p>
+
+        <!-- Mode Toggle Tabs -->
+        <div style="display: flex; background: var(--surface-alt); border-radius: var(--radius-md); padding: 4px; margin-bottom: 16px;">
+          <button type="button" class="btn btn-full btn-small" id="auth-tab-login" style="background: white; box-shadow: var(--shadow-xs);">Sign In</button>
+          <button type="button" class="btn btn-full btn-small" id="auth-tab-register" style="color: var(--text-muted);">Create Account</button>
+        </div>
+
+        <!-- Quick Social Sign-In Options (Google, Facebook, WhatsApp, Apple) -->
+        <div class="social-auth-grid">
+          <!-- Google / Gmail -->
+          <button type="button" class="btn-social btn-social-google" id="social-btn-google">
+            <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+            <span>Continue with Google / Gmail</span>
+          </button>
+
+          <!-- Facebook -->
+          <button type="button" class="btn-social btn-social-fb" id="social-btn-facebook">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            <span>Continue with Facebook</span>
+          </button>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <!-- WhatsApp Quick Sign In -->
+            <button type="button" class="btn-social btn-social-whatsapp" id="social-btn-whatsapp" style="font-size: 11.5px; padding: 8px 6px;">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              <span>WhatsApp Login</span>
+            </button>
+
+            <!-- Apple ID -->
+            <button type="button" class="btn-social btn-social-apple" id="social-btn-apple" style="font-size: 11.5px; padding: 8px 6px;">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.36c.64-.78 1.08-1.86.96-2.95-1 .04-2.12.67-2.77 1.44-.57.67-1.08 1.76-.94 2.83 1.12.09 2.15-.58 2.75-1.32"/></svg>
+              <span>Apple ID</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="social-auth-separator">
+          <span>OR CONTINUE WITH EMAIL</span>
+        </div>
+
+        <form id="auth-form">
+          <div class="field hidden" id="auth-name-field">
+            <label>Full Name *</label>
+            <input type="text" id="auth-name-input" placeholder="e.g. Aman Raj">
+          </div>
+
+          <div class="field">
+            <label>Email Address *</label>
+            <input type="email" id="auth-email-input" required placeholder="your.name@example.com">
+          </div>
+
+          <div class="field">
+            <label>Password *</label>
+            <input type="password" id="auth-password-input" required minlength="8" placeholder="Minimum 8 characters">
+          </div>
+
+          <div id="auth-alert-msg" class="badge badge-danger hidden" style="width: 100%; padding: 10px; margin-bottom: 16px; border-radius: var(--radius-md);"></div>
+
+          <button type="submit" class="btn btn-primary btn-full btn-large" id="auth-submit-btn">Sign In</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Smart Footer -->
+  <footer style="background: #070b12; color: var(--dark-text); padding: 60px 0 30px; border-top: 1px solid #1e293b; margin-top: auto;">
+    <div class="wrap" style="display: grid; grid-template-columns: 1.3fr 1.1fr 1.1fr 1fr; gap: 36px; margin-bottom: 40px;">
+      
+      <!-- Brand & Trust -->
+      <div>
+        <div class="brand" style="margin-bottom: 14px;">
+          <img src="/images/logo.png" alt="ZESH TECH Logo" class="brand-logo-img" style="height: 44px;">
+          <div class="brand-text">
+            <div class="brand-name" style="color: white; font-size: 20px;">ZESH<span style="color: #0066ff;"> TECH</span></div>
+            <span class="brand-tag" style="color: #64748b;">LIVE THE FUTURE</span>
+          </div>
+        </div>
+        <p style="color: #94a3b8; font-size: 13px; line-height: 1.6; max-width: 320px; margin-bottom: 16px;">
+          Your authorized technology and electronics destination in Barh, Patna. Flagship smartphones, high-performance audio, fast chargers, and verified accessories.
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 6px; font-size: 11px;">
+          <span style="color: #10b981; font-weight: 600;">✓ GST Registered: 10GURPS1052R1ZZ</span>
+          <span style="color: #38bdf8; font-weight: 600;">✓ 100% Genuine Brand Warranty Guaranteed</span>
+        </div>
+      </div>
+
+      <!-- Shop Location & Hours -->
+      <div>
+        <h4 style="color: white; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px; display: flex; align-items: center; gap: 6px;">
+          <span>📍</span> Store Location &amp; Hours
+        </h4>
+        <div style="font-size: 13px; color: #cbd5e1; line-height: 1.6; margin-bottom: 12px;">
+          <strong>ZESH TECH</strong><br>
+          Station Road, Bazidpur,<br>
+          (Near Happy Marriage Hall)<br>
+          Barh, Patna (Bihar) 803213
+        </div>
+        <div style="font-size: 12px; color: #94a3b8; margin-bottom: 14px;">
+          🕒 <strong>Open Daily:</strong> 10:00 AM – 9:00 PM
+        </div>
+        <a href="https://share.google/5sR85hrQG78dC3ixo" target="_blank" rel="noopener" class="btn btn-secondary btn-small" style="display: inline-flex; align-items: center; gap: 6px; color: #38bdf8; border-color: #0284c7; font-size: 12px;">
+          <span>Open in Google Maps ↗</span>
+        </a>
+      </div>
+
+      <!-- 0% EMI & Financing Partners -->
+      <div>
+        <h4 style="color: white; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px; display: flex; align-items: center; gap: 6px;">
+          <span>💳</span> 0% Easy EMI / Finance
+        </h4>
+        <p style="color: #94a3b8; font-size: 12px; line-height: 1.5; margin-bottom: 12px;">
+          Instant paperless loan approval with 0% interest and flexible tenures available through our retail finance partners:
+        </p>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px;">
+          <span class="badge" style="background: rgba(0, 102, 255, 0.15); color: #60a5fa; border: 1px solid rgba(0, 102, 255, 0.3);">Bajaj Finserv</span>
+          <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);">TVS Credit</span>
+          <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);">DMI Finance</span>
+          <span class="badge" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3);">HDB Financial</span>
+        </div>
+        <small style="color: #64748b; font-size: 11px;">* Instant counter verification with Aadhaar &amp; PAN card.</small>
+      </div>
+
+      <!-- Direct Contact & Support -->
+      <div>
+        <h4 style="color: white; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px; display: flex; align-items: center; gap: 6px;">
+          <span>📞</span> Contact &amp; Support
+        </h4>
+        <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
+          <a href="https://wa.me/917903746116?text=Hello%20ZeshTech%2C%20I%20have%20an%20inquiry%20regarding%20products" target="_blank" rel="noopener" style="color: #25D366; font-weight: 700; text-decoration: none; display: flex; align-items: center; gap: 8px;">
+            <span>💬 WhatsApp: 7903746116</span>
+          </a>
+          <a href="tel:+917903746116" style="color: #f1f5f9; text-decoration: none; display: flex; align-items: center; gap: 8px;">
+            <span>📞 +91 7903746116</span>
+          </a>
+          <a href="tel:+919122846271" style="color: #f1f5f9; text-decoration: none; display: flex; align-items: center; gap: 8px;">
+            <span>📞 +91 9122846271</span>
+          </a>
+          <a href="mailto:zishanshafique8@gmail.com" style="color: #94a3b8; text-decoration: none; display: flex; align-items: center; gap: 8px;">
+            <span>✉️ zishanshafique8@gmail.com</span>
+          </a>
+          <a href="https://instagram.com/zeshtechbarh" target="_blank" rel="noopener" style="color: #f43f5e; font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 8px;">
+            <span>📸 @zeshtechbarh</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Copyright & Accepted Payment Methods -->
+    <div class="wrap" style="padding-top: 24px; border-top: 1px solid #1e293b; display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #64748b; flex-wrap: wrap; gap: 14px;">
+      <div>
+        <span>&copy; <span id="current-year">2026</span> <strong>ZESH TECH</strong>. All rights reserved. • GSTIN: 10GURPS1052R1ZZ</span>
+      </div>
+      <div style="display: flex; gap: 14px; flex-wrap: wrap; font-size: 11px; color: #94a3b8;">
+        <span>Cash on Delivery</span>
+        <span>•</span>
+        <span>🟣 PhonePe &amp; Google Pay (9122846271-5@ybl)</span>
+        <span>•</span>
+        <span>Bajaj / TVS / DMI EMI</span>
+        <span>•</span>
+        <span>Official GST Tax Invoice</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Floating WhatsApp Quick-Action Button -->
+  <a href="https://wa.me/917903746116?text=Hello%20ZeshTech%2C%20I%20have%20an%20inquiry%20regarding%20products%20and%20orders." target="_blank" rel="noopener" class="floating-whatsapp-btn" aria-label="Chat with ZESH TECH on WhatsApp">
+    <div class="whatsapp-pulse"></div>
+    <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+  </a>
+
+  <!-- Mobile App Bottom Navigation Bar -->
+  <nav class="mobile-bottom-bar" aria-label="Mobile Navigation">
+    <a href="#" class="mobile-bottom-item active" id="mob-nav-home">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Home</span>
+    </a>
+    <a href="#catalogue-section" class="mobile-bottom-item" id="mob-nav-shop">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+      <span>Shop</span>
+    </a>
+    <a href="javascript:void(0)" class="mobile-bottom-item" id="mob-nav-cart">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      <span>Bag</span>
+      <span class="mobile-cart-badge" id="mob-cart-count">0</span>
+    </a>
+    <a href="javascript:void(0)" class="mobile-bottom-item" id="mob-nav-orders">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
+      <span>Orders</span>
+    </a>
+    <a href="https://wa.me/917903746116?text=Hello%20ZeshTech%2C%20I%20have%20an%20inquiry" target="_blank" rel="noopener" class="mobile-bottom-item" style="color: #25D366;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      <span>WhatsApp</span>
+    </a>
+  </nav>
+
+  <!-- Scripts -->
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    // PWA Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
