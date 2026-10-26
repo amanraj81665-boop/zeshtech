@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..800;1,9..40,400..800&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="/css/style.css?v=3.0">
+  <link rel="stylesheet" href="/css/style.css?v=3.2">
 
   <!-- Official Google Identity Services (GIS) Web SDK -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -229,69 +229,86 @@
   </section>
 
   <!-- =========================================================================
-       2. SMART BUDGET COMPARISON ENGINE & BUYER'S GUIDE (Under 30k & Custom Compare)
+       2. SMART BUDGET COMPARISON ENGINE & BUYER'S GUIDE (Clickable / On-Demand)
        ========================================================================= -->
   <section class="wrap phone-comparison-section" id="phone-comparison-section">
-    <div class="section-head">
-      <div>
-        <div class="eyebrow" style="color: #3b82f6;">🔍 SMART BUYER'S GUIDE &amp; COMPARISON</div>
-        <h2 class="section-title">Compare Phones in Your Budget</h2>
-        <p class="section-subtitle">Apne budget ke hisaab se sabhi phones ko side-by-side compare karein aur dekhein kon sa phone best hai.</p>
+    <!-- Clickable Comparison Launch Banner -->
+    <div class="comparison-launch-banner" id="launch-comparison-banner" role="button" tabindex="0">
+      <div class="launch-left">
+        <span class="launch-icon">⚖️</span>
+        <div>
+          <div class="launch-title">Smart Phone Comparison &amp; Buyer's Guide</div>
+          <div class="launch-subtitle">Compare ₹15k, ₹20k, ₹30k &amp; flagship phones side-by-side • Click to open &amp; find the best phone ›</div>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-small" id="toggle-comparison-view-btn" type="button">
+        <span id="toggle-comparison-text">Open Comparison ▾</span>
+      </button>
+    </div>
+
+    <!-- Collapsible Container (Hidden by default, shown when customer clicks) -->
+    <div class="comparison-collapsible-wrapper collapsed" id="phone-comparison-content">
+      <div class="section-head" style="margin-top: 14px;">
+        <div>
+          <div class="eyebrow" style="color: #3b82f6;">🔍 SMART BUYER'S GUIDE &amp; COMPARISON</div>
+          <h2 class="section-title">Compare Phones in Your Budget</h2>
+          <p class="section-subtitle">Apne budget ke hisaab se sabhi phones ko side-by-side compare karein aur dekhein kon sa phone best hai.</p>
+        </div>
+
+        <!-- Quick Custom Compare Trigger -->
+        <div class="comparison-mode-switch">
+          <button class="btn btn-secondary btn-small" id="toggle-custom-compare-btn" type="button">
+            <span>⚖️ Custom 2-Phone Compare</span>
+          </button>
+        </div>
       </div>
 
-      <!-- Quick Custom Compare Trigger -->
-      <div class="comparison-mode-switch">
-        <button class="btn btn-secondary btn-small" id="toggle-custom-compare-btn" type="button">
-          <span>⚖️ Custom 2-Phone Compare</span>
+      <!-- Budget Filter Chips Slider -->
+      <div class="budget-slider" id="budget-chips">
+        <button class="budget-chip" data-budget="15k">
+          <span>🎯</span> Under ₹15,000
+        </button>
+        <button class="budget-chip" data-budget="20k">
+          <span>🎯</span> Under ₹20,000
+        </button>
+        <button class="budget-chip active" data-budget="30k">
+          <span>⭐</span> ₹20k - ₹30k (Best ₹30k Picks)
+        </button>
+        <button class="budget-chip" data-budget="50k">
+          <span>🚀</span> ₹30,000 - ₹50,000
+        </button>
+        <button class="budget-chip" data-budget="flagship">
+          <span>👑</span> Above ₹50,000 (Flagships)
         </button>
       </div>
-    </div>
 
-    <!-- Budget Filter Chips Slider -->
-    <div class="budget-slider" id="budget-chips">
-      <button class="budget-chip" data-budget="15k">
-        <span>🎯</span> Under ₹15,000
-      </button>
-      <button class="budget-chip" data-budget="20k">
-        <span>🎯</span> Under ₹20,000
-      </button>
-      <button class="budget-chip active" data-budget="30k">
-        <span>⭐</span> ₹20k - ₹30k (Best ₹30k Picks)
-      </button>
-      <button class="budget-chip" data-budget="50k">
-        <span>🚀</span> ₹30,000 - ₹50,000
-      </button>
-      <button class="budget-chip" data-budget="flagship">
-        <span>👑</span> Above ₹50,000 (Flagships)
-      </button>
-    </div>
-
-    <!-- Winner Recommendation Card (AI Crowned) -->
-    <div class="comparison-winner-card" id="comparison-winner-card">
-      <!-- Injected via JS -->
-    </div>
-
-    <!-- Custom Compare Bar (Hidden by default, shown when user clicks custom compare) -->
-    <div class="custom-compare-bar hidden" id="custom-compare-bar">
-      <div class="custom-compare-inner">
-        <div style="flex: 1; min-width: 220px;">
-          <label style="font-size:12px; font-weight:700; color:var(--text-muted); display:block; margin-bottom:4px;">Select Phone 1:</label>
-          <select id="custom-phone-select-1" class="custom-compare-select"></select>
-        </div>
-        <div style="font-weight:900; font-size:16px; color:#3b82f6; align-self:center; padding: 0 8px;">VS</div>
-        <div style="flex: 1; min-width: 220px;">
-          <label style="font-size:12px; font-weight:700; color:var(--text-muted); display:block; margin-bottom:4px;">Select Phone 2:</label>
-          <select id="custom-phone-select-2" class="custom-compare-select"></select>
-        </div>
-        <button class="btn btn-primary" id="run-custom-compare-btn" type="button" style="align-self:flex-end;">
-          Compare Now 🚀
-        </button>
+      <!-- Winner Recommendation Card (AI Crowned) -->
+      <div class="comparison-winner-card" id="comparison-winner-card">
+        <!-- Injected via JS -->
       </div>
-    </div>
 
-    <!-- Comparison Matrix Table Container -->
-    <div class="comparison-matrix-wrapper" id="comparison-matrix-wrapper">
-      <!-- Injected via JS -->
+      <!-- Custom Compare Bar (Hidden by default, shown when user clicks custom compare) -->
+      <div class="custom-compare-bar hidden" id="custom-compare-bar">
+        <div class="custom-compare-inner">
+          <div style="flex: 1; min-width: 220px;">
+            <label style="font-size:12px; font-weight:700; color:var(--text-muted); display:block; margin-bottom:4px;">Select Phone 1:</label>
+            <select id="custom-phone-select-1" class="custom-compare-select"></select>
+          </div>
+          <div style="font-weight:900; font-size:16px; color:#3b82f6; align-self:center; padding: 0 8px;">VS</div>
+          <div style="flex: 1; min-width: 220px;">
+            <label style="font-size:12px; font-weight:700; color:var(--text-muted); display:block; margin-bottom:4px;">Select Phone 2:</label>
+            <select id="custom-phone-select-2" class="custom-compare-select"></select>
+          </div>
+          <button class="btn btn-primary" id="run-custom-compare-btn" type="button" style="align-self:flex-end;">
+            Compare Now 🚀
+          </button>
+        </div>
+      </div>
+
+      <!-- Comparison Matrix Table Container -->
+      <div class="comparison-matrix-wrapper" id="comparison-matrix-wrapper">
+        <!-- Injected via JS -->
+      </div>
     </div>
   </section>
 
@@ -1134,9 +1151,9 @@
   </nav>
 
   <!-- Scripts with Cache Busting -->
-  <script src="/js/phoneSpecsData.js?v=3.1"></script>
-  <script src="/js/api.js?v=3.1"></script>
-  <script src="/js/app.js?v=3.1"></script>
+  <script src="/js/phoneSpecsData.js?v=3.2"></script>
+  <script src="/js/api.js?v=3.2"></script>
+  <script src="/js/app.js?v=3.2"></script>
   <script>
     // PWA Service Worker Registration
     if ('serviceWorker' in navigator) {

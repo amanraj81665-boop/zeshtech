@@ -1035,15 +1035,199 @@ window.ZeshSpecs = (function () {
     // Exact or partial key match in specsDB
     for (const [key, val] of Object.entries(specsDB)) {
       if (combined.includes(key)) {
-        return { ...val, originalProduct: product };
+        return { ...val, originalProduct: product, categoryType: "mobile" };
       }
     }
 
-    // Dynamic intelligent generator for newly added products
-    const is5G = combined.includes("5g") || product.sellingPrice >= 18000;
-    const isAMOLED = product.sellingPrice >= 23000;
     const price = product.sellingPrice || 19999;
     const brand = product.brand || "Zesh Verified";
+    const cat = (product.category || "").toLowerCase();
+
+    // 1. WASHING MACHINE & HOME APPLIANCES
+    if (cat === "appliances" || combined.includes("washing") || combined.includes("machine") || combined.includes("wm")) {
+      const capMatch = product.name.match(/(\d+(\.\d+)?\s*kg)/i);
+      const cap = capMatch ? capMatch[0] : "7.5 Kg";
+      return {
+        brand: brand,
+        model: product.model || product.name,
+        categoryType: "appliance",
+        chipset: "High-Torque Inverter Motor with Smart Pulsator",
+        cpu: "Dual Storm Pulsator Wash System",
+        gpu: "N/A (Home Appliance)",
+        display: "Digital LED Touch Control Panel / Soft Dial",
+        resolution: "5 Wash Programs (Normal, Gentle, Heavy, Quick, Soak)",
+        refreshRate: "1350 RPM",
+        rearCamera: "N/A (Home Appliance)",
+        frontCamera: "N/A (Home Appliance)",
+        video: "Magic Filter with Rust-Proof Polypropylene Body",
+        battery: "230V AC / 50Hz • 5 Star Energy Efficient",
+        os: "Smart Auto-Restart & Water Level Sensor",
+        uiName: "Rotary Knob & Touch UI",
+        ramRom: `${cap} Washing Capacity`,
+        build: "Rust-Proof Toughened Glass Lid with Rat Protection",
+        sim: "N/A",
+        weight: "26.5 kg",
+        dimensions: { width: "790 mm", depth: "480 mm", height: "960 mm" },
+        inBox: "Washing Machine, Inlet Hose, Drain Pipe, Lint Filter, User Manual",
+        zeshScore: 9.4,
+        categoryTags: ["value", "appliance"],
+        bestForBadge: "🧺 Premium Home Appliance",
+        highlights: [
+          `${cap} Large Capacity - Ideal for Family Laundry`,
+          "1350 RPM Super Air Jet Dry for Faster Drying",
+          "5 Star BEE Rating for Lowest Power & Water Usage",
+          "10 Year Motor Warranty with Zesh Tech In-Store Support"
+        ],
+        customBadges: [
+          { icon: "🧺", title: `${cap} Capacity`, subtitle: "Family Wash Load" },
+          { icon: "⚡", title: "1350 RPM Speed", subtitle: "Super Air Turbo Dry" },
+          { icon: "⭐", title: "5 Star Rating", subtitle: "Lowest Electricity Bill" },
+          { icon: "🛡️", title: "10 Yr Warranty", subtitle: "Long Life Motor" }
+        ],
+        pros: ["Heavy-duty wash power", "Energy & water saver", "Long motor warranty"],
+        cons: ["Requires water tap connection"],
+        originalProduct: product
+      };
+    }
+
+    // 2. SMART TELEVISIONS
+    if (cat === "television" || combined.includes("tv")) {
+      const is43 = combined.includes("43");
+      const sizeText = is43 ? '43" (108 cm) 4K Ultra HD' : '32" (80 cm) Bezel-Less HD';
+      return {
+        brand: brand,
+        model: product.model || product.name,
+        categoryType: "tv",
+        chipset: "Quad Core A55 64-bit Processor with Mali GPU",
+        cpu: "Quad Core A55 (1.5 GHz)",
+        gpu: "Mali G31 MP2 GPU",
+        display: is43 ? '43" 4K Ultra HD A+ Grade IPS Display, HDR10' : '32" Bezel-Less HD Ready Display',
+        resolution: is43 ? "3840 x 2160 Pixels 4K UHD" : "1366 x 768 Pixels HD",
+        refreshRate: "60 Hz Vivid Motion Engine",
+        rearCamera: "N/A (Smart TV)",
+        frontCamera: "N/A (Smart TV)",
+        video: "24W Dolby Audio Stereo Speakers with DTS-HD",
+        battery: "Power: AC 100-240V ~ 50/60Hz, Eco Mode",
+        os: "Google TV / Android TV OS with Play Store & Chromecast",
+        uiName: "Google TV Interface",
+        ramRom: is43 ? "2 GB RAM | 16 GB Storage" : "1.5 GB RAM | 8 GB Storage",
+        build: "Metal Bezel-Less Frameless Design with Table Stand",
+        sim: "N/A • Dual Band WiFi (2.4/5GHz) + Bluetooth 5.0",
+        weight: is43 ? "6.8 kg" : "3.9 kg",
+        dimensions: { width: is43 ? "965 mm" : "720 mm", depth: "85 mm", height: is43 ? "560 mm" : "430 mm" },
+        inBox: "Smart TV, Smart Voice Remote, AAA Batteries, Wall Mount, Stand, Power Cable",
+        zeshScore: 9.3,
+        categoryTags: ["tv", "entertainment"],
+        bestForBadge: "📺 Home Cinema Champion",
+        highlights: [
+          `${sizeText} with 1.07 Billion Colors & HDR10`,
+          "24W Dolby Audio with Cinematic Virtual Surround",
+          "Google TV with Netflix, Prime Video, YouTube & Hotstar",
+          "3 HDMI, 2 USB, Dual Band WiFi, Bluetooth 5.0"
+        ],
+        customBadges: [
+          { icon: "📺", title: is43 ? "4K Ultra HD" : "HD Bezel-Less", subtitle: "Vivid Picture Engine" },
+          { icon: "🔊", title: "24W Dolby Audio", subtitle: "Cinema Surround Sound" },
+          { icon: "📶", title: "Google TV OS", subtitle: "Netflix, YouTube, Apps" },
+          { icon: "⚡", title: "3 HDMI + 2 USB", subtitle: "Full Connectivity" }
+        ],
+        pros: ["Cinema sound quality", "Stunning vivid colors", "Official Google TV with Play Store"],
+        cons: ["Wall mounting installation recommended"],
+        originalProduct: product
+      };
+    }
+
+    // 3. AUDIO & HEADPHONES
+    if (cat === "audio" || cat === "earphones" || cat === "headphones" || cat === "speaker") {
+      return {
+        brand: brand,
+        model: product.model || product.name,
+        categoryType: "audio",
+        chipset: "Low Latency Audio SoC with Bluetooth 5.3",
+        cpu: "Active Noise Cancellation DSP",
+        gpu: "N/A",
+        display: "Smart LED Battery Display Case",
+        resolution: "13mm Deep Bass Titanium Drivers",
+        refreshRate: "50ms Low Latency Gaming Mode",
+        rearCamera: "Quad Mics with AI Environmental Noise Cancellation",
+        frontCamera: "N/A",
+        video: "Touch Tap Gesture Controls",
+        battery: "Up to 40 Hours Total Playtime with Type-C Flash Charge",
+        os: "Compatible with Android, iOS, Windows, Mac",
+        uiName: "Touch Controls",
+        ramRom: "High Definition Audio Codec (AAC/SBC)",
+        build: "Ergonomic In-Ear Lightweight IPX5 Water Resistant",
+        sim: "Bluetooth 5.3 Instant Pairing",
+        weight: "42 g",
+        inBox: "Earbuds, Charging Case, Extra Ear Tips, Type-C Cable, Manual",
+        zeshScore: 9.1,
+        categoryTags: ["audio"],
+        bestForBadge: "🎧 Deep Bass King",
+        highlights: [
+          "13mm Bass Boost Drivers for Punchy Sound",
+          "40 Hours Monster Battery Life with Type-C Flash Charge",
+          "AI Quad Mic for Crystal Clear Calling",
+          "IPX5 Sweat & Water Resistance"
+        ],
+        customBadges: [
+          { icon: "🔋", title: "40 Hrs Playtime", subtitle: "Type-C Flash Charge" },
+          { icon: "🎵", title: "13mm Bass Driver", subtitle: "Deep Punchy Audio" },
+          { icon: "🎙️", title: "AI Noise Cancel", subtitle: "Crystal Clear Calls" },
+          { icon: "💧", title: "IPX5 Splash Proof", subtitle: "Gym & Rain Safe" }
+        ],
+        pros: ["Deep bass", "Massive battery life", "Instant Bluetooth pairing"],
+        cons: ["Keep charging case clean"],
+        originalProduct: product
+      };
+    }
+
+    // 4. CHARGERS & ACCESSORIES
+    if (cat === "charger" || cat === "cable" || cat === "power bank") {
+      return {
+        brand: brand,
+        model: product.model || product.name,
+        categoryType: "accessory",
+        chipset: "GaN Fast Power Controller IC",
+        cpu: "9-Layer Smart Circuit Protection",
+        gpu: "N/A",
+        display: "LED Power Output Indicator",
+        resolution: "Dual Port Type-C PD + USB-A",
+        refreshRate: "33W / 67W Turbo Flash Charging",
+        rearCamera: "N/A",
+        frontCamera: "N/A",
+        video: "Universal Fast Charging Protocol",
+        battery: "High Efficiency 94% Energy Transfer",
+        os: "Universal Compatibility",
+        uiName: "Plug & Play",
+        ramRom: "Over-Voltage, Over-Current, Short Circuit Protection",
+        build: "Fireproof Polycarbonate Glossy Compact Body",
+        sim: "N/A",
+        weight: "65 g",
+        inBox: "Fast Charger Adapter, Documentation, Warranty Card",
+        zeshScore: 9.2,
+        categoryTags: ["accessory"],
+        bestForBadge: "⚡ Ultra-Fast Charging",
+        highlights: [
+          "Super Fast Turbo Charging Output",
+          "9-Layer Smart Safety Temperature Control",
+          "Universal Compatibility for Android & iPhone",
+          "6 Months Zesh Tech Store Replacement Warranty"
+        ],
+        customBadges: [
+          { icon: "⚡", title: "Turbo Fast Charge", subtitle: "Rapid Power Delivery" },
+          { icon: "🔌", title: "Dual Output", subtitle: "Type-C + USB-A" },
+          { icon: "🛡️", title: "9-Layer Safety", subtitle: "No Over-Heating" },
+          { icon: "📱", title: "Universal Fit", subtitle: "Android & iPhone" }
+        ],
+        pros: ["Super fast charging speed", "Zero heating", "Sturdy pins"],
+        cons: ["Cable sold separately depending on model"],
+        originalProduct: product
+      };
+    }
+
+    // 5. SMARTPHONES & MOBILE PHONES (Dynamic Generator)
+    const is5G = combined.includes("5g") || price >= 18000;
+    const isAMOLED = price >= 23000;
 
     return {
       brand: brand,

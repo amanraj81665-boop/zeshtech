@@ -1637,13 +1637,23 @@
       btn.textContent = "Saving to Catalogue...";
       if (errBox) errBox.classList.add("hidden");
 
-      // Check if file upload is selected
+      // Check if file upload is selected (single or multiple)
       const fileInput = $("#add-product-file-input");
-      if (fileInput && fileInput.files && fileInput.files[0]) {
-        btn.textContent = "Uploading image to Cloudinary...";
-        const uploadRes = await zeshAPI.uploadProductImage(fileInput.files[0]);
-        if (uploadRes && uploadRes.imageUrl) {
-          productPayload.imageUrl = uploadRes.imageUrl;
+      if (fileInput && fileInput.files && fileInput.files.length > 0) {
+        if (fileInput.files.length === 1) {
+          btn.textContent = "Uploading image to Cloudinary...";
+          const uploadRes = await zeshAPI.uploadProductImage(fileInput.files[0]);
+          if (uploadRes && uploadRes.imageUrl) {
+            productPayload.imageUrl = uploadRes.imageUrl;
+            productPayload.images = [uploadRes.imageUrl];
+          }
+        } else {
+          btn.textContent = `Uploading ${fileInput.files.length} images to Cloudinary...`;
+          const uploadRes = await zeshAPI.uploadProductImages(fileInput.files);
+          if (uploadRes && uploadRes.imageUrls) {
+            productPayload.images = uploadRes.imageUrls;
+            productPayload.imageUrl = uploadRes.imageUrls[0];
+          }
         }
       }
 
@@ -2149,6 +2159,24 @@
       $("#admin-add-product-modal")?.classList.remove("active");
     });
     $("#add-product-form")?.addEventListener("submit", handleAddProductSubmit);
+
+    // Multi-image file preview
+    $("#add-product-file-input")?.addEventListener("change", (e) => {
+      const previewBox = $("#add-product-files-preview");
+      if (!previewBox) return;
+      previewBox.innerHTML = "";
+      const files = Array.from(e.target.files || []);
+      files.forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const wrap = document.createElement("div");
+          wrap.style.cssText = "position:relative; width:52px; height:52px; border-radius:8px; overflow:hidden; border:1px solid #3b82f6; background:#0f172a;";
+          wrap.innerHTML = `<img src="${ev.target.result}" style="width:100%; height:100%; object-fit:contain;">`;
+          previewBox.appendChild(wrap);
+        };
+        reader.readAsDataURL(file);
+      });
+    });
 
     // Edit Product Modal
     $("#close-edit-product-modal")?.addEventListener("click", () => {

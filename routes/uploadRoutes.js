@@ -11,8 +11,8 @@ const router = express.Router();
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 5 * 1024 * 1024,
-    files: 1
+    fileSize: 10 * 1024 * 1024,
+    files: 8
   },
   fileFilter(req, file, callback) {
     const allowedTypes = [
@@ -91,6 +91,7 @@ router.post(
         success: true,
         message: "Image uploaded successfully.",
         imageUrl: result.secure_url,
+        imageUrls: [result.secure_url],
         publicId: result.public_id
       });
     } catch (error) {
@@ -99,6 +100,53 @@ router.post(
       return res.status(502).json({
         success: false,
         message: "Image upload failed. Check Cloudinary settings."
+      });
+    }
+  }
+);
+
+// Multi-image upload for Product Gallery & Color Variants
+router.post(
+  "/product-images",
+  authMiddleware,
+  requireAdmin,
+  upload.array("images", 8),
+  async (req, res) => {
+    try {
+      const files = req.files || (req.file ? [req.file] : []);
+      if (!files || files.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Please select at least one image file."
+        });
+      }
+
+      if (
+        !process.env.CLOUDINARY_CLOUD_NAME ||
+        !process.env.CLOUDINARY_API_KEY ||
+        !process.env.CLOUDINARY_API_SECRET
+      ) {
+        return res.status(500).json({
+          success: false,
+          message: "Cloudinary credentials missing in environment."
+        });
+      }
+
+      const uploadPromises = files.map(f => uploadToCloudinary(f.buffer));
+      const results = await Promise.all(uploadPromises);
+      const imageUrls = results.map(r => r.secure_url);
+
+      return res.status(201).json({
+        success: true,
+        message: `${imageUrls.length} images uploaded successfully.`,
+        imageUrls,
+        imageUrl: imageUrls[0]
+      });
+    } catch (error) {
+      console.error("Cloudinary multi-image upload failed:", error.message);
+      return res.status(502).json({
+        success: false,
+        message: "Multiple image upload failed. Check Cloudinary connection."
       });
     }
   }

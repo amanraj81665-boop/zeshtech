@@ -884,13 +884,15 @@
           </div>
 
           <div class="field">
-            <label style="color: #e2e8f0;">Product Image URL (or upload below)</label>
-            <input type="url" name="imageUrl" id="add-product-img-url" placeholder="https://images.unsplash.com/..." style="background:#090d16; border-color:var(--dark-border); color:white;">
+            <label style="color: #e2e8f0;">Product Primary Image URL</label>
+            <input type="url" name="imageUrl" id="add-product-img-url" placeholder="https://..." style="background:#090d16; border-color:var(--dark-border); color:white;">
           </div>
 
           <div class="field">
-            <label style="color: #e2e8f0;">Or Upload Local Image to Cloudinary</label>
-            <input type="file" id="add-product-file-input" accept="image/*" style="background:#090d16; border-color:var(--dark-border); color:white;">
+            <label style="color: #e2e8f0;">Upload Product Images (Select 1 or More Photos / 360° Angles)</label>
+            <input type="file" id="add-product-file-input" accept="image/*" multiple style="background:#090d16; border-color:var(--dark-border); color:white;">
+            <div id="add-product-files-preview" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;"></div>
+            <small style="color:#94a3b8; font-size:11px;">Select multiple photos at once (Front, Back, Color variants, Box). Auto-uploaded to Cloudinary.</small>
           </div>
 
           <div class="field">
@@ -1115,7 +1117,7 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Scripts -->
-  <script src="/js/api.js"></script>
-  <script src="/js/admin.js"></script>
+  <script src="/js/api.js?v=3.2"></script>
+  <script src="/js/admin.js?v=3.2"></script>
 </body>
 </html>

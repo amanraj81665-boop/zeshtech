@@ -340,11 +340,91 @@
     }).join("");
   }
 
+  // Smart Color & Multi-Angle Image Resolver for Smartphones & Tech
+  function getProductColorVariants(product, allProds = []) {
+    const brand = (product.brand || "").toLowerCase();
+    const name = (product.name || "").toLowerCase();
+    const baseImg = product.imageUrl || imageFallback;
+    const variants = [];
+    const seenColors = new Set();
+
+    // 1. Current color from title
+    const currentColorMatch = product.name.match(/-\s*([A-Za-z\s]+?)(?:\(|$)/i);
+    const currentColorName = currentColorMatch ? currentColorMatch[1].trim() : (product.brand ? `${product.brand} Signature` : "Original Color");
+    variants.push({ color: currentColorName, image: baseImg });
+    seenColors.add(currentColorName.toLowerCase());
+
+    // 2. Look for sibling color variants in the catalog
+    const baseNameTokens = name.replace(/-\s*([A-Za-z\s]+?)(?:\(|$)/i, "").trim().split(" ").filter(w => w.length > 2);
+    const siblings = allProds.filter(p => {
+      if (p._id === product._id) return false;
+      const pBrand = (p.brand || "").toLowerCase();
+      const pName = (p.name || "").toLowerCase();
+      if (pBrand !== brand) return false;
+      const matches = baseNameTokens.filter(t => pName.includes(t));
+      return matches.length >= Math.min(2, baseNameTokens.length);
+    });
+
+    siblings.forEach(p => {
+      const cMatch = p.name.match(/-\s*([A-Za-z\s]+?)(?:\(|$)/i);
+      const cName = cMatch ? cMatch[1].trim() : "";
+      if (cName && !seenColors.has(cName.toLowerCase())) {
+        seenColors.add(cName.toLowerCase());
+        variants.push({ color: cName, image: p.imageUrl || baseImg });
+      }
+    });
+
+    // 3. Fallback color palette matching exact inventory stock photos
+    if (variants.length < 3 && product.category === "Mobile") {
+      if (brand.includes("apple") || name.includes("iphone")) {
+        if (!seenColors.has("lavender")) variants.push({ color: "Lavender", image: "/images/products/iphone-17-lavender.jpg" });
+        if (!seenColors.has("starlight white") && !seenColors.has("white")) variants.push({ color: "Starlight White", image: "/images/products/iphone-17-white.jpg" });
+        if (!seenColors.has("space black") && !seenColors.has("black")) variants.push({ color: "Space Black", image: "/images/products/iphone-18pro-black.jpg" });
+      } else if (brand.includes("samsung")) {
+        if (!seenColors.has("ice blue")) variants.push({ color: "Ice Blue", image: "/images/products/samsung-s25-iceblue.jpg" });
+        if (!seenColors.has("silver shadow") && !seenColors.has("silver")) variants.push({ color: "Silver Shadow", image: "/images/products/samsung-s25-silver.jpg" });
+        if (!seenColors.has("jet black") && !seenColors.has("black")) variants.push({ color: "Jet Black", image: "/images/products/samsung-s25fe-black.jpg" });
+      } else if (brand.includes("vivo")) {
+        if (!seenColors.has("wave blue")) variants.push({ color: "Wave Blue", image: "/images/products/vivo-t5lite-blue.jpg" });
+        if (!seenColors.has("twilight shadow") && !seenColors.has("twilight")) variants.push({ color: "Twilight Shadow", image: "/images/products/vivo-t5lite-twilight.jpg" });
+        if (!seenColors.has("glacier silver") && !seenColors.has("silver")) variants.push({ color: "Glacier Silver", image: "/images/products/vivo-t5x-silver.jpg" });
+      } else if (brand.includes("redmi") || brand.includes("xiaomi")) {
+        if (!seenColors.has("lake blue") && !seenColors.has("blue")) variants.push({ color: "Lake Blue", image: "/images/products/redmi-blue.jpg" });
+        if (!seenColors.has("carbon black") && !seenColors.has("black")) variants.push({ color: "Carbon Black", image: "/images/products/redmi-black.jpg" });
+        if (!seenColors.has("pastel purple") && !seenColors.has("purple")) variants.push({ color: "Pastel Purple", image: "/images/products/redmi-purple.jpg" });
+      } else if (brand.includes("oppo")) {
+        if (!seenColors.has("royal gold") && !seenColors.has("gold")) variants.push({ color: "Royal Gold", image: "/images/products/oppo-a6-pro-gold.jpg" });
+        if (!seenColors.has("mocha brown") && !seenColors.has("brown")) variants.push({ color: "Mocha Brown", image: "/images/products/oppo-f35-pro-brown.jpg" });
+        if (!seenColors.has("ocean blue") && !seenColors.has("blue")) variants.push({ color: "Ocean Blue", image: "/images/products/oppo-f35-blue.jpg" });
+      } else if (brand.includes("poco")) {
+        if (!seenColors.has("aqua blue") && !seenColors.has("blue")) variants.push({ color: "Aqua Blue", image: "/images/products/poco-m8x-blue.jpg" });
+        if (!seenColors.has("power black") && !seenColors.has("black")) variants.push({ color: "Power Black", image: "/images/products/poco-m8x-black.jpg" });
+        if (!seenColors.has("emerald green") && !seenColors.has("green")) variants.push({ color: "Emerald Green", image: "/images/products/poco-c85x-green.jpg" });
+      } else if (brand.includes("moto")) {
+        if (!seenColors.has("navy blue") && !seenColors.has("blue")) variants.push({ color: "Navy Blue", image: "/images/products/moto-blue.jpg" });
+        if (!seenColors.has("capri blue") && !seenColors.has("capri")) variants.push({ color: "Capri Blue", image: "/images/products/moto-capri.jpg" });
+        if (!seenColors.has("charcoal black") && !seenColors.has("black")) variants.push({ color: "Charcoal Black", image: "/images/products/moto-black.jpg" });
+      } else {
+        if (!seenColors.has("sapphire blue")) variants.push({ color: "Sapphire Blue", image: "/images/products/vivo-t5lite-blue.jpg" });
+        if (!seenColors.has("midnight black")) variants.push({ color: "Midnight Black", image: "/images/products/moto-black.jpg" });
+      }
+    }
+
+    return variants.slice(0, 4);
+  }
+
+  let active360SpinRaf = null;
+
   // ZESH TECH Official Specifications & Details Modal
   async function openQuickView(productId) {
     const modalBackdrop = $("#product-modal-backdrop");
     const modalContent = $("#product-modal-content");
     if (!modalBackdrop || !modalContent) return;
+
+    if (active360SpinRaf) {
+      cancelAnimationFrame(active360SpinRaf);
+      active360SpinRaf = null;
+    }
 
     // Check in-memory allProducts for instant 0ms rendering
     let product = allProducts.find(p => String(p._id) === String(productId));
@@ -395,15 +475,22 @@
       // Get rich specs from our Knowledge Base or intelligent generator
       const specs = window.ZeshSpecs ? window.ZeshSpecs.getPhoneSpecs(product) : null;
 
-      // Extract color from title (e.g. "Ice Blue", "White Silver", "Black", "Gold")
-      const colorMatch = product.name.match(/-\s*([A-Za-z\s]+?)(?:\(|$)/i);
-      const colorName = colorMatch ? colorMatch[1].trim() : (specs?.brand ? `${specs.brand} Signature` : "Sky Blue");
-
-      // Related colors for swatch picker
-      const colorsList = [colorName, "Emerald Green", "Twilight Purple", "Midnight Black"];
+      // Color variants with real photos
+      const colorVariants = getProductColorVariants(product, allProducts);
+      const selectedColor = colorVariants[0]?.color || "Standard Finish";
 
       // Variant extraction
       const ramRomText = specs?.ramRom || "8 GB RAM | 128 GB ROM";
+
+      // Category Badges (accurate for phones, TVs, washing machines, audio)
+      const posterBadges = specs?.customBadges || [
+        { icon: "🔋", title: specs?.battery?.split("with")[0]?.trim() || "5000 mAh", subtitle: "Long Lasting Battery" },
+        { icon: "📸", title: specs?.rearCamera?.split("+")[0]?.trim() || "50MP AI", subtitle: "AI Portrait Camera" },
+        { icon: "📱", title: specs?.display?.split(",")[0]?.trim() || "6.79 inch", subtitle: `${specs?.refreshRate || "120Hz"} Display` },
+        { icon: "⚡", title: specs?.antutuScore || "5,47,000+*", subtitle: "Leading AnTuTu Score" }
+      ];
+
+      const has360View = product.category === "Mobile" || product.category === "Television";
 
       modalContent.innerHTML = `
         <div class="zesh-product-page">
@@ -419,9 +506,16 @@
           </div>
 
           <div class="fk-main-grid">
-            <!-- LEFT: Gallery Column with Specs Poster Graphic Overlay -->
+            <!-- LEFT: Gallery Column with 360° Viewer & Specs Poster -->
             <div class="fk-gallery-column">
               <div class="fk-image-showcase">
+                <!-- 360 Interactive View Trigger -->
+                ${has360View ? `
+                  <button class="fk-360-badge" id="fk-toggle-360-btn" type="button" title="Experience 360 Interactive View">
+                    <span class="spin-icon">🔄</span> 360° 3D View
+                  </button>
+                ` : ""}
+
                 <!-- Top Floating Action Circles (Wishlist & Share) -->
                 <button class="fk-action-circle card-wishlist-btn ${wishlist.includes(product._id) ? "active" : ""}" title="Save to Wishlist" data-id="${escapeHTML(product._id)}" type="button">
                   ❤️
@@ -430,42 +524,46 @@
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
                 </button>
 
-                <!-- Main Product Image -->
-                <div class="fk-main-image-wrap">
-                  <img src="${escapeHTML(img)}" alt="${escapeHTML(product.name)}" class="fk-main-img" onerror="this.onerror=null;this.src='${imageFallback}';">
+                <!-- Standard Product Image Showcase -->
+                <div class="fk-main-image-wrap" id="fk-main-image-wrap">
+                  <img src="${escapeHTML(img)}" alt="${escapeHTML(product.name)}" class="fk-main-img" id="fk-main-img" onerror="this.onerror=null;this.src='${imageFallback}';">
+                </div>
+
+                <!-- 360° Interactive 3D Rotation Stage -->
+                <div class="fk-360-stage" id="fk-360-stage" style="display:none;">
+                  <div class="fk-360-phone-wrapper" id="fk-360-phone">
+                    <img src="${escapeHTML(img)}" alt="${escapeHTML(product.name)}" class="fk-360-phone-img" id="fk-360-img">
+                    <div class="fk-360-reflection"></div>
+                  </div>
+                  <div class="fk-360-hint-pill">
+                    <span>👈 Swipe / Drag to Rotate 360° 👉</span>
+                  </div>
+                </div>
+
+                <!-- 360° Control Bar -->
+                <div class="fk-360-controls-bar" id="fk-360-controls" style="display:none;">
+                  <button type="button" class="fk-360-angle-btn active" data-angle="0">Front</button>
+                  <button type="button" class="fk-360-angle-btn" data-angle="45">45°</button>
+                  <button type="button" class="fk-360-angle-btn" data-angle="90">Side</button>
+                  <button type="button" class="fk-360-angle-btn" data-angle="180">Back</button>
+                  <button type="button" class="fk-360-spin-toggle-btn" id="fk-auto-spin-btn">
+                    <span>▶ Auto Spin</span>
+                  </button>
+                  <button type="button" class="fk-360-angle-btn" id="fk-exit-360-btn" style="color:#ef4444; border-color:#fca5a5;">✕ Normal View</button>
                 </div>
 
                 <!-- Zesh Tech Specs Poster Graphic Badge Overlay -->
                 ${specs ? `
                   <div class="fk-specs-poster-overlay">
-                    <div class="fk-poster-badge">
-                      <span class="fk-poster-icon">🔋</span>
-                      <div>
-                        <strong>${escapeHTML(specs.battery.split("with")[0]?.trim() || "5000 mAh")}</strong>
-                        <small>Long Lasting Battery</small>
+                    ${posterBadges.map(b => `
+                      <div class="fk-poster-badge">
+                        <span class="fk-poster-icon">${escapeHTML(b.icon)}</span>
+                        <div>
+                          <strong>${escapeHTML(b.title)}</strong>
+                          <small>${escapeHTML(b.subtitle)}</small>
+                        </div>
                       </div>
-                    </div>
-                    <div class="fk-poster-badge">
-                      <span class="fk-poster-icon">📸</span>
-                      <div>
-                        <strong>${escapeHTML(specs.rearCamera.split("+")[0]?.trim() || "50MP AI")}</strong>
-                        <small>AI Portrait Camera</small>
-                      </div>
-                    </div>
-                    <div class="fk-poster-badge">
-                      <span class="fk-poster-icon">📱</span>
-                      <div>
-                        <strong>${escapeHTML(specs.display.split(",")[0]?.trim() || "6.79 inch")}</strong>
-                        <small>${escapeHTML(specs.refreshRate || "120Hz")} Display</small>
-                      </div>
-                    </div>
-                    <div class="fk-poster-badge">
-                      <span class="fk-poster-icon">⚡</span>
-                      <div>
-                        <strong>${escapeHTML(specs.antutuScore || "5,47,000+*")}</strong>
-                        <small>Leading AnTuTu Score</small>
-                      </div>
-                    </div>
+                    `).join("")}
                   </div>
                 ` : ""}
               </div>
@@ -479,14 +577,14 @@
                 <div class="fk-promo-text">100% Brand Sealed Pack • <b>ZESH TECH, Station Road, Barh (Patna)</b></div>
               </div>
 
-              <!-- Selected Color with Swatches Carousel -->
+              <!-- Selected Color with Swatches & Real Photos -->
               <div class="fk-swatch-section">
-                <div class="fk-section-subhead">Selected Color: <b id="fk-selected-color-label">${escapeHTML(colorName)}</b></div>
+                <div class="fk-section-subhead">Color: <b id="fk-selected-color-label">${escapeHTML(selectedColor)}</b></div>
                 <div class="fk-color-swatches-row">
-                  ${colorsList.map((c, i) => `
-                    <div class="fk-swatch-card ${i === 0 ? 'active' : ''}" data-color="${escapeHTML(c)}">
-                      <img src="${escapeHTML(img)}" alt="${escapeHTML(c)}">
-                      <span>${escapeHTML(c)}</span>
+                  ${colorVariants.map((c, i) => `
+                    <div class="fk-swatch-card ${i === 0 ? 'active' : ''}" data-color="${escapeHTML(c.color)}" data-image="${escapeHTML(c.image)}">
+                      <img src="${escapeHTML(c.image)}" alt="${escapeHTML(c.color)}" onerror="this.src='${imageFallback}';">
+                      <span>${escapeHTML(c.color)}</span>
                     </div>
                   `).join("")}
                 </div>
@@ -642,59 +740,14 @@
                   </div>
 
                   <div class="fk-highlights-grid">
-                    <!-- 1. RAM / ROM -->
-                    <div class="fk-highlight-card">
-                      <div class="fk-highlight-icon-box">🖲️</div>
-                      <div class="fk-highlight-text">
-                        <strong class="fk-hl-title">${escapeHTML(specs.ramRom)}</strong>
-                        <div class="fk-hl-desc">Store up to 13,000+ photos and full HD videos without lag</div>
+                    ${(specs.highlights || []).map(hl => `
+                      <div class="fk-highlight-card">
+                        <div class="fk-highlight-icon-box">✨</div>
+                        <div class="fk-highlight-text">
+                          <strong class="fk-hl-title">${escapeHTML(hl)}</strong>
+                        </div>
                       </div>
-                    </div>
-
-                    <!-- 2. Processor -->
-                    <div class="fk-highlight-card">
-                      <div class="fk-highlight-icon-box">⚙️</div>
-                      <div class="fk-highlight-text">
-                        <strong class="fk-hl-title">${escapeHTML(specs.chipset)} | Octa Core | 2.4+ GHz</strong>
-                        <div class="fk-hl-desc">Official Benchmark AnTuTu Score of ${escapeHTML(specs.antutuScore || "5,47,000+*")}</div>
-                      </div>
-                    </div>
-
-                    <!-- 3. Rear Camera -->
-                    <div class="fk-highlight-card">
-                      <div class="fk-highlight-icon-box">📸</div>
-                      <div class="fk-highlight-text">
-                        <strong class="fk-hl-title">${escapeHTML(specs.rearCamera.split("+")[0]?.trim() || "50MP AI")} Rear Camera</strong>
-                        <div class="fk-hl-desc">AI Super Night Mode. 4K Cinema Video. Ultra Clear Stabilization</div>
-                      </div>
-                    </div>
-
-                    <!-- 4. Front Camera -->
-                    <div class="fk-highlight-card">
-                      <div class="fk-highlight-icon-box">🤳</div>
-                      <div class="fk-highlight-text">
-                        <strong class="fk-hl-title">${escapeHTML(specs.frontCamera)} Front Camera</strong>
-                        <div class="fk-hl-desc">Sharp, detailed natural selfies with AI Portrait Bokeh</div>
-                      </div>
-                    </div>
-
-                    <!-- 5. Display -->
-                    <div class="fk-highlight-card">
-                      <div class="fk-highlight-icon-box">📱</div>
-                      <div class="fk-highlight-text">
-                        <strong class="fk-hl-title">${escapeHTML(specs.display.split(",")[0]?.trim() || "6.79 inch")}</strong>
-                        <div class="fk-hl-desc">1200 Nits Peak Brightness • ${escapeHTML(specs.refreshRate || "120Hz")} Refresh Rate</div>
-                      </div>
-                    </div>
-
-                    <!-- 6. Battery -->
-                    <div class="fk-highlight-card">
-                      <div class="fk-highlight-icon-box">🔋</div>
-                      <div class="fk-highlight-text">
-                        <strong class="fk-hl-title">${escapeHTML(specs.battery.split("with")[0]?.trim() || "5000 mAh")} Battery</strong>
-                        <div class="fk-hl-desc">Charging that can last up to 2 full days • Super Fast Flash Charge</div>
-                      </div>
-                    </div>
+                    `).join("")}
                   </div>
                 </div>
               ` : ""}
@@ -717,16 +770,16 @@
 
                   <!-- Tab 1: Specifications (Default Active) -->
                   <div class="fk-tab-pane active" id="fk-tab-specs">
-                    <!-- Battery & Power Features -->
+                    <!-- Power & Performance -->
                     <div class="fk-specs-group">
-                      <h3 class="fk-group-title">Battery &amp; Power Features</h3>
+                      <h3 class="fk-group-title">Performance &amp; Power</h3>
                       <div class="fk-spec-item-line">
-                        <span class="fk-spec-name">Battery Capacity</span>
-                        <strong class="fk-spec-val">${escapeHTML(specs.battery.split("with")[0]?.trim() || "5000 mAh")}</strong>
+                        <span class="fk-spec-name">Processor / Engine</span>
+                        <strong class="fk-spec-val">${escapeHTML(specs.chipset || "Flagship Octa-Core")}</strong>
                       </div>
                       <div class="fk-spec-item-line">
-                        <span class="fk-spec-name">Fast Charging Support</span>
-                        <strong class="fk-spec-val">${escapeHTML(specs.battery.split("with")[1]?.trim() || "Super Fast Charge")}</strong>
+                        <span class="fk-spec-name">Power / Battery</span>
+                        <strong class="fk-spec-val">${escapeHTML(specs.battery || "5000 mAh")}</strong>
                       </div>
                     </div>
 
@@ -736,15 +789,15 @@
                       <div class="fk-dimensions-2col-grid">
                         <div class="fk-dim-box">
                           <span class="fk-dim-name">Width</span>
-                          <strong class="fk-dim-val">${escapeHTML(specs.dimensions?.width || "77.71 mm (7.77 cm)")}</strong>
+                          <strong class="fk-dim-val">${escapeHTML(specs.dimensions?.width || "77.71 mm")}</strong>
                         </div>
                         <div class="fk-dim-box">
                           <span class="fk-dim-name">Depth</span>
-                          <strong class="fk-dim-val">${escapeHTML(specs.dimensions?.depth || "8.5 mm (0.85 cm)")}</strong>
+                          <strong class="fk-dim-val">${escapeHTML(specs.dimensions?.depth || "8.5 mm")}</strong>
                         </div>
                         <div class="fk-dim-box">
                           <span class="fk-dim-name">Height</span>
-                          <strong class="fk-dim-val">${escapeHTML(specs.dimensions?.height || "170 mm (17.0 cm)")}</strong>
+                          <strong class="fk-dim-val">${escapeHTML(specs.dimensions?.height || "170 mm")}</strong>
                         </div>
                         <div class="fk-dim-box">
                           <span class="fk-dim-name">Weight</span>
@@ -755,81 +808,47 @@
 
                     <!-- Display Features -->
                     <div class="fk-specs-group">
-                      <h3 class="fk-group-title">Display Features</h3>
-                      <div class="fk-dimensions-2col-grid">
-                        <div class="fk-dim-box">
-                          <span class="fk-dim-name">Display Size</span>
-                          <strong class="fk-dim-val">${escapeHTML(specs.display.split(",")[0]?.trim() || "17.25 cm (6.79 inch)")}</strong>
-                        </div>
-                        <div class="fk-dim-box">
-                          <span class="fk-dim-name">Resolution</span>
-                          <strong class="fk-dim-val">${escapeHTML(specs.resolution || "2400 x 1080 pixels")}</strong>
-                        </div>
-                        <div class="fk-dim-box">
-                          <span class="fk-dim-name">Resolution Type</span>
-                          <strong class="fk-dim-val">Full HD+ Super AMOLED</strong>
-                        </div>
-                        <div class="fk-dim-box">
-                          <span class="fk-dim-name">GPU</span>
-                          <strong class="fk-dim-val">${escapeHTML(specs.gpu)}</strong>
-                        </div>
+                      <h3 class="fk-group-title">Display &amp; Audio</h3>
+                      <div class="fk-spec-item-line">
+                        <span class="fk-spec-name">Display</span>
+                        <strong class="fk-spec-val">${escapeHTML(specs.display || "Full HD+")}</strong>
                       </div>
-                      <div class="fk-spec-item-line" style="margin-top: 10px;">
-                        <span class="fk-spec-name">Other Display Features</span>
-                        <strong class="fk-spec-val">Refresh Rate: ${escapeHTML(specs.refreshRate || "120Hz")}, Aspect Ratio: 20:9, 1200 NITS Peak Brightness, Eye Protection 3.0</strong>
+                      <div class="fk-spec-item-line">
+                        <span class="fk-spec-name">Resolution / Audio</span>
+                        <strong class="fk-spec-val">${escapeHTML(specs.resolution || "HD")}</strong>
                       </div>
                     </div>
 
-                    <!-- OS & Processor Features -->
-                    <div class="fk-specs-group">
-                      <h3 class="fk-group-title">OS &amp; Processor Features</h3>
-                      <div class="fk-spec-item-line">
-                        <span class="fk-spec-name">Operating System</span>
-                        <strong class="fk-spec-val">${escapeHTML(specs.os)}</strong>
+                    <!-- Features -->
+                    ${specs.rearCamera && specs.rearCamera !== "N/A (Home Appliance)" && specs.rearCamera !== "N/A" ? `
+                      <div class="fk-specs-group">
+                        <h3 class="fk-group-title">Camera &amp; Video</h3>
+                        <div class="fk-spec-item-line">
+                          <span class="fk-spec-name">Primary Camera</span>
+                          <strong class="fk-spec-val">${escapeHTML(specs.rearCamera)}</strong>
+                        </div>
+                        <div class="fk-spec-item-line">
+                          <span class="fk-spec-name">Selfie Camera</span>
+                          <strong class="fk-spec-val">${escapeHTML(specs.frontCamera)}</strong>
+                        </div>
                       </div>
-                      <div class="fk-spec-item-line">
-                        <span class="fk-spec-name">Processor Brand</span>
-                        <strong class="fk-spec-val">${escapeHTML(specs.chipset.split(" ")[0])}</strong>
-                      </div>
-                      <div class="fk-spec-item-line">
-                        <span class="fk-spec-name">Processor Core</span>
-                        <strong class="fk-spec-val">${escapeHTML(specs.cpu)}</strong>
-                      </div>
-                    </div>
-
-                    <!-- Camera Features -->
-                    <div class="fk-specs-group">
-                      <h3 class="fk-group-title">Camera Features</h3>
-                      <div class="fk-spec-item-line">
-                        <span class="fk-spec-name">Primary Camera</span>
-                        <strong class="fk-spec-val">${escapeHTML(specs.rearCamera)}</strong>
-                      </div>
-                      <div class="fk-spec-item-line">
-                        <span class="fk-spec-name">Secondary Selfie Camera</span>
-                        <strong class="fk-spec-val">${escapeHTML(specs.frontCamera)}</strong>
-                      </div>
-                      <div class="fk-spec-item-line">
-                        <span class="fk-spec-name">Video Recording</span>
-                        <strong class="fk-spec-val">${escapeHTML(specs.video)}</strong>
-                      </div>
-                    </div>
+                    ` : ""}
                   </div>
 
                   <!-- Tab 2: Showcase -->
                   <div class="fk-tab-pane" id="fk-tab-showcase" style="display:none; padding:16px 0;">
                     <div style="text-align:center; padding: 20px;">
-                      <img src="${escapeHTML(img)}" style="max-height:260px; object-fit:contain; margin-bottom:12px;">
+                      <img src="${escapeHTML(img)}" style="max-height:240px; object-fit:contain; margin-bottom:12px;">
                       <h3 style="font-size:16px; font-weight:800; color:#0f172a;">${escapeHTML(product.name)}</h3>
-                      <p style="font-size:13px; color:#64748b; max-width:600px; margin:0 auto; line-height:1.6;">${escapeHTML(product.description || "Engineered for high performance, battery endurance, and crystal clear photography with 100% brand warranty.")}</p>
+                      <p style="font-size:13px; color:#64748b; max-width:600px; margin:0 auto; line-height:1.6;">${escapeHTML(product.description || "Engineered for high performance, battery endurance, and crystal clear quality with 100% brand warranty.")}</p>
                     </div>
                   </div>
 
                   <!-- Tab 3: Description -->
                   <div class="fk-tab-pane" id="fk-tab-desc" style="display:none; padding:16px 0;">
                     <div style="font-size:13px; line-height:1.7; color:#334155;">
-                      <p><b>Performance Overview:</b> ${escapeHTML(product.name)} delivers flagship performance in its segment. Equipped with ${escapeHTML(specs.chipset)}, it handles intense multitasking and gaming without thermal throttling.</p>
-                      <p><b>Camera System:</b> Features ${escapeHTML(specs.rearCamera)} capable of capturing stunning low-light portraits and 4K video recording with shake-free stabilization.</p>
-                      <p><b>Battery &amp; Charging:</b> The massive ${escapeHTML(specs.battery)} ensures you never run out of power during busy workdays or long travel journeys.</p>
+                      <p><b>Product Overview:</b> ${escapeHTML(product.name)} delivers exceptional reliability and power in its class. Manufactured under strict quality benchmarks with official brand sealing.</p>
+                      <p><b>Performance &amp; Quality:</b> Designed for endurance, low energy consumption, and maximum daily productivity.</p>
                     </div>
                   </div>
 
@@ -837,7 +856,7 @@
                   <div class="fk-tab-pane" id="fk-tab-warranty" style="display:none; padding:16px 0;">
                     <div class="fk-spec-item-line">
                       <span class="fk-spec-name">Warranty Summary</span>
-                      <strong class="fk-spec-val">1 Year Official Manufacturer Warranty for Handset and 6 Months for In-Box Accessories</strong>
+                      <strong class="fk-spec-val">1 Year Official Brand Warranty (10 Year Motor Warranty for Appliances)</strong>
                     </div>
                     <div class="fk-spec-item-line">
                       <span class="fk-spec-name">Service Location</span>
@@ -867,6 +886,136 @@
       `;
 
       // Wire up clicks inside modal
+
+      // 1. Color Swatches with Instant Real Photo Switching!
+      modalContent.querySelectorAll(".fk-swatch-card").forEach(swatch => {
+        swatch.addEventListener("click", () => {
+          modalContent.querySelectorAll(".fk-swatch-card").forEach(s => s.classList.remove("active"));
+          swatch.classList.add("active");
+          const chosenColor = swatch.dataset.color || "";
+          const chosenImg = swatch.dataset.image || "";
+          const label = modalContent.querySelector("#fk-selected-color-label");
+          if (label) label.textContent = chosenColor;
+          const mainImg = modalContent.querySelector("#fk-main-img");
+          if (mainImg && chosenImg) {
+            mainImg.style.opacity = "0.4";
+            setTimeout(() => {
+              mainImg.src = chosenImg;
+              mainImg.style.opacity = "1";
+            }, 120);
+          }
+          const view360Img = modalContent.querySelector("#fk-360-img");
+          if (view360Img && chosenImg) {
+            view360Img.src = chosenImg;
+          }
+        });
+      });
+
+      // 2. 360° Interactive 3D Viewer Logic
+      const toggle360Btn = modalContent.querySelector("#fk-toggle-360-btn");
+      const stage = modalContent.querySelector("#fk-360-stage");
+      const controlsBar = modalContent.querySelector("#fk-360-controls");
+      const mainImageWrap = modalContent.querySelector("#fk-main-image-wrap");
+      const phoneWrapper = modalContent.querySelector("#fk-360-phone");
+      const spinBtn = modalContent.querySelector("#fk-auto-spin-btn");
+
+      let currentAngle = 0;
+      let isDragging = false;
+      let startX = 0;
+
+      function update360Rotation(deg) {
+        currentAngle = ((deg % 360) + 360) % 360;
+        if (phoneWrapper) {
+          phoneWrapper.style.transform = `rotateY(${currentAngle}deg) rotateX(4deg)`;
+          const brightness = 0.95 + Math.sin(currentAngle * Math.PI / 180) * 0.12;
+          const phoneImg = modalContent.querySelector("#fk-360-img");
+          if (phoneImg) {
+            phoneImg.style.filter = `drop-shadow(0 14px 24px rgba(15,23,42,0.3)) brightness(${brightness})`;
+          }
+        }
+      }
+
+      function stopAutoSpin() {
+        if (active360SpinRaf) {
+          cancelAnimationFrame(active360SpinRaf);
+          active360SpinRaf = null;
+          if (spinBtn) spinBtn.innerHTML = `<span>▶ Auto Spin</span>`;
+        }
+      }
+
+      function startAutoSpin() {
+        function step() {
+          update360Rotation(currentAngle + 1.2);
+          active360SpinRaf = requestAnimationFrame(step);
+        }
+        active360SpinRaf = requestAnimationFrame(step);
+        if (spinBtn) spinBtn.innerHTML = `<span>⏸ Pause Spin</span>`;
+      }
+
+      toggle360Btn?.addEventListener("click", () => {
+        const isOpening = stage.style.display === "none";
+        stage.style.display = isOpening ? "flex" : "none";
+        controlsBar.style.display = isOpening ? "flex" : "none";
+        mainImageWrap.style.display = isOpening ? "none" : "flex";
+        toggle360Btn.classList.toggle("active", isOpening);
+        toggle360Btn.innerHTML = isOpening ? `<span class="spin-icon">📱</span> Photo View` : `<span class="spin-icon">🔄</span> 360° 3D View`;
+        if (isOpening) {
+          update360Rotation(0);
+        } else {
+          stopAutoSpin();
+        }
+      });
+
+      if (stage) {
+        const onPointerDown = (clientX) => {
+          isDragging = true;
+          startX = clientX;
+          stopAutoSpin();
+        };
+        const onPointerMove = (clientX) => {
+          if (!isDragging) return;
+          const delta = clientX - startX;
+          startX = clientX;
+          update360Rotation(currentAngle + delta * 1.5);
+        };
+        const onPointerUp = () => { isDragging = false; };
+
+        stage.addEventListener("mousedown", (e) => onPointerDown(e.clientX));
+        window.addEventListener("mousemove", (e) => onPointerMove(e.clientX));
+        window.addEventListener("mouseup", onPointerUp);
+
+        stage.addEventListener("touchstart", (e) => {
+          if (e.touches && e.touches[0]) onPointerDown(e.touches[0].clientX);
+        }, { passive: true });
+        stage.addEventListener("touchmove", (e) => {
+          if (e.touches && e.touches[0]) onPointerMove(e.touches[0].clientX);
+        }, { passive: true });
+        stage.addEventListener("touchend", onPointerUp);
+      }
+
+      modalContent.querySelectorAll(".fk-360-angle-btn[data-angle]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          stopAutoSpin();
+          modalContent.querySelectorAll(".fk-360-angle-btn[data-angle]").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          const targetAngle = Number(btn.dataset.angle) || 0;
+          update360Rotation(targetAngle);
+        });
+      });
+
+      spinBtn?.addEventListener("click", () => {
+        if (active360SpinRaf) stopAutoSpin();
+        else startAutoSpin();
+      });
+
+      modalContent.querySelector("#fk-exit-360-btn")?.addEventListener("click", () => {
+        stopAutoSpin();
+        stage.style.display = "none";
+        controlsBar.style.display = "none";
+        mainImageWrap.style.display = "flex";
+        toggle360Btn.classList.remove("active");
+        toggle360Btn.innerHTML = `<span class="spin-icon">🔄</span> 360° 3D View`;
+      });
 
       // Toggle Zesh Store Savings Accordion
       const wowToggle = modalContent.querySelector("#fk-toggle-wow-deal");
@@ -914,16 +1063,6 @@
           renderCatalogue();
         });
       }
-
-      // Color Swatch Click
-      modalContent.querySelectorAll(".fk-swatch-card").forEach(swatch => {
-        swatch.addEventListener("click", () => {
-          modalContent.querySelectorAll(".fk-swatch-card").forEach(s => s.classList.remove("active"));
-          swatch.classList.add("active");
-          const label = modalContent.querySelector("#fk-selected-color-label");
-          if (label) label.textContent = swatch.dataset.color || "";
-        });
-      });
 
       // Variant Box Click
       modalContent.querySelectorAll(".fk-variant-box").forEach(box => {
@@ -1955,10 +2094,30 @@
     matrixWrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
+  function toggleComparisonDrawer(forceOpen = null) {
+    const content = $("#phone-comparison-content");
+    const label = $("#toggle-comparison-text");
+    if (!content) return;
+
+    const isCollapsed = content.classList.contains("collapsed");
+    const open = forceOpen !== null ? forceOpen : isCollapsed;
+
+    if (open) {
+      content.classList.remove("collapsed");
+      if (label) label.textContent = "Close Comparison ▴";
+      renderBudgetComparison(currentBudgetComparisonKey || "30k");
+    } else {
+      content.classList.add("collapsed");
+      if (label) label.textContent = "Open Comparison ▾";
+    }
+  }
+
   // 4. Quick Compare Trigger from Product Card
   function handleComparePhone(productId) {
     const product = allProducts.find(p => p._id === productId);
     if (!product) return;
+
+    toggleComparisonDrawer(true);
 
     const compareSection = $("#phone-comparison-section");
     if (compareSection) {
@@ -2152,6 +2311,18 @@
         openQuickView(viewBtn.dataset.id);
         return;
       }
+    });
+
+    // Clickable Comparison Launch Banner & Toggle
+    $("#launch-comparison-banner")?.addEventListener("click", () => toggleComparisonDrawer());
+    $("#toggle-comparison-view-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleComparisonDrawer();
+    });
+    document.querySelectorAll('a[href="#phone-comparison-section"]').forEach(link => {
+      link.addEventListener("click", () => {
+        toggleComparisonDrawer(true);
+      });
     });
 
     // Budget Comparison Chips

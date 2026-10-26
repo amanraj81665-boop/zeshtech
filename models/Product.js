@@ -144,6 +144,11 @@ const productSchema = new mongoose.Schema(
       maxlength: [500, "Image URL cannot exceed 500 characters"]
     },
 
+    images: {
+      type: [String],
+      default: []
+    },
+
     isActive: {
       type: Boolean,
       default: true

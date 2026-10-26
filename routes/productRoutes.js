@@ -84,6 +84,7 @@ const editableFields = [
   "lowStockThreshold",
   "description",
   "imageUrl",
+  "images",
   "isActive"
 ];
 

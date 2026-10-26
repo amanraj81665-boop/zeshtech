@@ -164,6 +164,28 @@ const api = {
     return data;
   },
 
+  async uploadProductImages(files) {
+    const formData = new FormData();
+    Array.from(files).forEach(f => formData.append("images", f));
+
+    const headers = {};
+    if (this.token) {
+      headers.Authorization = `Bearer ${this.token}`;
+    }
+
+    const res = await fetch(`${API_BASE}/uploads/product-images`, {
+      method: "POST",
+      headers,
+      body: formData
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.message || "Failed to upload images");
+    }
+    return data;
+  },
+
   // POS Billing
   createBill(billData) {
     return this.request("/bills", {
