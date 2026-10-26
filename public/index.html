@@ -463,43 +463,46 @@
 
       <div class="modal-body" style="padding: 22px; background: #0b101d; color: white;">
         
-        <!-- Mobile 1-Tap App Launcher Buttons (Visible on Mobile & Quick Desktop) -->
-        <div style="margin-bottom: 18px;">
-          <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px;">
-            ⚡ 1-Tap Instant Payment (Mobile Apps):
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">
-            <a href="#" id="upi-intent-phonepe" class="btn" style="background: #5f259f; color: white; font-weight: 700; font-size: 12px; padding: 11px; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 8px;">
-              <span>🟣 Pay via PhonePe</span>
-            </a>
-            <a href="#" id="upi-intent-gpay" class="btn" style="background: #1a73e8; color: white; font-weight: 700; font-size: 12px; padding: 11px; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 8px;">
-              <span>🔵 Pay via GPay</span>
-            </a>
-          </div>
-          <a href="#" id="upi-intent-any" class="btn btn-full" style="background: #0284c7; color: white; font-weight: 700; font-size: 12px; padding: 10px; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 8px;">
-            <span>🟢 Pay via Any UPI App (Paytm / BHIM)</span>
-          </a>
+        <!-- Safety & Testing Notice -->
+        <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; font-size: 11.5px; color: #fde047; line-height: 1.5;">
+          <strong>⚠️ Payment Guidelines:</strong><br>
+          <span style="display:block; margin-top:4px;">• <strong>Self-Transfer Not Allowed:</strong> Agar aap apne hi PhonePe number (<strong>9122846271</strong>) se payment kar rahe hain, toh PhonePe <em>"Payment declined for security reason"</em> bolkar reject karega (khud ke number par payment allowed nahi hoti). Kisi doosre number ya phone se pay karein.</span>
+          <span style="display:block; margin-top:4px;">• <strong>Safe &amp; Instant:</strong> Niche diye gaye <strong>QR Code ko PhonePe/GPay camera se scan karein</strong> ya <strong>PhonePe Number / UPI ID</strong> par send karein.</span>
         </div>
 
         <!-- PhonePe QR Code & VPA Display Section -->
-        <div style="background: #131b2e; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px; text-align: center; margin-bottom: 18px;">
-          <div style="font-size: 12px; font-weight: 700; color: #e2e8f0; margin-bottom: 10px;">
-            Or Scan Official PhonePe QR Code:
+        <div style="background: #131b2e; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 18px; text-align: center; margin-bottom: 16px;">
+          <div style="font-size: 13px; font-weight: 800; color: #f8fafc; margin-bottom: 4px;">
+            📱 Scan Official PhonePe QR Code
+          </div>
+          <div style="font-size: 11px; color: #94a3b8; margin-bottom: 12px;">
+            Open PhonePe, Google Pay, or Paytm camera to scan &amp; pay:
           </div>
           
-          <div style="background: white; padding: 10px; border-radius: 12px; display: inline-block; margin-bottom: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+          <div style="background: white; padding: 10px; border-radius: 12px; display: inline-block; margin-bottom: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
             <img src="/images/phonepe_qr.png" alt="PhonePe QR Code" style="width: 190px; height: 190px; object-fit: contain; display: block;">
           </div>
 
-          <!-- UPI ID Copy Box -->
-          <div style="display: flex; align-items: center; justify-content: center; gap: 8px; background: #090d16; padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
-            <span style="font-size: 11px; color: #94a3b8;">UPI ID:</span>
-            <strong id="upi-id-text" style="font-family: var(--font-mono); font-size: 13px; color: #38bdf8;">9122846271-5@ybl</strong>
-            <button type="button" id="copy-upi-btn" style="background: #1e293b; color: white; border: 1px solid rgba(255,255,255,0.2); font-size: 11px; padding: 3px 8px; border-radius: 4px; cursor: pointer;">
-              Copy
+          <!-- Quick Copy Boxes for PhonePe Mobile Number & UPI ID -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 6px;">
+            <button type="button" id="copy-upi-btn" style="background: #090d16; border: 1px solid #334155; color: #38bdf8; padding: 9px 8px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px;">
+              <span style="color: #94a3b8; font-size: 10px; font-weight: normal;">UPI ID</span>
+              <span>📋 9122846271-5@ybl</span>
+            </button>
+
+            <button type="button" id="copy-phone-btn" style="background: #090d16; border: 1px solid #334155; color: #4ade80; padding: 9px 8px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px;">
+              <span style="color: #94a3b8; font-size: 10px; font-weight: normal;">PhonePe Mobile</span>
+              <span>📋 9122846271</span>
             </button>
           </div>
           <small style="color: #64748b; font-size: 11px; display: block; margin-top: 6px;">Merchant: ZESH TECH | Ph: 9122846271</small>
+        </div>
+
+        <!-- Universal 1-Tap UPI Launcher for Mobile -->
+        <div style="margin-bottom: 18px;">
+          <a href="#" id="upi-intent-any" class="btn btn-full" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: white; font-weight: 700; font-size: 12.5px; padding: 11px; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 8px;">
+            <span>🚀 Open UPI App on this Device (PhonePe / GPay)</span>
+          </a>
         </div>
 
         <!-- UTR / Reference Verification Form -->
@@ -612,7 +615,9 @@
   <div class="modal-backdrop" id="auth-modal-backdrop">
     <div class="modal-dialog modal-dialog-small">
       <button class="modal-close-btn" id="close-auth-modal-btn">✕</button>
-      <div class="modal-body" style="padding: 30px;">
+      <div class="modal-body" style="padding: 28px;">
+        <!-- Main Auth View (Tabs + Social Buttons + Email/Password Form) -->
+        <div id="auth-main-view">
         <div class="eyebrow" id="auth-modal-eyebrow">WELCOME TO ZESH-TECH</div>
         <h2 style="font-size: 22px; margin-bottom: 6px;" id="auth-modal-heading">Sign In to Your Account</h2>
         <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;" id="auth-modal-subtext">Access your orders, tracking, and warranty details.</p>
@@ -676,6 +681,50 @@
 
           <button type="submit" class="btn btn-primary btn-full btn-large" id="auth-submit-btn">Sign In</button>
         </form>
+        </div>
+
+        <!-- Dedicated Social Login View (Personalized, NO dummy data) -->
+        <div id="auth-social-view" class="hidden">
+          <button type="button" id="social-back-btn" class="btn btn-small" style="background: none; border: none; color: var(--primary); padding: 0; margin-bottom: 16px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+            <span>Back to login options</span>
+          </button>
+
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <div id="social-header-icon" style="width: 38px; height: 38px; display: grid; place-items: center; border-radius: 8px; background: var(--surface-alt);"></div>
+            <div>
+              <h3 id="social-view-title" style="margin: 0; font-size: 18px; font-weight: 800;">Sign in with Google</h3>
+              <div id="social-view-subtitle" style="font-size: 12px; color: var(--text-muted);">Personal customer account</div>
+            </div>
+          </div>
+
+          <p id="social-view-desc" style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 18px; line-height: 1.4;">
+            Apna real Gmail address aur naam enter karein:
+          </p>
+
+          <form id="social-auth-form">
+            <div class="field" id="social-name-group">
+              <label id="social-name-label">Your Full Name *</label>
+              <input type="text" id="social-name-input" placeholder="e.g. Rahul Sharma" required autocomplete="name">
+            </div>
+
+            <div class="field" id="social-id-group">
+              <label id="social-id-label">Gmail Address *</label>
+              <input type="text" id="social-id-input" placeholder="e.g. yourname@gmail.com" required autocomplete="email">
+            </div>
+
+            <div class="field" id="social-phone-group">
+              <label id="social-phone-label">Mobile Number (For Delivery &amp; WhatsApp updates)</label>
+              <input type="tel" id="social-phone-input" placeholder="e.g. 9876543210" maxlength="10" autocomplete="tel">
+            </div>
+
+            <div id="social-alert-msg" class="badge badge-danger hidden" style="width: 100%; padding: 10px; margin-bottom: 14px; border-radius: var(--radius-md);"></div>
+
+            <button type="submit" class="btn btn-full btn-large" id="social-submit-btn" style="background: #4285F4; color: white; font-weight: 800; font-size: 14px; padding: 13px; border-radius: var(--radius-md);">
+              Continue with Google
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   </div>
