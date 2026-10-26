@@ -156,6 +156,140 @@
   }
 
   /* ==========================================================================
+     Forgot Password Handlers
+     ========================================================================== */
+  let forgotPasswordEmail = "";
+
+  function setupForgotPassword() {
+    const openBtn = $("#open-admin-forgot-btn");
+    const closeBtn = $("#close-admin-forgot-btn");
+    const loginForm = $("#admin-login-form");
+    const forgotCard = $("#admin-forgot-card");
+    const step1Form = $("#admin-forgot-step1-form");
+    const step2Form = $("#admin-forgot-step2-form");
+
+    openBtn?.addEventListener("click", () => {
+      loginForm?.classList.add("hidden");
+      forgotCard?.classList.remove("hidden");
+      step1Form?.classList.remove("hidden");
+      step2Form?.classList.add("hidden");
+      $("#forgot-step1-error")?.classList.add("hidden");
+      $("#forgot-step2-error")?.classList.add("hidden");
+      $("#forgot-step2-success")?.classList.add("hidden");
+    });
+
+    closeBtn?.addEventListener("click", () => {
+      forgotCard?.classList.add("hidden");
+      loginForm?.classList.remove("hidden");
+    });
+
+    // Step 1: Send OTP
+    step1Form?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = $("#forgot-admin-email").value.trim();
+      const btn = $("#forgot-send-otp-btn");
+      const errBox = $("#forgot-step1-error");
+
+      if (!email) return;
+
+      try {
+        btn.disabled = true;
+        btn.textContent = "Sending OTP...";
+        errBox?.classList.add("hidden");
+
+        const res = await zeshAPI.sendForgotPasswordOtp(email);
+        forgotPasswordEmail = email;
+
+        showToast("Password reset OTP generated!", "success");
+
+        // Display OTP on screen & wire WhatsApp link
+        if ($("#forgot-otp-display")) {
+          $("#forgot-otp-display").textContent = res.otp || "Sent via WhatsApp";
+        }
+        if ($("#forgot-whatsapp-link") && res.whatsappLink) {
+          $("#forgot-whatsapp-link").href = res.whatsappLink;
+        }
+
+        step1Form.classList.add("hidden");
+        step2Form.classList.remove("hidden");
+      } catch (err) {
+        console.error("Forgot password OTP error:", err);
+        if (errBox) {
+          errBox.textContent = err.message || "Could not generate OTP. Check your email.";
+          errBox.classList.remove("hidden");
+        }
+        showToast(err.message || "Failed to send OTP", "error");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `
+          <span>Send Verification OTP</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        `;
+      }
+    });
+
+    // Step 2: Reset Password
+    step2Form?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const otp = $("#forgot-otp-input").value.trim();
+      const newPass = $("#forgot-new-password").value;
+      const confirmPass = $("#forgot-confirm-password").value;
+      const btn = $("#forgot-submit-btn");
+      const errBox = $("#forgot-step2-error");
+      const successBox = $("#forgot-step2-success");
+
+      errBox?.classList.add("hidden");
+      successBox?.classList.add("hidden");
+
+      if (newPass !== confirmPass) {
+        if (errBox) {
+          errBox.textContent = "Passwords do not match. Please re-enter.";
+          errBox.classList.remove("hidden");
+        }
+        return;
+      }
+
+      if (newPass.length < 8) {
+        if (errBox) {
+          errBox.textContent = "Password must be at least 8 characters.";
+          errBox.classList.remove("hidden");
+        }
+        return;
+      }
+
+      try {
+        btn.disabled = true;
+        btn.textContent = "Updating Password...";
+
+        const res = await zeshAPI.resetPasswordWithOtp(forgotPasswordEmail, otp, newPass);
+        showToast("Password reset successful!", "success");
+
+        if (successBox) {
+          successBox.textContent = res.message || "Password updated! Redirecting to login...";
+          successBox.classList.remove("hidden");
+        }
+
+        setTimeout(() => {
+          $("#admin-password").value = newPass;
+          $("#admin-email").value = forgotPasswordEmail;
+          forgotCard.classList.add("hidden");
+          loginForm.classList.remove("hidden");
+        }, 1500);
+      } catch (err) {
+        console.error("Reset password error:", err);
+        if (errBox) {
+          errBox.textContent = err.message || "Failed to reset password. Please check your OTP.";
+          errBox.classList.remove("hidden");
+        }
+        showToast(err.message || "Failed to reset password", "error");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Update Password & Log In";
+      }
+    });
+  }
+
+  /* ==========================================================================
      Tab Navigation
      ========================================================================== */
 
@@ -1850,6 +1984,7 @@
     // Authentication form
     $("#admin-login-form")?.addEventListener("submit", handleAdminLogin);
     $("#admin-logout-btn")?.addEventListener("click", handleAdminLogout);
+    setupForgotPassword();
 
     // Sidebar navigation
     $$(".admin-nav-btn").forEach(btn => {

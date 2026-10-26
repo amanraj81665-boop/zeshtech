@@ -532,6 +532,156 @@ router.post("/google/verify", async (req, res) => {
   }
 });
 
+// In-memory store for Forgot Password OTPs: email -> { otp, expiresAt }
+const forgotPasswordOtpStore = new Map();
+
+// Helper to clean expired forgot-password OTPs
+setInterval(() => {
+  const now = Date.now();
+  for (const [email, data] of forgotPasswordOtpStore.entries()) {
+    if (data.expiresAt < now) {
+      forgotPasswordOtpStore.delete(email);
+    }
+  }
+}, 60000);
+
+// POST /api/auth/forgot-password/send-otp
+router.post("/forgot-password/send-otp", async (req, res) => {
+  try {
+    const { email } = req.body || {};
+    if (!validEmail(email)) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a valid email address"
+      });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const user = await User.findOne({ email: cleanEmail });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "No account found registered with this email address"
+      });
+    }
+
+    // Generate secure 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+    forgotPasswordOtpStore.set(cleanEmail, { otp, expiresAt });
+    console.log(`[Forgot Password OTP] Generated for ${cleanEmail}: ${otp}`);
+
+    // WhatsApp alert message
+    const targetPhone = (user.phone || "").replace(/\D/g, "").slice(-10) || "7903746116";
+    const waText = encodeURIComponent(
+      `🔐 *ZESH-TECH Password Reset*\n\nAccount: *${cleanEmail}*\nYour 6-Digit Password Reset OTP is: *${otp}*\n\n(Valid for 10 minutes). Do not share this OTP with anyone.`
+    );
+    const whatsappLink = `https://wa.me/91${targetPhone}?text=${waText}`;
+
+    return res.status(200).json({
+      success: true,
+      message: `Password reset OTP generated for ${cleanEmail}`,
+      email: cleanEmail,
+      otp,
+      targetPhone: targetPhone ? `+91 ${targetPhone.slice(0, 2)}••••${targetPhone.slice(-4)}` : "",
+      whatsappLink,
+      expiresInSeconds: 600
+    });
+  } catch (error) {
+    console.error("Forgot password send-otp error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Could not generate password reset OTP. Please try again."
+    });
+  }
+});
+
+// POST /api/auth/forgot-password/reset
+router.post("/forgot-password/reset", async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body || {};
+    if (!validEmail(email)) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid email is required"
+      });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanOtp = (otp || "").toString().trim();
+
+    if (!cleanOtp || cleanOtp.length !== 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter the complete 6-digit OTP"
+      });
+    }
+
+    if (
+      typeof newPassword !== "string" ||
+      newPassword.length < PASSWORD_MIN ||
+      newPassword.length > PASSWORD_MAX
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: `New password must be between ${PASSWORD_MIN} and ${PASSWORD_MAX} characters`
+      });
+    }
+
+    const storedData = forgotPasswordOtpStore.get(cleanEmail);
+    if (!storedData) {
+      return res.status(400).json({
+        success: false,
+        message: "OTP expired or not found. Please click 'Resend OTP'."
+      });
+    }
+
+    if (Date.now() > storedData.expiresAt) {
+      forgotPasswordOtpStore.delete(cleanEmail);
+      return res.status(400).json({
+        success: false,
+        message: "OTP has expired. Please request a new one."
+      });
+    }
+
+    if (storedData.otp !== cleanOtp) {
+      return res.status(400).json({
+        success: false,
+        message: "Incorrect OTP. Please check the code and try again."
+      });
+    }
+
+    // Update user password in database
+    const user = await User.findOne({ email: cleanEmail });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User account not found"
+      });
+    }
+
+    user.password = await hashPassword(newPassword);
+    await user.save();
+
+    // Consume OTP
+    forgotPasswordOtpStore.delete(cleanEmail);
+
+    console.log(`[Forgot Password] Successfully updated password for ${cleanEmail}`);
+
+    return res.status(200).json({
+      success: true,
+      message: "Your password has been successfully reset. You can now log in."
+    });
+  } catch (error) {
+    console.error("Forgot password reset error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Could not reset password. Please try again."
+    });
+  }
+});
+
 // Get the authenticated user's profile
 router.get("/me", authMiddleware, async (req, res) => {
   try {

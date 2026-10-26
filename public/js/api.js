@@ -77,6 +77,21 @@ const api = {
     this.setToken("");
   },
 
+  // Forgot Password
+  sendForgotPasswordOtp(email) {
+    return this.request("/auth/forgot-password/send-otp", {
+      method: "POST",
+      body: JSON.stringify({ email })
+    });
+  },
+
+  resetPasswordWithOtp(email, otp, newPassword) {
+    return this.request("/auth/forgot-password/reset", {
+      method: "POST",
+      body: JSON.stringify({ email, otp, newPassword })
+    });
+  },
+
   // Products & Inventory
   getProducts(params = {}) {
     const query = new URLSearchParams(params);
@@ -396,6 +411,20 @@ const customerAPI = {
 
   getOrder(id) {
     return this.request(`/orders/${encodeURIComponent(id)}`);
+  },
+
+  sendForgotPasswordOtp(email) {
+    return this.request("/auth/forgot-password/send-otp", {
+      method: "POST",
+      body: JSON.stringify({ email })
+    });
+  },
+
+  resetPasswordWithOtp(email, otp, newPassword) {
+    return this.request("/auth/forgot-password/reset", {
+      method: "POST",
+      body: JSON.stringify({ email, otp, newPassword })
+    });
   },
 
   logout() {

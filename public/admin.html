@@ -48,7 +48,7 @@
             <input type="checkbox" id="admin-remember" checked style="accent-color: var(--primary);">
             <span>Remember session</span>
           </label>
-          <a href="/" style="color: #93c5fd;">Return to Storefront ↗</a>
+          <button type="button" id="open-admin-forgot-btn" style="background: none; border: none; color: #60a5fa; cursor: pointer; font-size: 12px; text-decoration: underline; padding: 0;">Forgot Password?</button>
         </div>
 
         <div id="admin-login-error" class="badge badge-danger hidden" style="width: 100%; padding: 10px; margin-bottom: 16px; border-radius: var(--radius-md);"></div>
@@ -58,6 +58,67 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
         </button>
       </form>
+
+      <!-- Forgot Password Card -->
+      <div id="admin-forgot-card" class="hidden" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--dark-border);">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+          <h3 style="color: white; font-size: 16px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 6px;">
+            <span>🔑</span> Reset Password
+          </h3>
+          <button type="button" id="close-admin-forgot-btn" style="background: none; border: none; color: #94a3b8; font-size: 16px; cursor: pointer;">✕</button>
+        </div>
+        <p style="color: #94a3b8; font-size: 12px; line-height: 1.5; margin-bottom: 14px;">
+          Enter your admin email to receive a secure 6-digit OTP on WhatsApp.
+        </p>
+
+        <!-- Step 1: Send OTP -->
+        <form id="admin-forgot-step1-form">
+          <div class="field" style="margin-bottom: 12px;">
+            <label style="color: var(--dark-text);">Administrator Email</label>
+            <input type="email" id="forgot-admin-email" required placeholder="zishanshafique8@gmail.com" value="zishanshafique8@gmail.com" style="background:#090d16; border-color:var(--dark-border); color:white;">
+          </div>
+          <div id="forgot-step1-error" class="badge badge-danger hidden" style="width: 100%; padding: 10px; margin-bottom: 12px; border-radius: var(--radius-md);"></div>
+          <button type="submit" class="btn btn-secondary btn-full" id="forgot-send-otp-btn">
+            <span>Send Verification OTP</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </button>
+        </form>
+
+        <!-- Step 2: Enter OTP & New Password -->
+        <form id="admin-forgot-step2-form" class="hidden" style="margin-top: 14px;">
+          <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 10px 12px; margin-bottom: 14px;">
+            <div style="font-size: 11px; color: #34d399; font-weight: 700;">6-Digit OTP Generated:</div>
+            <div style="font-size: 18px; color: white; font-weight: 800; letter-spacing: 3px; margin: 4px 0;" id="forgot-otp-display">------</div>
+            <a href="#" id="forgot-whatsapp-link" target="_blank" rel="noopener" style="font-size: 11px; color: #60a5fa; text-decoration: underline; display: inline-block;">💬 Open in WhatsApp</a>
+          </div>
+
+          <div class="field" style="margin-bottom: 12px;">
+            <label style="color: var(--dark-text);">Enter 6-Digit OTP</label>
+            <input type="text" id="forgot-otp-input" maxlength="6" required placeholder="123456" style="background:#090d16; border-color:var(--dark-border); color:white; font-size: 18px; letter-spacing: 4px; text-align: center; font-weight: 800;">
+          </div>
+
+          <div class="field" style="margin-bottom: 12px;">
+            <label style="color: var(--dark-text);">New Password (min 8 chars)</label>
+            <input type="password" id="forgot-new-password" minlength="8" required placeholder="New password" style="background:#090d16; border-color:var(--dark-border); color:white;">
+          </div>
+
+          <div class="field" style="margin-bottom: 14px;">
+            <label style="color: var(--dark-text);">Confirm New Password</label>
+            <input type="password" id="forgot-confirm-password" minlength="8" required placeholder="Confirm new password" style="background:#090d16; border-color:var(--dark-border); color:white;">
+          </div>
+
+          <div id="forgot-step2-error" class="badge badge-danger hidden" style="width: 100%; padding: 10px; margin-bottom: 12px; border-radius: var(--radius-md);"></div>
+          <div id="forgot-step2-success" class="badge badge-success hidden" style="width: 100%; padding: 10px; margin-bottom: 12px; border-radius: var(--radius-md);"></div>
+
+          <button type="submit" class="btn btn-primary btn-full" id="forgot-submit-btn">
+            <span>Update Password &amp; Log In</span>
+          </button>
+        </form>
+      </div>
+
+      <div style="text-align: center; margin-top: 18px; font-size: 12px;">
+        <a href="/" style="color: #93c5fd; text-decoration: none;">← Return to Storefront</a>
+      </div>
     </div>
   </div>
 
