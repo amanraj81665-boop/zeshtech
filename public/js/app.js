@@ -113,6 +113,7 @@
       }
 
       applyFiltersAndRender();
+      initCurationsAndComparison();
     } catch (err) {
       console.error("Failed to load catalogue:", err);
       container.innerHTML = `
@@ -289,6 +290,13 @@
               <span class="star-icon">★</span>
               <span class="rating-count">(${reviews})</span>
             </div>
+
+            <!-- Quick Compare Button for Mobile Phones -->
+            ${product.category === "Mobile" ? `
+              <button class="card-compare-pill compare-this-btn" data-id="${escapeHTML(product._id)}" title="Compare this phone" type="button">
+                ⚖️ Compare
+              </button>
+            ` : ""}
           </div>
 
           <!-- Product Body Content -->
@@ -332,13 +340,13 @@
     }).join("");
   }
 
-  // Quick View Modal
+  // Amazon & Flipkart Grade Product Specs Modal
   async function openQuickView(productId) {
     const modalBackdrop = $("#product-modal-backdrop");
     const modalContent = $("#product-modal-content");
     if (!modalBackdrop || !modalContent) return;
 
-    modalContent.innerHTML = `<div style="text-align:center; padding: 40px; color:var(--text-muted);">Loading details...</div>`;
+    modalContent.innerHTML = `<div style="text-align:center; padding: 48px; color:var(--text-muted);"><div class="live-dot pulse-dot" style="margin:0 auto 12px;"></div>Loading full technical specifications...</div>`;
     modalBackdrop.classList.add("active");
 
     try {
@@ -349,80 +357,262 @@
       const stock = Number(product.stockQuantity) || 0;
       const isOut = stock <= 0;
       const img = product.imageUrl || imageFallback;
+      const { mrp, discountPct } = calculateDiscount(product.sellingPrice);
+      const { rating, reviews } = getProductRating(product);
+
+      // Get rich specs from our Knowledge Base or intelligent generator
+      const specs = window.ZeshSpecs ? window.ZeshSpecs.getPhoneSpecs(product) : null;
 
       modalContent.innerHTML = `
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 28px; align-items: start;">
-          <div style="background: var(--surface-alt); border-radius: var(--radius-lg); padding: 20px; display:flex; align-items:center; justify-content:center; max-height:360px;">
-            <img src="${escapeHTML(img)}" alt="${escapeHTML(product.name)}" style="max-height: 320px; object-fit: contain;">
+        <!-- Top Half: Visual Showcase, Pricing, Offers & Buy Action -->
+        <div class="product-specs-top">
+          <!-- Left: Gallery Showcase -->
+          <div class="product-specs-gallery">
+            <div class="product-specs-image-box">
+              <span class="card-badge-pill assured-badge" style="position: absolute; top: 12px; left: 12px;">
+                <span class="star-sparkle">★</span> Zesh Assured
+              </span>
+              <img src="${escapeHTML(img)}" alt="${escapeHTML(product.name)}" onerror="this.onerror=null;this.src='${imageFallback}';">
+            </div>
+
+            <!-- Trust Bar Under Image -->
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; font-size: 10.5px; text-align: center; color: var(--text-muted);">
+              <div style="background:var(--surface-alt); padding: 8px 4px; border-radius: 6px; border:1px solid var(--border);">
+                <div style="font-size: 14px; margin-bottom: 2px;">🛡️</div>
+                <b>1 Year</b> Brand Warranty
+              </div>
+              <div style="background:var(--surface-alt); padding: 8px 4px; border-radius: 6px; border:1px solid var(--border);">
+                <div style="font-size: 14px; margin-bottom: 2px;">⚡</div>
+                <b>24-Hour</b> Fast Dispatch
+              </div>
+              <div style="background:var(--surface-alt); padding: 8px 4px; border-radius: 6px; border:1px solid var(--border);">
+                <div style="font-size: 14px; margin-bottom: 2px;">🔄</div>
+                <b>7 Days</b> Replacement
+              </div>
+            </div>
           </div>
 
-          <div>
-            <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-              <span class="badge badge-info">${escapeHTML(product.category)}</span>
-              ${isOut ? `<span class="badge badge-danger">Out of Stock</span>` : `<span class="badge badge-success">In Stock (${stock} units)</span>`}
+          <!-- Right: Title, Pricing, Bank Offers & Highlights -->
+          <div class="product-specs-info">
+            <div class="specs-breadcrumb">
+              <a href="/">Home</a> <span>›</span>
+              <a href="#catalogue-section">${escapeHTML(product.category)}</a> <span>›</span>
+              <span>${escapeHTML(product.brand || "Zesh Retail")}</span>
             </div>
 
-            <h2 style="font-size: 22px; margin-bottom: 8px; line-height: 1.3;">${escapeHTML(product.name)}</h2>
+            <h1 class="specs-product-title">${escapeHTML(product.name)}</h1>
 
-            <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">
-              ${product.brand ? `Brand: <b>${escapeHTML(product.brand)}</b> &nbsp;•&nbsp; ` : ""}
-              ${product.model ? `Model: <b>${escapeHTML(product.model)}</b>` : ""}
+            <!-- Rating & Reviews Pill -->
+            <div class="specs-rating-row">
+              <span class="rating-badge-flipkart">
+                <span>${rating}</span>
+                <span style="font-size: 10px;">★</span>
+              </span>
+              <span class="rating-count-text">${reviews.toLocaleString()} Ratings &amp; ${(reviews / 3.8).toFixed(0)} Reviews</span>
+              <span class="badge ${isOut ? 'badge-danger' : 'badge-success'}" style="margin-left: auto;">
+                ${isOut ? 'Out of Stock' : `● In Stock (${stock} units left)`}
+              </span>
             </div>
 
-            <div style="font-size: 26px; font-weight: 800; color: var(--primary); font-family: var(--font-heading); margin-bottom: 18px;">
-              ${money(product.sellingPrice)}
-              <small style="font-size: 12px; font-weight: 500; color: var(--text-muted);">MRP (All Taxes Included)</small>
-            </div>
-
-            ${product.description ? `<p style="font-size: 13px; line-height: 1.6; color: var(--text-body); margin-bottom: 20px;">${escapeHTML(product.description)}</p>` : ""}
-
-            <div style="background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px; margin-bottom: 24px; font-size: 12px; display: grid; gap: 6px;">
-              <div>🛡️ <b>Warranty:</b> 1 Year Official Replacement / Service Warranty</div>
-              <div>⚡ <b>Delivery:</b> Dispatches within 24 Hours via Express Air</div>
-              <div>💰 <b>Payment:</b> Cash on Delivery available at checkout</div>
-            </div>
-
-            <div style="display: flex; align-items: center; gap: 14px;">
-              <div class="quantity-stepper">
-                <button type="button" id="modal-qty-minus">-</button>
-                <span id="modal-qty-val">1</span>
-                <button type="button" id="modal-qty-plus">+</button>
+            <!-- Flipkart Style Pricing Block -->
+            <div class="specs-pricing-block">
+              <div class="specs-main-price">
+                <span>${money(product.sellingPrice)}</span>
+                <span class="specs-mrp">${money(mrp)}</span>
+                <span class="specs-discount-pill">${discountPct}% off</span>
               </div>
+              <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
+                Inclusive of all taxes • Easy EMI starts from <b>₹${Math.round(product.sellingPrice / 6).toLocaleString()}/mo</b>
+              </div>
+            </div>
 
-              <button class="btn btn-primary btn-large" style="flex:1;" id="modal-add-cart-btn" ${isOut ? "disabled" : ""}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-                <span>${isOut ? "Out of Stock" : "Add to Bag"}</span>
+            <!-- Available Bank & Store Offers -->
+            <div class="bank-offers-container">
+              <div class="bank-offers-title">🏷️ Available Offers &amp; Discounts</div>
+              <div class="bank-offer-item">
+                <span class="bank-offer-tag">Bank Offer</span>
+                <span>5% Unlimited Cashback on PhonePe UPI and Net Banking payments.</span>
+              </div>
+              <div class="bank-offer-item">
+                <span class="bank-offer-tag">Special Price</span>
+                <span>Get extra ₹${(mrp - product.sellingPrice).toLocaleString()} off (price inclusive of retail discount).</span>
+              </div>
+              <div class="bank-offer-item">
+                <span class="bank-offer-tag">Partner Offer</span>
+                <span>Get Flat 0% Interest EMI with Bajaj Finserv &amp; TVS Credit at our Barh counter.</span>
+              </div>
+            </div>
+
+            <!-- Key Highlights (Flipkart Bullet Points) -->
+            ${specs ? `
+              <div class="specs-highlights-box">
+                <div class="specs-highlights-title">⚡ Key Highlights &amp; Specifications</div>
+                <div class="specs-highlights-list">
+                  <div class="specs-highlight-item">
+                    <span class="specs-highlight-bullet">●</span>
+                    <span><b>Memory:</b> ${escapeHTML(specs.ramRom)}</span>
+                  </div>
+                  <div class="specs-highlight-item">
+                    <span class="specs-highlight-bullet">●</span>
+                    <span><b>Display:</b> ${escapeHTML(specs.display)}</span>
+                  </div>
+                  <div class="specs-highlight-item">
+                    <span class="specs-highlight-bullet">●</span>
+                    <span><b>Camera:</b> ${escapeHTML(specs.rearCamera)} | <b>Selfie:</b> ${escapeHTML(specs.frontCamera)}</span>
+                  </div>
+                  <div class="specs-highlight-item">
+                    <span class="specs-highlight-bullet">●</span>
+                    <span><b>Processor:</b> ${escapeHTML(specs.chipset)} (${escapeHTML(specs.cpu)})</span>
+                  </div>
+                  <div class="specs-highlight-item">
+                    <span class="specs-highlight-bullet">●</span>
+                    <span><b>Battery &amp; Speed:</b> ${escapeHTML(specs.battery)}</span>
+                  </div>
+                  <div class="specs-highlight-item">
+                    <span class="specs-highlight-bullet">●</span>
+                    <span><b>OS Experience:</b> ${escapeHTML(specs.os)}</span>
+                  </div>
+                </div>
+              </div>
+            ` : ""}
+
+            <!-- Action Buttons: Buy Now, Add to Bag & Compare -->
+            <div class="specs-actions-row">
+              <button class="btn-specs-buy direct-buy-btn" data-id="${escapeHTML(product._id)}" ${isOut ? "disabled" : ""}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                <span>${isOut ? "Sold Out" : "⚡ Buy Now"}</span>
               </button>
+
+              <button class="btn-specs-cart add-to-bag-btn" data-id="${escapeHTML(product._id)}" ${isOut ? "disabled" : ""}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                <span>Add to Bag</span>
+              </button>
+
+              ${product.category === "Mobile" ? `
+                <button class="btn-specs-compare compare-this-btn" data-id="${escapeHTML(product._id)}" type="button">
+                  ⚖️ Compare with other Phones
+                </button>
+              ` : ""}
             </div>
           </div>
         </div>
+
+        <!-- Bottom Half: Flipkart Full Specifications Tables -->
+        ${specs ? `
+          <div class="specs-accordion-container">
+            <div class="specs-accordion-header">
+              <span>📋</span> Detailed Specifications
+            </div>
+
+            <!-- General -->
+            <div class="specs-table-card">
+              <div class="specs-category-title">General</div>
+              <table class="specs-detail-table">
+                <tr><th class="specs-th">In The Box</th><td class="specs-td">${escapeHTML(specs.inBox || "Handset, Cable, Guide")}</td></tr>
+                <tr><th class="specs-th">Model Number / Name</th><td class="specs-td">${escapeHTML(specs.model)}</td></tr>
+                <tr><th class="specs-th">Color Variant</th><td class="specs-td">${escapeHTML(product.name.split("-")[1]?.trim() || "Official Color")}</td></tr>
+                <tr><th class="specs-th">SIM Type</th><td class="specs-td">${escapeHTML(specs.sim)}</td></tr>
+                <tr><th class="specs-th">Touchscreen</th><td class="specs-td">Yes (Multi-Touch Capacitive)</td></tr>
+                <tr><th class="specs-th">Quick Charging</th><td class="specs-td">Yes (Fast Charging Supported)</td></tr>
+              </table>
+            </div>
+
+            <!-- Display Features -->
+            <div class="specs-table-card">
+              <div class="specs-category-title">Display Features</div>
+              <table class="specs-detail-table">
+                <tr><th class="specs-th">Display Size &amp; Type</th><td class="specs-td">${escapeHTML(specs.display)}</td></tr>
+                <tr><th class="specs-th">Resolution</th><td class="specs-td">${escapeHTML(specs.resolution)}</td></tr>
+                <tr><th class="specs-th">Refresh Rate</th><td class="specs-td">${escapeHTML(specs.refreshRate)} High Refresh Rate</td></tr>
+                <tr><th class="specs-th">GPU Graphics</th><td class="specs-td">${escapeHTML(specs.gpu)}</td></tr>
+              </table>
+            </div>
+
+            <!-- Os & Processor Features -->
+            <div class="specs-table-card">
+              <div class="specs-category-title">OS &amp; Processor Features</div>
+              <table class="specs-detail-table">
+                <tr><th class="specs-th">Operating System</th><td class="specs-td">${escapeHTML(specs.os)}</td></tr>
+                <tr><th class="specs-th">Processor Brand</th><td class="specs-td">${escapeHTML(specs.chipset.split(" ")[0])}</td></tr>
+                <tr><th class="specs-th">Processor Type</th><td class="specs-td">${escapeHTML(specs.chipset)}</td></tr>
+                <tr><th class="specs-th">Processor Core</th><td class="specs-td">${escapeHTML(specs.cpu)}</td></tr>
+              </table>
+            </div>
+
+            <!-- Memory & Storage Features -->
+            <div class="specs-table-card">
+              <div class="specs-category-title">Memory &amp; Storage Features</div>
+              <table class="specs-detail-table">
+                <tr><th class="specs-th">RAM &amp; Storage Configuration</th><td class="specs-td">${escapeHTML(specs.ramRom)}</td></tr>
+                <tr><th class="specs-th">Supported Memory Card</th><td class="specs-td">MicroSD / Cloud Storage</td></tr>
+              </table>
+            </div>
+
+            <!-- Camera Features -->
+            <div class="specs-table-card">
+              <div class="specs-category-title">Camera Features</div>
+              <table class="specs-detail-table">
+                <tr><th class="specs-th">Primary Camera</th><td class="specs-td">${escapeHTML(specs.rearCamera)}</td></tr>
+                <tr><th class="specs-th">Secondary / Selfie Camera</th><td class="specs-td">${escapeHTML(specs.frontCamera)}</td></tr>
+                <tr><th class="specs-th">Video Recording Resolution</th><td class="specs-td">${escapeHTML(specs.video)}</td></tr>
+                <tr><th class="specs-th">Flash</th><td class="specs-td">Rear LED Flash with Night Mode Assist</td></tr>
+              </table>
+            </div>
+
+            <!-- Battery & Power Features -->
+            <div class="specs-table-card">
+              <div class="specs-category-title">Battery &amp; Power Features</div>
+              <table class="specs-detail-table">
+                <tr><th class="specs-th">Battery Capacity &amp; Type</th><td class="specs-td">${escapeHTML(specs.battery)}</td></tr>
+                <tr><th class="specs-th">Weight</th><td class="specs-td">${escapeHTML(specs.weight || "185 g")}</td></tr>
+              </table>
+            </div>
+
+            <!-- Warranty -->
+            <div class="specs-table-card">
+              <div class="specs-category-title">Warranty &amp; Service</div>
+              <table class="specs-detail-table">
+                <tr><th class="specs-th">Warranty Summary</th><td class="specs-td">1 Year Official Manufacturer Warranty for Device and 6 Months for In-Box Accessories</td></tr>
+                <tr><th class="specs-th">Covered in Warranty</th><td class="specs-td">Manufacturing Defects, Motherboard, Screen and Hardware Defects</td></tr>
+              </table>
+            </div>
+
+            <!-- Pros & Cons Analysis -->
+            ${specs.pros && specs.cons ? `
+              <div class="pros-cons-box">
+                <div class="pros-box">
+                  <strong>✅ Reasons to Buy:</strong>
+                  <ul style="padding-left: 18px; margin: 0; line-height: 1.6;">
+                    ${specs.pros.map(p => `<li>${escapeHTML(p)}</li>`).join("")}
+                  </ul>
+                </div>
+                <div class="cons-box">
+                  <strong>⚠️ Things to Consider:</strong>
+                  <ul style="padding-left: 18px; margin: 0; line-height: 1.6;">
+                    ${specs.cons.map(c => `<li>${escapeHTML(c)}</li>`).join("")}
+                  </ul>
+                </div>
+              </div>
+            ` : ""}
+          </div>
+        ` : ""}
       `;
 
-      let selectedQty = 1;
-      const minusBtn = $("#modal-qty-minus");
-      const plusBtn = $("#modal-qty-plus");
-      const qtyVal = $("#modal-qty-val");
-      const addBtn = $("#modal-add-cart-btn");
-
-      minusBtn?.addEventListener("click", () => {
-        if (selectedQty > 1) {
-          selectedQty--;
-          qtyVal.textContent = selectedQty;
-        }
-      });
-
-      plusBtn?.addEventListener("click", () => {
-        if (selectedQty < stock) {
-          selectedQty++;
-          qtyVal.textContent = selectedQty;
-        } else {
-          showToast(`Maximum available stock is ${stock}`, "warning");
-        }
-      });
-
-      addBtn?.addEventListener("click", () => {
-        addToCart(product, selectedQty);
+      // Wire up clicks inside modal
+      modalContent.querySelector(".btn-specs-buy")?.addEventListener("click", () => {
         modalBackdrop.classList.remove("active");
+        addToCart(product, 1);
+        openCheckoutModal();
+      });
+
+      modalContent.querySelector(".btn-specs-cart")?.addEventListener("click", () => {
+        addToCart(product, 1);
+        modalBackdrop.classList.remove("active");
+      });
+
+      modalContent.querySelector(".btn-specs-compare")?.addEventListener("click", () => {
+        modalBackdrop.classList.remove("active");
+        handleComparePhone(product._id);
       });
 
     } catch (err) {
@@ -1041,6 +1231,394 @@
   }
 
   /* ==========================================================================
+     EXPERT CURATIONS & SMART PHONE COMPARISON ENGINE
+     ========================================================================== */
+
+  let currentCuration = "camera";
+  let currentBudget = "30k";
+
+  function initCurationsAndComparison() {
+    if (!window.ZeshSpecs || !allProducts || allProducts.length === 0) return;
+
+    setupPhoneSelectors();
+    renderCuratedChampions(currentCuration);
+    renderBudgetComparison(currentBudget);
+  }
+
+  // 1. Curated Champions (Best Camera, Best Gaming, Clean UI, Battery, Best Value)
+  function renderCuratedChampions(catKey) {
+    currentCuration = catKey;
+    const banner = $("#curation-header-banner");
+    const grid = $("#curation-cards-grid");
+    if (!banner || !grid || !window.ZeshSpecs) return;
+
+    // Update active tab button
+    $$("#curations-tab-bar .curation-tab-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.curation === catKey);
+    });
+
+    const data = window.ZeshSpecs.getCuratedChampions(allProducts, catKey);
+
+    banner.innerHTML = `
+      <div>
+        <div class="curation-header-title">${data.title}</div>
+        <div class="curation-header-sub">${data.subtitle}</div>
+      </div>
+      <a href="#phone-comparison-section" style="font-size: 12.5px; font-weight: 700; color: #2563eb; text-decoration: none;">
+        Compare in Budget Engine →
+      </a>
+    `;
+
+    if (!data.items || data.items.length === 0) {
+      grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:30px; color:var(--text-muted);">No phones found for this category.</div>`;
+      return;
+    }
+
+    const rankBadges = ["🥇 #1 Champion", "🥈 #2 Contender", "🥉 #3 Strong Pick", "⭐ Top Value Pick"];
+
+    grid.innerHTML = data.items.map((item, idx) => {
+      const p = item.product;
+      const s = item.specs;
+      const img = p.imageUrl || imageFallback;
+      const { mrp, discountPct } = calculateDiscount(p.sellingPrice);
+
+      let keyMetric = "";
+      if (catKey === "camera") {
+        keyMetric = `📸 ${s.rearCamera.split("+")[0]?.trim() || "50MP OIS"} • Selfie: ${s.frontCamera.split(" ")[0] || "32MP"}`;
+      } else if (catKey === "gaming") {
+        keyMetric = `⚡ ${s.chipset.split("(")[0]?.trim()} • 120Hz Screen`;
+      } else if (catKey === "ui") {
+        keyMetric = `✨ ${s.uiName} • 100% Zero Bloatware`;
+      } else if (catKey === "battery") {
+        keyMetric = `🔋 ${s.battery.split("with")[0]?.trim()} • Super Fast Charge`;
+      } else {
+        keyMetric = `💰 ${s.ramRom} • ${s.display.split(",")[0]}`;
+      }
+
+      return `
+        <article class="curation-card">
+          <span class="curation-rank-pill">${rankBadges[idx] || "⭐ Ranked"}</span>
+
+          <div class="curation-img-wrap view-details-btn" data-id="${p._id}" title="Click to view full specs">
+            <img src="${escapeHTML(img)}" alt="${escapeHTML(p.name)}" onerror="this.onerror=null;this.src='${imageFallback}';">
+          </div>
+
+          <span class="curation-card-badge">${escapeHTML(s.bestForBadge || "Verified Choice")}</span>
+          <h4 class="curation-title view-details-btn" data-id="${p._id}">${escapeHTML(p.name)}</h4>
+
+          <div class="curation-specs-bullets">
+            <div style="color: #2563eb; font-weight: 700; margin-bottom: 2px;">${keyMetric}</div>
+            <div>• <b>RAM/ROM:</b> ${escapeHTML(s.ramRom)}</div>
+            <div>• <b>Display:</b> ${escapeHTML(s.display.split(",")[0])}</div>
+          </div>
+
+          <div class="curation-price-row">
+            <div>
+              <div class="curation-price">${money(p.sellingPrice)}</div>
+              <small style="font-size: 10px; color: var(--text-muted); text-decoration: line-through;">${money(mrp)} (${discountPct}% off)</small>
+            </div>
+            <button class="btn btn-primary btn-small direct-buy-btn" data-id="${p._id}">
+              ⚡ Buy
+            </button>
+          </div>
+        </article>
+      `;
+    }).join("");
+  }
+
+  // 2. Smart Budget Comparison Engine (Side-by-Side Matrix + Crowned Winner)
+  function renderBudgetComparison(budgetKey) {
+    currentBudget = budgetKey;
+    const winnerCard = $("#comparison-winner-card");
+    const matrixWrap = $("#comparison-matrix-wrapper");
+    if (!winnerCard || !matrixWrap || !window.ZeshSpecs) return;
+
+    // Update active budget chip
+    $$("#budget-chips .budget-chip").forEach(chip => {
+      chip.classList.toggle("active", chip.dataset.budget === budgetKey);
+    });
+
+    const data = window.ZeshSpecs.getBudgetComparison(allProducts, budgetKey);
+
+    // Winner Banner Card
+    if (data.winner) {
+      const wp = data.winner.product;
+      const ws = data.winner.specs;
+      const { mrp, discountPct } = calculateDiscount(wp.sellingPrice);
+
+      winnerCard.innerHTML = `
+        <div style="flex: 1;">
+          <div class="winner-badge-pill">
+            <span>🏆</span> ZESH TECH #1 CROWNED WINNER (${data.budgetLabel})
+          </div>
+          <h3 style="font-size: 19px; font-weight: 800; color: var(--text-heading); margin-bottom: 8px;">
+            ${escapeHTML(wp.name)}
+          </h3>
+          <p class="winner-verdict-text">${data.verdict}</p>
+
+          <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
+            <span class="badge badge-success" style="font-size: 11px;">Score: ${ws.zeshScore}/10 ★</span>
+            <span class="badge badge-info" style="font-size: 11px;">RAM: ${escapeHTML(ws.ramRom)}</span>
+            <span class="badge badge-neutral" style="font-size: 11px;">120Hz Display</span>
+          </div>
+        </div>
+
+        <div style="text-align: center; flex-shrink: 0; min-width: 140px;">
+          <img src="${escapeHTML(wp.imageUrl || imageFallback)}" alt="${escapeHTML(wp.name)}" style="height: 100px; object-fit: contain; margin-bottom: 6px;">
+          <div style="font-size: 18px; font-weight: 900; color: var(--primary); font-family: var(--font-heading);">${money(wp.sellingPrice)}</div>
+          <div style="font-size: 11px; color: var(--text-muted); text-decoration: line-through; margin-bottom: 8px;">${money(mrp)} (${discountPct}% off)</div>
+          <button class="btn btn-primary btn-small direct-buy-btn" data-id="${wp._id}" style="width: 100%;">
+            ⚡ Buy Winner
+          </button>
+        </div>
+      `;
+    } else {
+      winnerCard.innerHTML = `<div style="padding: 20px; color: var(--text-muted);">No winner in this segment.</div>`;
+    }
+
+    // Side-by-Side Comparison Matrix Table
+    const contenders = (data.contenders || []).slice(0, 4);
+
+    if (contenders.length === 0) {
+      matrixWrap.innerHTML = `<div style="padding: 40px; text-align: center; color: var(--text-muted);">No products found in this budget range.</div>`;
+      return;
+    }
+
+    renderComparisonTable(contenders, matrixWrap, data.winner?.product?._id);
+  }
+
+  // Helper to render the comparison table rows
+  function renderComparisonTable(contenders, containerEl, winnerId) {
+    const isWinner = id => id === winnerId;
+
+    let html = `
+      <table class="comparison-matrix-table">
+        <thead>
+          <tr>
+            <th class="feature-col-th">Specifications</th>
+            ${contenders.map(c => {
+              const p = c.product;
+              const { mrp, discountPct } = calculateDiscount(p.sellingPrice);
+              const win = isWinner(p._id);
+              return `
+                <th class="compare-product-col ${win ? 'winner-col-highlight' : ''}">
+                  <div class="compare-img-box view-details-btn" data-id="${p._id}" style="cursor: pointer;">
+                    <img src="${escapeHTML(p.imageUrl || imageFallback)}" alt="${escapeHTML(p.name)}">
+                  </div>
+                  <strong style="font-size: 13px; color: var(--text-heading); display: block; margin-bottom: 4px; min-height: 36px; line-height: 1.3;">
+                    ${escapeHTML(p.name)}
+                  </strong>
+                  <div style="font-size: 16px; font-weight: 900; color: var(--primary);">${money(p.sellingPrice)}</div>
+                  <small style="font-size: 11px; color: var(--text-muted); text-decoration: line-through;">${money(mrp)} (${discountPct}% off)</small>
+                  <div style="margin-top: 8px;">
+                    <button class="btn btn-primary btn-small direct-buy-btn" data-id="${p._id}" style="width: 100%; font-size: 11px; padding: 6px 10px;">
+                      ⚡ Buy Now
+                    </button>
+                  </div>
+                </th>
+              `;
+            }).join("")}
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Row 1: Overall Zesh Score -->
+          <tr>
+            <td class="feature-col-td">⭐ Overall Zesh Score</td>
+            ${contenders.map(c => `
+              <td class="${isWinner(c.product._id) ? 'winner-col-highlight' : ''}">
+                <span class="score-pill">${c.specs.zeshScore} / 10 ★</span>
+              </td>
+            `).join("")}
+          </tr>
+
+          <!-- Row 2: Best For Tag -->
+          <tr>
+            <td class="feature-col-td">🏆 Best Known For</td>
+            ${contenders.map(c => `
+              <td class="${isWinner(c.product._id) ? 'winner-col-highlight' : ''}" style="font-weight: 700; color: #2563eb; font-size: 12px;">
+                ${escapeHTML(c.specs.bestForBadge || "High Quality")}
+              </td>
+            `).join("")}
+          </tr>
+
+          <!-- Row 3: Processor & Chipset -->
+          <tr>
+            <td class="feature-col-td">⚡ Processor</td>
+            ${contenders.map(c => `
+              <td class="${isWinner(c.product._id) ? 'winner-col-highlight' : ''}" style="font-size: 12px;">
+                <b>${escapeHTML(c.specs.chipset.split("(")[0])}</b>
+                <div style="font-size: 10.5px; color: var(--text-muted);">${escapeHTML(c.specs.cpu)}</div>
+              </td>
+            `).join("")}
+          </tr>
+
+          <!-- Row 4: RAM & Storage -->
+          <tr>
+            <td class="feature-col-td">💾 RAM &amp; Storage</td>
+            ${contenders.map(c => `
+              <td class="${isWinner(c.product._id) ? 'winner-col-highlight' : ''}" style="font-size: 12px; font-weight: 700;">
+                ${escapeHTML(c.specs.ramRom)}
+              </td>
+            `).join("")}
+          </tr>
+
+          <!-- Row 5: Display & Refresh Rate -->
+          <tr>
+            <td class="feature-col-td">📱 Display Quality</td>
+            ${contenders.map(c => `
+              <td class="${isWinner(c.product._id) ? 'winner-col-highlight' : ''}" style="font-size: 12px;">
+                <div><b>${escapeHTML(c.specs.display.split(",")[0])}</b></div>
+                <span class="badge badge-info" style="font-size: 10px; margin-top: 4px;">${escapeHTML(c.specs.refreshRate)}</span>
+              </td>
+            `).join("")}
+          </tr>
+
+          <!-- Row 6: Rear Camera -->
+          <tr>
+            <td class="feature-col-td">📸 Rear Cameras</td>
+            ${contenders.map(c => `
+              <td class="${isWinner(c.product._id) ? 'winner-col-highlight' : ''}" style="font-size: 12px;">
+                ${escapeHTML(c.specs.rearCamera)}
+              </td>
+            `).join("")}
+          </tr>
+
+          <!-- Row 7: Selfie Camera -->
+          <tr>
+            <td class="feature-col-td">🤳 Front Selfie Camera</td>
+            ${contenders.map(c => `
+              <td class="${isWinner(c.product._id) ? 'winner-col-highlight' : ''}" style="font-size: 12px;">
+                ${escapeHTML(c.specs.frontCamera)}
+              </td>
+            `).join("")}
+          </tr>
+
+          <!-- Row 8: Battery & Charging Speed -->
+          <tr>
+            <td class="feature-col-td">🔋 Battery &amp; Charging</td>
+            ${contenders.map(c => `
+              <td class="${isWinner(c.product._id) ? 'winner-col-highlight' : ''}" style="font-size: 12px;">
+                <b>${escapeHTML(c.specs.battery.split("with")[0]?.trim() || "5000 mAh")}</b>
+                <div style="font-size: 11px; color: #16a34a; font-weight: 700;">${escapeHTML(c.specs.battery.split("with")[1]?.trim() || "Fast Charge")}</div>
+              </td>
+            `).join("")}
+          </tr>
+
+          <!-- Row 9: Operating System & Clean UI -->
+          <tr>
+            <td class="feature-col-td">🎨 Software &amp; UI</td>
+            ${contenders.map(c => `
+              <td class="${isWinner(c.product._id) ? 'winner-col-highlight' : ''}" style="font-size: 12px;">
+                <b>${escapeHTML(c.specs.uiName)}</b>
+                <div style="font-size: 10.5px; color: var(--text-muted);">${escapeHTML(c.specs.os)}</div>
+              </td>
+            `).join("")}
+          </tr>
+
+          <!-- Row 10: In The Box -->
+          <tr>
+            <td class="feature-col-td">📦 In The Box</td>
+            ${contenders.map(c => `
+              <td class="${isWinner(c.product._id) ? 'winner-col-highlight' : ''}" style="font-size: 11.5px; color: var(--text-muted);">
+                ${escapeHTML(c.specs.inBox || "Handset, Cable, Guide")}
+              </td>
+            `).join("")}
+          </tr>
+
+          <!-- Row 11: Full Details Action -->
+          <tr>
+            <td class="feature-col-td">🔍 Full Details</td>
+            ${contenders.map(c => `
+              <td class="${isWinner(c.product._id) ? 'winner-col-highlight' : ''}">
+                <button class="btn btn-secondary btn-small view-details-btn" data-id="${c.product._id}" style="font-size: 11px; width: 100%;">
+                  View Full Specs ↗
+                </button>
+              </td>
+            `).join("")}
+          </tr>
+        </tbody>
+      </table>
+    `;
+
+    containerEl.innerHTML = html;
+  }
+
+  // 3. Custom 2-Phone Comparison
+  function setupPhoneSelectors() {
+    const s1 = $("#custom-phone-select-1");
+    const s2 = $("#custom-phone-select-2");
+    if (!s1 || !s2 || !allProducts) return;
+
+    const phones = allProducts.filter(p => p.category === "Mobile" && p.sellingPrice > 2000);
+    phones.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+
+    const options = phones.map(p => `<option value="${p._id}">${escapeHTML(p.name)} — ${money(p.sellingPrice)}</option>`).join("");
+    s1.innerHTML = options;
+    s2.innerHTML = options;
+
+    // Pick two default contrasting phones
+    const phone1 = phones.find(p => (p.name || "").toLowerCase().includes("t5 lite") && (p.name || "").includes("256")) || phones[0];
+    const phone2 = phones.find(p => (p.name || "").toLowerCase().includes("nothing") && (p.name || "").includes("4b")) || phones[1];
+
+    if (phone1) s1.value = phone1._id;
+    if (phone2) s2.value = phone2._id;
+  }
+
+  function runCustomComparison() {
+    const s1 = $("#custom-phone-select-1");
+    const s2 = $("#custom-phone-select-2");
+    const matrixWrap = $("#comparison-matrix-wrapper");
+    if (!s1 || !s2 || !matrixWrap) return;
+
+    const id1 = s1.value;
+    const id2 = s2.value;
+    if (id1 === id2) {
+      showToast("Please choose two different phones to compare", "warning");
+      return;
+    }
+
+    const p1 = allProducts.find(p => p._id === id1);
+    const p2 = allProducts.find(p => p._id === id2);
+    if (!p1 || !p2) return;
+
+    const contenders = [
+      { product: p1, specs: window.ZeshSpecs.getPhoneSpecs(p1) },
+      { product: p2, specs: window.ZeshSpecs.getPhoneSpecs(p2) }
+    ];
+
+    const winnerId = (contenders[0].specs.zeshScore >= contenders[1].specs.zeshScore) ? p1._id : p2._id;
+    renderComparisonTable(contenders, matrixWrap, winnerId);
+
+    // Scroll smoothly to table
+    matrixWrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  // 4. Quick Compare Trigger from Product Card
+  function handleComparePhone(productId) {
+    const product = allProducts.find(p => p._id === productId);
+    if (!product) return;
+
+    const compareSection = $("#phone-comparison-section");
+    if (compareSection) {
+      compareSection.scrollIntoView({ behavior: "smooth" });
+    }
+
+    // Determine matching budget
+    let targetBudget = "30k";
+    if (product.sellingPrice <= 15000) targetBudget = "15k";
+    else if (product.sellingPrice <= 20000) targetBudget = "20k";
+    else if (product.sellingPrice <= 30000) targetBudget = "30k";
+    else if (product.sellingPrice <= 50000) targetBudget = "50k";
+    else targetBudget = "flagship";
+
+    renderBudgetComparison(targetBudget);
+
+    // Preselect in custom compare selectors
+    const s1 = $("#custom-phone-select-1");
+    if (s1) s1.value = product._id;
+  }
+
+  /* ==========================================================================
      Global Event Listeners & Initialization
      ========================================================================== */
 
@@ -1178,6 +1756,82 @@
       if (addBtn) {
         const product = allProducts.find(p => p._id === addBtn.dataset.id);
         if (product) addToCart(product, 1);
+        return;
+      }
+
+      // 5. Compare this phone button
+      const compareBtn = e.target.closest(".compare-this-btn");
+      if (compareBtn) {
+        e.stopPropagation();
+        handleComparePhone(compareBtn.dataset.id);
+        return;
+      }
+    });
+
+    // Curations Tab Bar (Best Camera, Gaming, UI, Battery, Value)
+    $("#curations-tab-bar")?.addEventListener("click", (e) => {
+      const btn = e.target.closest(".curation-tab-btn");
+      if (btn) renderCuratedChampions(btn.dataset.curation);
+    });
+
+    // Curations Grid Actions (Buy Now & View Details)
+    $("#curation-cards-grid")?.addEventListener("click", (e) => {
+      const buyBtn = e.target.closest(".direct-buy-btn");
+      if (buyBtn) {
+        const product = allProducts.find(p => p._id === buyBtn.dataset.id);
+        if (product) {
+          addToCart(product, 1);
+          openCheckoutModal();
+        }
+        return;
+      }
+      const viewBtn = e.target.closest(".view-details-btn");
+      if (viewBtn) {
+        openQuickView(viewBtn.dataset.id);
+        return;
+      }
+    });
+
+    // Budget Comparison Chips
+    $("#budget-chips")?.addEventListener("click", (e) => {
+      const chip = e.target.closest(".budget-chip");
+      if (chip) renderBudgetComparison(chip.dataset.budget);
+    });
+
+    // Custom Compare Toggle Bar & Run Button
+    $("#toggle-custom-compare-btn")?.addEventListener("click", () => {
+      $("#custom-compare-bar")?.classList.toggle("hidden");
+    });
+
+    $("#run-custom-compare-btn")?.addEventListener("click", runCustomComparison);
+
+    // Winner Card Buy Action
+    $("#comparison-winner-card")?.addEventListener("click", (e) => {
+      const buyBtn = e.target.closest(".direct-buy-btn");
+      if (buyBtn) {
+        const product = allProducts.find(p => p._id === buyBtn.dataset.id);
+        if (product) {
+          addToCart(product, 1);
+          openCheckoutModal();
+        }
+        return;
+      }
+    });
+
+    // Comparison Matrix Table Actions
+    $("#comparison-matrix-wrapper")?.addEventListener("click", (e) => {
+      const buyBtn = e.target.closest(".direct-buy-btn");
+      if (buyBtn) {
+        const product = allProducts.find(p => p._id === buyBtn.dataset.id);
+        if (product) {
+          addToCart(product, 1);
+          openCheckoutModal();
+        }
+        return;
+      }
+      const viewBtn = e.target.closest(".view-details-btn");
+      if (viewBtn) {
+        openQuickView(viewBtn.dataset.id);
         return;
       }
     });

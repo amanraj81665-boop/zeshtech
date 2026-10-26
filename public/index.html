@@ -54,11 +54,11 @@
       <nav class="main-nav" aria-label="Main Navigation">
         <a href="#catalogue-section" class="nav-link active" data-cat="All">All Tech</a>
         <a href="#catalogue-section" class="nav-link" data-cat="Mobile">Smartphones</a>
+        <a href="#expert-picks-section" class="nav-link" style="color: #f59e0b; font-weight: 700;">🏆 Best in Class</a>
+        <a href="#phone-comparison-section" class="nav-link" style="color: #60a5fa; font-weight: 700;">⚖️ Compare Phones</a>
         <a href="#catalogue-section" class="nav-link" data-cat="Television">Smart TV</a>
         <a href="#catalogue-section" class="nav-link" data-cat="Appliances">Appliances</a>
         <a href="#catalogue-section" class="nav-link" data-cat="Audio">Audio</a>
-        <a href="#catalogue-section" class="nav-link" data-cat="Charger">Chargers</a>
-        <a href="#catalogue-section" class="nav-link" data-cat="Accessories">Accessories</a>
       </nav>
 
       <div class="header-actions">
@@ -183,6 +183,115 @@
           <small>Direct store assistance</small>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       1. EXPERT PICKS & CURATED CHAMPIONS (Camera, Gaming, Clean UI, Battery)
+       ========================================================================= -->
+  <section class="wrap expert-picks-section" id="expert-picks-section">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow" style="color: #f59e0b;">🏆 EXPERT CURATIONS &amp; CHAMPIONS</div>
+        <h2 class="section-title">Best Phones by Category</h2>
+        <p class="section-subtitle">Handpicked by specialists — find the undisputed champion for your specific lifestyle.</p>
+      </div>
+    </div>
+
+    <!-- Category Selector Tabs -->
+    <div class="curations-tab-bar" id="curations-tab-bar">
+      <button class="curation-tab-btn active" data-curation="camera">
+        <span>📸</span> Best Camera Phones
+      </button>
+      <button class="curation-tab-btn" data-curation="gaming">
+        <span>🎮</span> Best Gaming Phones
+      </button>
+      <button class="curation-tab-btn" data-curation="ui">
+        <span>✨</span> Clean Ad-Free UI
+      </button>
+      <button class="curation-tab-btn" data-curation="battery">
+        <span>🔋</span> Battery &amp; Fast Charging
+      </button>
+      <button class="curation-tab-btn" data-curation="value">
+        <span>💰</span> Best Value (&lt; ₹30k)
+      </button>
+    </div>
+
+    <!-- Category Header Info Banner -->
+    <div class="curation-header-banner" id="curation-header-banner">
+      <!-- Injected via JS -->
+    </div>
+
+    <!-- Curated Cards Grid -->
+    <div class="curation-cards-grid" id="curation-cards-grid">
+      <!-- Injected via JS -->
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       2. SMART BUDGET COMPARISON ENGINE & BUYER'S GUIDE (Under 30k & Custom Compare)
+       ========================================================================= -->
+  <section class="wrap phone-comparison-section" id="phone-comparison-section">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow" style="color: #3b82f6;">🔍 SMART BUYER'S GUIDE &amp; COMPARISON</div>
+        <h2 class="section-title">Compare Phones in Your Budget</h2>
+        <p class="section-subtitle">Apne budget ke hisaab se sabhi phones ko side-by-side compare karein aur dekhein kon sa phone best hai.</p>
+      </div>
+
+      <!-- Quick Custom Compare Trigger -->
+      <div class="comparison-mode-switch">
+        <button class="btn btn-secondary btn-small" id="toggle-custom-compare-btn" type="button">
+          <span>⚖️ Custom 2-Phone Compare</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Budget Filter Chips Slider -->
+    <div class="budget-slider" id="budget-chips">
+      <button class="budget-chip" data-budget="15k">
+        <span>🎯</span> Under ₹15,000
+      </button>
+      <button class="budget-chip" data-budget="20k">
+        <span>🎯</span> Under ₹20,000
+      </button>
+      <button class="budget-chip active" data-budget="30k">
+        <span>⭐</span> ₹20k - ₹30k (Best ₹30k Picks)
+      </button>
+      <button class="budget-chip" data-budget="50k">
+        <span>🚀</span> ₹30,000 - ₹50,000
+      </button>
+      <button class="budget-chip" data-budget="flagship">
+        <span>👑</span> Above ₹50,000 (Flagships)
+      </button>
+    </div>
+
+    <!-- Winner Recommendation Card (AI Crowned) -->
+    <div class="comparison-winner-card" id="comparison-winner-card">
+      <!-- Injected via JS -->
+    </div>
+
+    <!-- Custom Compare Bar (Hidden by default, shown when user clicks custom compare) -->
+    <div class="custom-compare-bar hidden" id="custom-compare-bar">
+      <div class="custom-compare-inner">
+        <div style="flex: 1; min-width: 220px;">
+          <label style="font-size:12px; font-weight:700; color:var(--text-muted); display:block; margin-bottom:4px;">Select Phone 1:</label>
+          <select id="custom-phone-select-1" class="custom-compare-select"></select>
+        </div>
+        <div style="font-weight:900; font-size:16px; color:#3b82f6; align-self:center; padding: 0 8px;">VS</div>
+        <div style="flex: 1; min-width: 220px;">
+          <label style="font-size:12px; font-weight:700; color:var(--text-muted); display:block; margin-bottom:4px;">Select Phone 2:</label>
+          <select id="custom-phone-select-2" class="custom-compare-select"></select>
+        </div>
+        <button class="btn btn-primary" id="run-custom-compare-btn" type="button" style="align-self:flex-end;">
+          Compare Now 🚀
+        </button>
+      </div>
+    </div>
+
+    <!-- Comparison Matrix Table Container -->
+    <div class="comparison-matrix-wrapper" id="comparison-matrix-wrapper">
+      <!-- Injected via JS -->
     </div>
   </section>
 
@@ -345,7 +454,7 @@
 
   <!-- Product Details Quick-View Modal -->
   <div class="modal-backdrop" id="product-modal-backdrop">
-    <div class="modal-dialog modal-dialog-large">
+    <div class="modal-dialog modal-dialog-large modal-dialog-specs">
       <button class="modal-close-btn" id="close-product-modal-btn">✕</button>
       <div class="modal-body" id="product-modal-content">
         <!-- Injected via JavaScript -->
@@ -1025,6 +1134,7 @@
   </nav>
 
   <!-- Scripts -->
+  <script src="/js/phoneSpecsData.js"></script>
   <script src="/js/api.js"></script>
   <script src="/js/app.js"></script>
   <script>
