@@ -21,17 +21,26 @@
   let allProducts = [];
   let cart = [];
   let currentCategory = "All";
+  let currentBrand = "All";
+  let wishlist = [];
   let searchKeyword = "";
   let inStockOnly = false;
   let sortBy = "newest";
   let authMode = "login"; // 'login' or 'register'
 
-  // Load cart from localStorage
+  // Load cart & wishlist from localStorage
   try {
     const saved = localStorage.getItem("zesh_customer_cart");
     if (saved) cart = JSON.parse(saved);
   } catch (e) {
     cart = [];
+  }
+
+  try {
+    const savedWish = localStorage.getItem("zesh_wishlist");
+    if (savedWish) wishlist = JSON.parse(savedWish);
+  } catch (e) {
+    wishlist = [];
   }
 
   // Toast Notification
@@ -117,27 +126,120 @@
     }
   }
 
+  // Extract key specs for Flipkart-style cute cutlet pills
+  function extractProductSpecs(product) {
+    const specs = [];
+    const name = product.name || "";
+
+    // 1. Storage / RAM
+    const ramRomMatch = name.match(/(\d+\s*GB\s*\/\s*\d+\s*GB|\d+\/\d+|\d+\s*GB)/i);
+    if (ramRomMatch) specs.push(ramRomMatch[0].trim());
+
+    // 2. Color / Finish
+    const colors = [
+      "Ice Blue", "Iceblue", "Lavender", "Silver Shadow", "Twilight Shadow",
+      "Wave Blue", "Jet Black", "White Silver", "Gold", "Violet",
+      "Green", "Blue", "Black", "Capri", "White", "Brown", "Purple"
+    ];
+    for (const c of colors) {
+      if (name.toLowerCase().includes(c.toLowerCase()) && !specs.includes(c)) {
+        specs.push(c);
+        break;
+      }
+    }
+
+    // 3. Screen size / type
+    if (name.includes("43")) specs.push("43\" Display");
+    if (name.includes("32")) specs.push("32\" Display");
+    if (name.includes("4K")) specs.push("4K UHD");
+    if (name.includes("Fire TV")) specs.push("Fire TV");
+
+    // 4. Appliances capacity
+    const wmMatch = name.match(/(\d+(\.\d+)?\s*Kg)/i);
+    if (wmMatch) specs.push(wmMatch[0]);
+
+    if (name.includes("Adapter")) specs.push("+ Fast Adapter");
+    if (name.includes("Dual SIM")) specs.push("Dual SIM");
+
+    return specs.slice(0, 3);
+  }
+
+  // Realistic Flipkart-style MRP and Discount Calculation
+  function calculateDiscount(sellingPrice) {
+    const price = Number(sellingPrice) || 0;
+    if (price <= 0) return { mrp: 0, discountPct: 0 };
+
+    let pct = 18;
+    if (price > 70000) pct = 10;
+    else if (price > 40000) pct = 14;
+    else if (price > 20000) pct = 18;
+    else if (price > 10000) pct = 22;
+    else pct = 26;
+
+    const mrp = Math.round((price * (1 + pct / 100)) / 100) * 100 - 1;
+    const discountPct = Math.max(5, Math.round(((mrp - price) / mrp) * 100));
+
+    return { mrp, discountPct };
+  }
+
+  // Deterministic realistic rating & reviews based on SKU
+  function getProductRating(product) {
+    const key = (product.sku || product.name || "ZESH");
+    let hash = 0;
+    for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) & 0xffffffff;
+    const abs = Math.abs(hash);
+    const rating = (4.3 + (abs % 7) * 0.1).toFixed(1); // 4.3 to 4.9
+    const reviews = 240 + (abs % 1850);
+    return { rating, reviews: reviews.toLocaleString("en-IN") };
+  }
+
   function applyFiltersAndRender() {
     const container = $("#products-container");
     const noProductsView = $("#no-products-view");
+    const countBadge = $("#product-count-badge");
     if (!container) return;
 
     let filtered = [...allProducts];
 
-    // Search filter
+    // Category filter including special tabs
+    if (currentCategory === "Apple") {
+      filtered = filtered.filter(p =>
+        (p.brand && p.brand.toLowerCase() === "apple") ||
+        (p.name && (p.name.includes("iPhone") || p.name.includes("iPad")))
+      );
+    } else if (currentCategory === "Keypad") {
+      filtered = filtered.filter(p =>
+        (p.sku && p.sku.includes("KEYPAD")) ||
+        (p.name && p.name.toLowerCase().includes("keypad"))
+      );
+    } else if (currentCategory && currentCategory !== "All") {
+      filtered = filtered.filter(p => p.category === currentCategory);
+    }
+
+    // Brand quick filter
+    if (currentBrand && currentBrand !== "All") {
+      filtered = filtered.filter(p => p.brand && p.brand.toLowerCase() === currentBrand.toLowerCase());
+    }
+
+    // Search keyword filter
     if (searchKeyword) {
       const q = searchKeyword.toLowerCase();
       filtered = filtered.filter(p =>
         (p.name && p.name.toLowerCase().includes(q)) ||
         (p.brand && p.brand.toLowerCase().includes(q)) ||
         (p.model && p.model.toLowerCase().includes(q)) ||
-        (p.category && p.category.toLowerCase().includes(q))
+        (p.category && p.category.toLowerCase().includes(q)) ||
+        (p.sku && p.sku.toLowerCase().includes(q))
       );
     }
 
     // In stock only filter
     if (inStockOnly) {
       filtered = filtered.filter(p => (p.stockQuantity || 0) > 0);
+    }
+
+    if (countBadge) {
+      countBadge.textContent = `${filtered.length} products found`;
     }
 
     if (filtered.length === 0) {
@@ -151,51 +253,78 @@
     container.innerHTML = filtered.map(product => {
       const stock = Number(product.stockQuantity) || 0;
       const isOut = stock <= 0;
-      const isLow = !isOut && stock <= (product.lowStockThreshold || 5);
-
-      let badgeHtml = "";
-      if (isOut) {
-        badgeHtml = `<span class="badge badge-danger card-tag">Out of Stock</span>`;
-      } else if (isLow) {
-        badgeHtml = `<span class="badge badge-warning card-tag">Low Stock (${stock} left)</span>`;
-      } else {
-        badgeHtml = `<span class="badge badge-success card-tag">In Stock</span>`;
-      }
-
+      const isLow = !isOut && stock <= (product.lowStockThreshold || 2);
+      const isWish = wishlist.includes(product._id);
       const img = product.imageUrl || imageFallback;
+      const specs = extractProductSpecs(product);
+      const { mrp, discountPct } = calculateDiscount(product.sellingPrice);
+      const { rating, reviews } = getProductRating(product);
 
       return `
         <article class="product-card" data-product-id="${escapeHTML(product._id)}">
-          <div class="product-thumbnail-box">
-            ${badgeHtml}
+          <!-- Image Cutlet Box -->
+          <div class="product-thumbnail-box view-details-btn" data-id="${escapeHTML(product._id)}" title="Click to view details">
+            <!-- Top-Left Badge -->
+            ${isOut ? `
+              <span class="card-badge-pill out-of-stock">Out of Stock</span>
+            ` : isLow ? `
+              <span class="card-badge-pill low-stock">🔥 Only ${stock} left</span>
+            ` : `
+              <span class="card-badge-pill assured-badge">
+                <span class="star-sparkle">★</span> Zesh Assured
+              </span>
+            `}
+
+            <!-- Top-Right Wishlist Button -->
+            <button class="card-wishlist-btn ${isWish ? "active" : ""}" title="${isWish ? "Remove from wishlist" : "Add to wishlist"}" data-id="${escapeHTML(product._id)}" type="button" aria-label="Toggle Wishlist">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+            </button>
+
+            <!-- Product Image with contain fit -->
             <img src="${escapeHTML(img)}" alt="${escapeHTML(product.name)}" loading="lazy" onerror="this.onerror=null;this.src='${imageFallback}';">
+
+            <!-- Bottom Rating Pill Overlay -->
+            <div class="product-rating-badge">
+              <span>${rating}</span>
+              <span class="star-icon">★</span>
+              <span class="rating-count">(${reviews})</span>
+            </div>
           </div>
 
+          <!-- Product Body Content -->
           <div class="product-content">
-            <div class="product-meta">
-              <span class="product-category-text">${escapeHTML(product.category)}</span>
-              ${product.brand ? `<span style="font-size:11px; color:var(--text-muted); font-weight:600;">${escapeHTML(product.brand)}</span>` : ""}
+            <div class="product-brand-row">
+              <span class="product-brand-pill">${escapeHTML(product.brand || "ZESH TECH")}</span>
+              <span class="product-category-sub">${escapeHTML(product.category || "Verified")}</span>
             </div>
 
-            <h3 class="product-title" title="${escapeHTML(product.name)}">${escapeHTML(product.name)}</h3>
+            <h3 class="product-title view-details-btn" data-id="${escapeHTML(product._id)}" title="${escapeHTML(product.name)}">
+              ${escapeHTML(product.name)}
+            </h3>
 
-            ${product.model ? `<div class="product-brand-line">Model: ${escapeHTML(product.model)}</div>` : `<div class="product-brand-line">Genuine Brand Product</div>`}
+            <!-- Micro Specs Cutlet Pills -->
+            <div class="product-specs-row">
+              ${specs.map(s => `<span class="spec-cutlet">${escapeHTML(s)}</span>`).join("")}
+            </div>
 
-            <div class="product-footer">
-              <div class="price-block">
-                <span class="price-amount">${money(product.sellingPrice)}</span>
-                <span class="price-sub">GST Inclusive</span>
+            <!-- Flipkart Style Pricing Row -->
+            <div class="flipkart-price-row">
+              <div class="price-main-wrap">
+                <span class="selling-price-val">${money(product.sellingPrice)}</span>
+                <span class="mrp-strikethrough">${money(mrp)}</span>
+                <span class="discount-badge">${discountPct}% off</span>
               </div>
+              <div class="perk-subtext">Free Store Delivery • 0% EMI</div>
+            </div>
 
-              <div style="display:flex; gap:6px;">
-                <button class="btn btn-secondary btn-small view-details-btn" data-id="${escapeHTML(product._id)}" title="Quick View">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                </button>
-                <button class="btn btn-primary btn-small add-to-bag-btn" data-id="${escapeHTML(product._id)}" ${isOut ? "disabled" : ""}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-                  <span>${isOut ? "Sold Out" : "Add"}</span>
-                </button>
-              </div>
+            <!-- Dual Action Buttons -->
+            <div class="product-card-actions">
+              <button class="btn-buy-now direct-buy-btn" data-id="${escapeHTML(product._id)}" ${isOut ? "disabled" : ""}>
+                <span>${isOut ? "Sold Out" : "⚡ Buy Now"}</span>
+              </button>
+              <button class="btn-add-bag add-to-bag-btn" data-id="${escapeHTML(product._id)}" title="Add to Cart Bag" ${isOut ? "disabled" : ""}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+              </button>
             </div>
           </div>
         </article>
@@ -936,6 +1065,18 @@
       fetchCatalogue();
     });
 
+    // Brand Quick Slider Chips
+    $("#brand-chips")?.addEventListener("click", (e) => {
+      const chip = e.target.closest(".brand-chip");
+      if (!chip) return;
+
+      $$("#brand-chips .brand-chip").forEach(c => c.classList.remove("active"));
+      chip.classList.add("active");
+
+      currentBrand = chip.dataset.brand || "All";
+      applyFiltersAndRender();
+    });
+
     // Header Category Nav Links
     $$(".main-nav .nav-link").forEach(link => {
       link.addEventListener("click", (e) => {
@@ -979,6 +1120,7 @@
     // Reset Filters Button
     $("#reset-filters-btn")?.addEventListener("click", () => {
       currentCategory = "All";
+      currentBrand = "All";
       searchKeyword = "";
       inStockOnly = false;
       sortBy = "newest";
@@ -988,17 +1130,50 @@
       if (inStockCheck) inStockCheck.checked = false;
 
       $$("#category-chips .category-chip").forEach(c => c.classList.toggle("active", c.dataset.category === "All"));
+      $$("#brand-chips .brand-chip").forEach(c => c.classList.toggle("active", c.dataset.brand === "All"));
       fetchCatalogue();
     });
 
-    // Product Card Clicks: Quick View and Add to Bag
+    // Product Card Clicks: Buy Now, Wishlist, Quick View, and Add to Bag
     $("#products-container")?.addEventListener("click", (e) => {
+      // 1. Direct Buy Now
+      const buyNowBtn = e.target.closest(".direct-buy-btn");
+      if (buyNowBtn) {
+        const product = allProducts.find(p => p._id === buyNowBtn.dataset.id);
+        if (product) {
+          addToCart(product, 1);
+          openCheckoutModal();
+        }
+        return;
+      }
+
+      // 2. Wishlist Heart Toggle
+      const wishBtn = e.target.closest(".card-wishlist-btn");
+      if (wishBtn) {
+        e.stopPropagation();
+        const pid = wishBtn.dataset.id;
+        const idx = wishlist.indexOf(pid);
+        if (idx > -1) {
+          wishlist.splice(idx, 1);
+          wishBtn.classList.remove("active");
+          showToast("Removed from wishlist", "info");
+        } else {
+          wishlist.push(pid);
+          wishBtn.classList.add("active");
+          showToast("Added to wishlist ❤️", "success");
+        }
+        localStorage.setItem("zesh_wishlist", JSON.stringify(wishlist));
+        return;
+      }
+
+      // 3. Quick View Modal
       const viewBtn = e.target.closest(".view-details-btn");
       if (viewBtn) {
         openQuickView(viewBtn.dataset.id);
         return;
       }
 
+      // 4. Add to Bag button
       const addBtn = e.target.closest(".add-to-bag-btn");
       if (addBtn) {
         const product = allProducts.find(p => p._id === addBtn.dataset.id);
