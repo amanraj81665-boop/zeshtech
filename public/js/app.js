@@ -127,7 +127,7 @@
     }
   }
 
-  // Extract key specs for Flipkart-style cute cutlet pills
+  // Extract key specs for Zesh Tech cute cutlet pills
   function extractProductSpecs(product) {
     const specs = [];
     const name = product.name || "";
@@ -165,7 +165,7 @@
     return specs.slice(0, 3);
   }
 
-  // Realistic Flipkart-style MRP and Discount Calculation
+  // Realistic Zesh Tech MRP and Discount Calculation
   function calculateDiscount(sellingPrice) {
     const price = Number(sellingPrice) || 0;
     if (price <= 0) return { mrp: 0, discountPct: 0 };
@@ -315,8 +315,8 @@
               ${specs.map(s => `<span class="spec-cutlet">${escapeHTML(s)}</span>`).join("")}
             </div>
 
-            <!-- Flipkart Style Pricing Row -->
-            <div class="flipkart-price-row">
+            <!-- Zesh Tech Pricing Row -->
+            <div class="zesh-price-row">
               <div class="price-main-wrap">
                 <span class="selling-price-val">${money(product.sellingPrice)}</span>
                 <span class="mrp-strikethrough">${money(mrp)}</span>
@@ -340,25 +340,52 @@
     }).join("");
   }
 
-  // Amazon & Flipkart Official Grade Product Details Modal (1:1 with Screenshots)
+  // ZESH TECH Official Specifications & Details Modal
   async function openQuickView(productId) {
     const modalBackdrop = $("#product-modal-backdrop");
     const modalContent = $("#product-modal-content");
     if (!modalBackdrop || !modalContent) return;
 
-    modalContent.innerHTML = `
-      <div style="text-align:center; padding: 60px 20px; color:var(--text-muted);">
-        <div class="live-dot pulse-dot" style="margin:0 auto 12px; width:12px; height:12px;"></div>
-        <div style="font-weight:700; font-size:14px; color:#0f172a;">Loading Flipkart Official Product Specs...</div>
-      </div>
-    `;
-    modalBackdrop.classList.add("active");
+    // Check in-memory allProducts for instant 0ms rendering
+    let product = allProducts.find(p => String(p._id) === String(productId));
+
+    if (!product) {
+      modalContent.innerHTML = `
+        <div style="text-align:center; padding: 60px 20px; color:var(--text-muted);">
+          <div class="live-dot pulse-dot" style="margin:0 auto 12px; width:12px; height:12px;"></div>
+          <div style="font-weight:700; font-size:14px; color:#0f172a;">Loading ZESH TECH Verified Specifications...</div>
+        </div>
+      `;
+      modalBackdrop.classList.add("active");
+
+      try {
+        const res = await zeshAPI.getProductById(productId);
+        product = res.product;
+      } catch (err) {
+        modalContent.innerHTML = `
+          <div style="text-align:center; padding: 40px 20px;">
+            <div style="font-size:32px; margin-bottom:12px;">⚠️</div>
+            <div style="font-weight:700; font-size:16px; color:#ef4444; margin-bottom:8px;">Unable to load product details</div>
+            <p style="font-size:13px; color:#64748b;">${escapeHTML(err.message || "Please check your network connection.")}</p>
+          </div>
+        `;
+        return;
+      }
+    } else {
+      modalBackdrop.classList.add("active");
+    }
+
+    if (!product) {
+      modalContent.innerHTML = `
+        <div style="text-align:center; padding: 40px 20px;">
+          <div style="font-size:32px; margin-bottom:12px;">🔍</div>
+          <div style="font-weight:700; font-size:16px; color:#0f172a;">Product not found in store inventory</div>
+        </div>
+      `;
+      return;
+    }
 
     try {
-      const res = await zeshAPI.getProductById(productId);
-      const product = res.product;
-      if (!product) throw new Error("Product details not found");
-
       const stock = Number(product.stockQuantity) || 0;
       const isOut = stock <= 0;
       const img = product.imageUrl || imageFallback;
@@ -379,24 +406,24 @@
       const ramRomText = specs?.ramRom || "8 GB RAM | 128 GB ROM";
 
       modalContent.innerHTML = `
-        <div class="flipkart-product-page">
-          <!-- Top Breadcrumb Bar (Screenshot 1) -->
+        <div class="zesh-product-page">
+          <!-- Top Breadcrumb Bar -->
           <div class="fk-breadcrumb-bar">
             <div class="fk-breadcrumbs">
               <a href="/">Home</a> <span>/</span>
-              <a href="#catalogue-section">Mobiles &amp; Accessories</a> <span>/</span>
-              <a href="#catalogue-section">Mobiles</a> <span>/</span>
-              <span>${escapeHTML(product.brand || "Zesh")} Mobiles</span> <span>/</span>
+              <a href="#catalogue-section">Mobiles &amp; Electronics</a> <span>/</span>
+              <a href="#catalogue-section">${escapeHTML(product.category || "Smartphones")}</a> <span>/</span>
+              <span>${escapeHTML(product.brand || "Zesh")}</span> <span>/</span>
               <span class="fk-current-crumb">${escapeHTML(product.name)}</span>
             </div>
           </div>
 
           <div class="fk-main-grid">
-            <!-- LEFT: Gallery Column with Specs Poster Overlay (Screenshot 1) -->
+            <!-- LEFT: Gallery Column with Specs Poster Graphic Overlay -->
             <div class="fk-gallery-column">
               <div class="fk-image-showcase">
                 <!-- Top Floating Action Circles (Wishlist & Share) -->
-                <button class="fk-action-circle card-wishlist-btn" title="Save to Wishlist" data-id="${escapeHTML(product._id)}">
+                <button class="fk-action-circle card-wishlist-btn ${wishlist.includes(product._id) ? "active" : ""}" title="Save to Wishlist" data-id="${escapeHTML(product._id)}" type="button">
                   ❤️
                 </button>
                 <button class="fk-action-circle fk-share-btn" title="Share Product Link" type="button">
@@ -408,7 +435,7 @@
                   <img src="${escapeHTML(img)}" alt="${escapeHTML(product.name)}" class="fk-main-img" onerror="this.onerror=null;this.src='${imageFallback}';">
                 </div>
 
-                <!-- Flipkart-style Specs Poster Graphic Badge Overlay (Screenshot 1) -->
+                <!-- Zesh Tech Specs Poster Graphic Badge Overlay -->
                 ${specs ? `
                   <div class="fk-specs-poster-overlay">
                     <div class="fk-poster-badge">
@@ -421,7 +448,7 @@
                     <div class="fk-poster-badge">
                       <span class="fk-poster-icon">📸</span>
                       <div>
-                        <strong>${escapeHTML(specs.rearCamera.split("+")[0]?.trim() || "64MP AI")}</strong>
+                        <strong>${escapeHTML(specs.rearCamera.split("+")[0]?.trim() || "50MP AI")}</strong>
                         <small>AI Portrait Camera</small>
                       </div>
                     </div>
@@ -446,13 +473,13 @@
 
             <!-- RIGHT: Product Details, Offers, Highlights & Accordion -->
             <div class="fk-info-column">
-              <!-- Promo Brand Banner (Screenshot 1) -->
+              <!-- Official Store Verification Banner -->
               <div class="fk-brand-promo-banner">
-                <div class="fk-promo-brand"><b>${escapeHTML(product.brand?.toUpperCase() || "SMART")}</b> SMARTPHONES</div>
-                <div class="fk-promo-text">EVO | Official Verified Retail Stock • <b>Station Road, Barh</b></div>
+                <div class="fk-promo-brand"><b>${escapeHTML(product.brand?.toUpperCase() || "SMART")}</b> AUTHORIZED RETAIL STOCK</div>
+                <div class="fk-promo-text">100% Brand Sealed Pack • <b>ZESH TECH, Station Road, Barh (Patna)</b></div>
               </div>
 
-              <!-- Selected Color with Swatches Carousel (Screenshot 1) -->
+              <!-- Selected Color with Swatches Carousel -->
               <div class="fk-swatch-section">
                 <div class="fk-section-subhead">Selected Color: <b id="fk-selected-color-label">${escapeHTML(colorName)}</b></div>
                 <div class="fk-color-swatches-row">
@@ -465,7 +492,7 @@
                 </div>
               </div>
 
-              <!-- RAM & Storage Variant Boxes (Screenshot 1) -->
+              <!-- RAM & Storage Variant Boxes -->
               <div class="fk-variants-section">
                 <div class="fk-section-subhead">Variant: <b>${escapeHTML(ramRomText)}</b></div>
                 <div class="fk-variant-boxes-row">
@@ -487,7 +514,7 @@
                 </div>
               </div>
 
-              <!-- Product Title & Verified Rating (Screenshot 1) -->
+              <!-- Product Title & Verified Rating -->
               <h1 class="fk-product-title">${escapeHTML(product.name)} (${escapeHTML(ramRomText)})</h1>
 
               <div class="fk-rating-row">
@@ -501,22 +528,22 @@
                 </span>
               </div>
 
-              <!-- Main Price Display (Screenshot 1) -->
+              <!-- Main Price Display -->
               <div class="fk-price-box">
                 <div class="fk-price-main-line">
-                  <span class="fk-discount-green">↓${discountPct}%</span>
+                  <span class="fk-discount-green">↓${discountPct}% Off</span>
                   <span class="fk-mrp-line">${money(mrp)}</span>
                   <span class="fk-actual-price">${money(product.sellingPrice)}</span>
                 </div>
-                <div class="fk-protect-promise">+₹129 Protect Promise Fee Included • Free Store Express Delivery</div>
+                <div class="fk-protect-promise">✓ 100% Genuine Brand Product • Free Store Pickup • Express Delivery (Barh &amp; Patna)</div>
               </div>
 
-              <!-- WOW! DEAL Apply Offers Box (Screenshot 2) -->
+              <!-- ZESH MEGA SAVINGS Apply Offers Box -->
               <div class="fk-wow-deal-box">
-                <div class="fk-wow-header" id="fk-toggle-wow-deal">
-                  <div class="fk-wow-badge">WOW! DEAL</div>
-                  <div class="fk-wow-title">Apply offers for maximum savings</div>
-                  <span class="fk-arrow-toggle">▲</span>
+                <div class="fk-wow-header" id="fk-toggle-wow-deal" role="button" tabindex="0">
+                  <div class="fk-wow-badge">★ ZESH STORE SAVINGS</div>
+                  <div class="fk-wow-title">Apply in-store &amp; card offers for maximum discount</div>
+                  <span class="fk-arrow-toggle" id="fk-wow-arrow">▲</span>
                 </div>
 
                 <div class="fk-wow-body" id="fk-wow-deal-content">
@@ -524,81 +551,69 @@
                   <div class="fk-lowest-price-split">
                     <div class="fk-split-card lowest-card">
                       <div class="fk-lowest-val">${money(Math.max(product.sellingPrice - 1000, 999))}</div>
-                      <small>Lowest price for you with Bank Offer</small>
+                      <small>Lowest price with UPI / Card Instant Offer</small>
                     </div>
                     <div class="fk-split-or">OR</div>
                     <div class="fk-split-card emi-card">
                       <div class="fk-emi-val">${money(Math.round(product.sellingPrice / 3))} x 3m</div>
-                      <small>Pay ${money(product.sellingPrice + 400)} with No-Cost EMI</small>
+                      <small>Easy 0% No-Cost EMI via Credit Cards / Bajaj Finance</small>
                     </div>
                   </div>
 
                   <!-- Exchange Offer Card -->
                   <div class="fk-exchange-card">
                     <div class="fk-exchange-head">
-                      <span>Exchange offer <b>Available at Barh &amp; Patna (803213)</b></span>
+                      <span>Old Phone Exchange <b>Available at Zesh Tech Counter</b></span>
                     </div>
                     <div class="fk-exchange-content">
                       <div class="fk-exchange-icon">🔄</div>
                       <div>
-                        <strong>Up to ₹11,850 off</strong> on exchanging old smartphone
-                        <div style="font-size: 11px; color: #2563eb; font-weight:700;">Instant device valuation at store counter ›</div>
+                        <strong>Up to ₹12,000 off</strong> on exchanging old smartphone
+                        <div style="font-size: 11px; color: #2563eb; font-weight:700;">Instant device valuation at Station Road Barh store ›</div>
                       </div>
                     </div>
                   </div>
 
-                  <!-- Bank Offers Grid -->
+                  <!-- Payment / Bank Offers Grid -->
                   <div class="fk-bank-offers-wrap">
                     <div class="fk-bank-offers-header">
-                      <strong>Bank offers</strong>
-                      <a href="javascript:void(0)" class="fk-view-emi-link">View EMI offers</a>
+                      <strong>Payment &amp; Bank Offers</strong>
+                      <span class="fk-view-emi-link" style="color:var(--text-muted); font-size:12px;">Store Verified</span>
                     </div>
-                    <div class="fk-best-value-pill">Best value for you</div>
+                    <div class="fk-best-value-pill">Verified In-Store &amp; Online</div>
 
                     <div class="fk-bank-cards-grid">
-                      <!-- GPay -->
+                      <!-- UPI GPay / PhonePe -->
                       <div class="fk-bank-card">
                         <div class="fk-bank-left">
-                          <div class="fk-bank-logo">GPay</div>
+                          <div class="fk-bank-logo">UPI</div>
                           <div>
-                            <strong>₹1,000 off</strong> Google Pay
-                            <div class="fk-bank-sub">UPI Instant Discount</div>
+                            <strong>₹1,000 off</strong> Instant Discount
+                            <div class="fk-bank-sub">GPay / PhonePe / Paytm / QR</div>
                           </div>
                         </div>
                         <button type="button" class="fk-apply-btn">Apply</button>
                       </div>
 
-                      <!-- Axis / Credit Card -->
+                      <!-- HDFC / ICICI / SBI / Axis Cards -->
                       <div class="fk-bank-card">
                         <div class="fk-bank-left">
                           <div class="fk-bank-logo">💳</div>
                           <div>
-                            <strong>₹1,500 off</strong> Axis / HDFC
-                            <div class="fk-bank-sub">Credit Card • Cashback</div>
+                            <strong>₹1,500 off</strong> Bank Cards
+                            <div class="fk-bank-sub">HDFC / ICICI / SBI / Axis Credit Card</div>
                           </div>
                         </div>
                         <button type="button" class="fk-apply-btn">Apply</button>
                       </div>
 
-                      <!-- PhonePe -->
-                      <div class="fk-bank-card">
-                        <div class="fk-bank-left">
-                          <div class="fk-bank-logo">पे</div>
-                          <div>
-                            <strong>₹1,000 off</strong> PhonePe
-                            <div class="fk-bank-sub">UPI Instant Discount</div>
-                          </div>
-                        </div>
-                        <button type="button" class="fk-apply-btn">Apply</button>
-                      </div>
-
-                      <!-- BHIM -->
+                      <!-- BHIM UPI -->
                       <div class="fk-bank-card">
                         <div class="fk-bank-left">
                           <div class="fk-bank-logo">🇮🇳</div>
                           <div>
-                            <strong>₹1,000 off</strong> BHIM
-                            <div class="fk-bank-sub">UPI Instant Discount</div>
+                            <strong>₹1,000 off</strong> BHIM UPI
+                            <div class="fk-bank-sub">Direct Bank Account Transfer</div>
                           </div>
                         </div>
                         <button type="button" class="fk-apply-btn">Apply</button>
@@ -607,18 +622,18 @@
 
                     <!-- Additional Benefits -->
                     <div class="fk-benefits-section">
-                      <div class="fk-benefit-title">Additional benefits on this purchase</div>
+                      <div class="fk-benefit-title">Store Perks &amp; Freebies with this device</div>
                       <div class="fk-benefit-card">
-                        <span>🎟️</span>
-                        <span><b>Unlock Storage Devices coupon • 10% off</b> on SanDisk Memory Cards &amp; SSDs</span>
-                        <span style="margin-left:auto; color:#94a3b8;">›</span>
+                        <span>🎁</span>
+                        <span><b>Free Tempered Glass &amp; Case Voucher</b> • Claim at Zesh Tech Barh counter with this purchase</span>
+                        <span style="margin-left:auto; color:#94a3b8;">✓</span>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <!-- PRODUCT HIGHLIGHTS SECTION (Screenshot 3) -->
+              <!-- PRODUCT HIGHLIGHTS SECTION -->
               ${specs ? `
                 <div class="fk-highlights-section">
                   <div class="fk-section-header-collapsible">
@@ -632,7 +647,7 @@
                       <div class="fk-highlight-icon-box">🖲️</div>
                       <div class="fk-highlight-text">
                         <strong class="fk-hl-title">${escapeHTML(specs.ramRom)}</strong>
-                        <div class="fk-hl-desc">Store up to 13000+ photos and full HD videos without lag</div>
+                        <div class="fk-hl-desc">Store up to 13,000+ photos and full HD videos without lag</div>
                       </div>
                     </div>
 
@@ -641,7 +656,7 @@
                       <div class="fk-highlight-icon-box">⚙️</div>
                       <div class="fk-highlight-text">
                         <strong class="fk-hl-title">${escapeHTML(specs.chipset)} | Octa Core | 2.4+ GHz</strong>
-                        <div class="fk-hl-desc">Industry's Best AnTuTu Score of ${escapeHTML(specs.antutuScore || "5,47,000+*")}</div>
+                        <div class="fk-hl-desc">Official Benchmark AnTuTu Score of ${escapeHTML(specs.antutuScore || "5,47,000+*")}</div>
                       </div>
                     </div>
 
@@ -650,7 +665,7 @@
                       <div class="fk-highlight-icon-box">📸</div>
                       <div class="fk-highlight-text">
                         <strong class="fk-hl-title">${escapeHTML(specs.rearCamera.split("+")[0]?.trim() || "50MP AI")} Rear Camera</strong>
-                        <div class="fk-hl-desc">AI Super Night Mode. 4K Cinema Video. Google Lens Integration</div>
+                        <div class="fk-hl-desc">AI Super Night Mode. 4K Cinema Video. Ultra Clear Stabilization</div>
                       </div>
                     </div>
 
@@ -684,7 +699,7 @@
                 </div>
               ` : ""}
 
-              <!-- ALL DETAILS TABBED SECTION (Screenshot 4) -->
+              <!-- ALL DETAILS TABBED SECTION -->
               ${specs ? `
                 <div class="fk-all-details-section">
                   <div class="fk-section-header-collapsible">
@@ -692,10 +707,10 @@
                     <span class="fk-arrow-toggle">▲</span>
                   </div>
 
-                  <!-- 4 Flipkart Tab Buttons (Screenshot 4) -->
+                  <!-- 4 Tab Buttons -->
                   <div class="fk-tab-pills-row">
-                    <button type="button" class="fk-tab-pill" data-fktab="showcase">Showcase</button>
                     <button type="button" class="fk-tab-pill active" data-fktab="specs">Specifications</button>
+                    <button type="button" class="fk-tab-pill" data-fktab="showcase">Showcase</button>
                     <button type="button" class="fk-tab-pill" data-fktab="desc">Description</button>
                     <button type="button" class="fk-tab-pill" data-fktab="warranty">Warranty</button>
                   </div>
@@ -715,7 +730,7 @@
                       </div>
                     </div>
 
-                    <!-- Dimensions (Screenshot 4) -->
+                    <!-- Dimensions -->
                     <div class="fk-specs-group">
                       <h3 class="fk-group-title">Dimensions</h3>
                       <div class="fk-dimensions-2col-grid">
@@ -738,7 +753,7 @@
                       </div>
                     </div>
 
-                    <!-- Display Features (Screenshot 4) -->
+                    <!-- Display Features -->
                     <div class="fk-specs-group">
                       <h3 class="fk-group-title">Display Features</h3>
                       <div class="fk-dimensions-2col-grid">
@@ -805,7 +820,7 @@
                     <div style="text-align:center; padding: 20px;">
                       <img src="${escapeHTML(img)}" style="max-height:260px; object-fit:contain; margin-bottom:12px;">
                       <h3 style="font-size:16px; font-weight:800; color:#0f172a;">${escapeHTML(product.name)}</h3>
-                      <p style="font-size:13px; color:#64748b; max-width:600px; margin:0 auto; line-height:1.6;">${escapeHTML(product.description || "Engineered for speed, battery endurance, and crystal clear photography with official brand warranty.")}</p>
+                      <p style="font-size:13px; color:#64748b; max-width:600px; margin:0 auto; line-height:1.6;">${escapeHTML(product.description || "Engineered for high performance, battery endurance, and crystal clear photography with 100% brand warranty.")}</p>
                     </div>
                   </div>
 
@@ -826,7 +841,7 @@
                     </div>
                     <div class="fk-spec-item-line">
                       <span class="fk-spec-name">Service Location</span>
-                      <strong class="fk-spec-val">Authorized Brand Service Centers Across India + Walk-in Store Support at Zesh Tech Barh</strong>
+                      <strong class="fk-spec-val">Authorized Brand Service Centers Across India + Walk-in Store Support at Zesh Tech, Station Road, Barh</strong>
                     </div>
                   </div>
                 </div>
@@ -853,7 +868,54 @@
 
       // Wire up clicks inside modal
 
-      // 1. Color Swatch Click
+      // Toggle Zesh Store Savings Accordion
+      const wowToggle = modalContent.querySelector("#fk-toggle-wow-deal");
+      const wowContent = modalContent.querySelector("#fk-wow-deal-content");
+      const wowArrow = modalContent.querySelector("#fk-wow-arrow");
+      if (wowToggle && wowContent) {
+        wowToggle.addEventListener("click", () => {
+          const isHidden = wowContent.style.display === "none";
+          wowContent.style.display = isHidden ? "block" : "none";
+          if (wowArrow) wowArrow.textContent = isHidden ? "▲" : "▼";
+        });
+      }
+
+      // Share button
+      modalContent.querySelector(".fk-share-btn")?.addEventListener("click", () => {
+        if (navigator.share) {
+          navigator.share({
+            title: product.name,
+            text: `Check out ${product.name} at Zesh Tech Barh!`,
+            url: window.location.href
+          }).catch(() => {});
+        } else {
+          navigator.clipboard.writeText(window.location.href);
+          showToast("Product link copied! 📋", "success");
+        }
+      });
+
+      // Wishlist toggle button inside modal
+      const modalWishBtn = modalContent.querySelector(".card-wishlist-btn");
+      if (modalWishBtn) {
+        modalWishBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const pid = product._id;
+          const idx = wishlist.indexOf(pid);
+          if (idx > -1) {
+            wishlist.splice(idx, 1);
+            modalWishBtn.classList.remove("active");
+            showToast("Removed from wishlist", "info");
+          } else {
+            wishlist.push(pid);
+            modalWishBtn.classList.add("active");
+            showToast("Added to wishlist ❤️", "success");
+          }
+          localStorage.setItem("zesh_wishlist", JSON.stringify(wishlist));
+          renderCatalogue();
+        });
+      }
+
+      // Color Swatch Click
       modalContent.querySelectorAll(".fk-swatch-card").forEach(swatch => {
         swatch.addEventListener("click", () => {
           modalContent.querySelectorAll(".fk-swatch-card").forEach(s => s.classList.remove("active"));
@@ -863,7 +925,7 @@
         });
       });
 
-      // 2. Variant Box Click
+      // Variant Box Click
       modalContent.querySelectorAll(".fk-variant-box").forEach(box => {
         box.addEventListener("click", () => {
           modalContent.querySelectorAll(".fk-variant-box").forEach(b => b.classList.remove("active"));
@@ -871,17 +933,17 @@
         });
       });
 
-      // 3. Bank Apply Button Click
+      // Bank Apply Button Click
       modalContent.querySelectorAll(".fk-apply-btn").forEach(btn => {
         btn.addEventListener("click", () => {
           btn.textContent = "Applied ✓";
           btn.style.color = "#16a34a";
           btn.style.fontWeight = "800";
-          showToast("Bank discount voucher applied successfully! 🎉", "success");
+          showToast("Offer applied to your cart! 🎉", "success");
         });
       });
 
-      // 4. Flipkart Tabs Switcher (Screenshot 4)
+      // Tabs Switcher
       modalContent.querySelectorAll(".fk-tab-pill").forEach(pill => {
         pill.addEventListener("click", () => {
           const tabKey = pill.dataset.fktab;
@@ -898,7 +960,7 @@
         });
       });
 
-      // 5. Buy Now & Add to Bag
+      // Buy Now & Add to Bag
       modalContent.querySelector(".fk-btn-buy")?.addEventListener("click", () => {
         modalBackdrop.classList.remove("active");
         addToCart(product, 1);
@@ -916,7 +978,7 @@
       });
 
     } catch (err) {
-      modalContent.innerHTML = `<div style="text-align:center; padding: 30px; color:var(--danger);">${escapeHTML(err.message)}</div>`;
+      modalContent.innerHTML = `<div style="text-align:center; padding: 30px; color:var(--danger);">${escapeHTML(err.message || "Failed to render details")}</div>`;
     }
   }
 

@@ -2,7 +2,7 @@
 
 /**
  * ZESH TECH — Rich Specifications, Expert Curations & Comparison Engine
- * Provides Amazon & Flipkart-grade structured specs for all smartphones,
+ * Provides official brand-authorized structured specs for all smartphones,
  * smart budget comparison with AI recommendations, and category curations.
  */
 

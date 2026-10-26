@@ -928,7 +928,7 @@ select {
 }
 
 /* ==========================================================================
-   Product Cards & Grid (Flipkart-Style Cutlet Box Architecture)
+   Product Cards & Grid (Zesh Tech Cutlet Box Architecture)
    ========================================================================== */
 
 .product-grid {
@@ -1026,7 +1026,7 @@ select {
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2);
 }
 
-/* Premium Flipkart-Style Cutlet Box Card */
+/* Premium Zesh Tech Cutlet Box Card */
 .product-card {
   background: #ffffff;
   border: 1px solid #eef2f6;
@@ -1234,8 +1234,9 @@ select {
   border: 1px solid #e2e8f0;
 }
 
-/* Flipkart-Style Pricing Row */
-.flipkart-price-row {
+/* Zesh Tech Pricing Row */
+.flipkart-price-row,
+.zesh-price-row {
   margin-top: auto;
   padding-top: 8px;
   border-top: 1px dashed #e2e8f0;
@@ -2878,7 +2879,7 @@ select {
 }
 
 /* ==========================================================================
-   AMAZON & FLIPKART STYLE PRODUCT SPECIFICATIONS & DETAILS
+   ZESH TECH ADVANCED PRODUCT SPECIFICATIONS & DETAILS
    ========================================================================== */
 
 .modal-dialog-specs {
@@ -2892,11 +2893,12 @@ select {
 }
 
 /* ==========================================================================
-   FLIPKART OFFICIAL PRODUCT PAGE ARCHITECTURE
-   Matches Flipkart 1:1 based on mobile/web screenshots
+   ZESH TECH OFFICIAL PRODUCT PAGE ARCHITECTURE
+   Premium retail store specification modal
    ========================================================================== */
 
-.flipkart-product-page {
+.flipkart-product-page,
+.zesh-product-page {
   display: flex;
   flex-direction: column;
   background: #ffffff;
@@ -3763,7 +3765,8 @@ select {
   flex-wrap: wrap;
 }
 
-.rating-badge-flipkart {
+.rating-badge-flipkart,
+.rating-badge-zesh {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -3815,7 +3818,7 @@ select {
   border-radius: 4px;
 }
 
-/* Flipkart Style Bank & Store Offers */
+/* Zesh Tech Bank & Store Offers */
 .bank-offers-container {
   margin-bottom: 20px;
 }
@@ -3955,7 +3958,7 @@ select {
   color: var(--primary);
 }
 
-/* Full Flipkart Specifications Table Accordion */
+/* Full Zesh Tech Specifications Table Accordion */
 .specs-accordion-container {
   margin-top: 24px;
 }
