@@ -13,8 +13,16 @@ const billRoutes = require("./routes/billRoutes");
 const adminUsersRoutes = require("./routes/adminUsersRoutes");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
+const compression = require("compression");
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// High-speed Gzip/Brotli Compression
+app.use(
+  compression({
+    threshold: 1024
+  })
+);
 
 // High Security Headers
 app.disable("x-powered-by");
@@ -78,8 +86,22 @@ app.use("/api/uploads", uploadRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/bills", billRoutes);
 app.use("/api/admin", adminUsersRoutes);
-// Frontend static files
-app.use(express.static(path.join(__dirname, "public")));
+// Frontend static files with production caching headers
+app.use(
+  express.static(path.join(__dirname, "public"), {
+    etag: true,
+    lastModified: true,
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith(".html")) {
+        res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
+      } else if (filePath.match(/\.(jpg|jpeg|png|webp|svg|ico)$/i)) {
+        res.setHeader("Cache-Control", "public, max-age=604800, immutable");
+      } else if (filePath.match(/\.(css|js)$/i)) {
+        res.setHeader("Cache-Control", "public, max-age=86400");
+      }
+    }
+  })
+);
 
 // Unknown API routes
 app.use("/api", (req, res) => {
