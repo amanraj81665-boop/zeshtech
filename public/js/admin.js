@@ -1458,64 +1458,6 @@
     }).join("");
   }
 
-  // Edit Product Modal
-  function openEditProductModal(productId) {
-    const product = inventoryList.find(p => p._id === productId);
-    if (!product) return;
-
-    $("#edit-product-id").value = product._id;
-    $("#edit-prod-name").value = product.name || "";
-    $("#edit-prod-sku").value = product.sku || "";
-    $("#edit-prod-category").value = product.category || "Mobile";
-    $("#edit-prod-brand").value = product.brand || "";
-    $("#edit-prod-model").value = product.model || "";
-    if ($("#edit-prod-serial")) $("#edit-prod-serial").value = product.serialNumber || "";
-    if ($("#edit-prod-imei1")) $("#edit-prod-imei1").value = product.imei1 || "";
-    if ($("#edit-prod-imei2")) $("#edit-prod-imei2").value = product.imei2 || "";
-    $("#edit-prod-cost").value = product.purchasePrice || 0;
-    $("#edit-prod-price").value = product.sellingPrice || 0;
-    $("#edit-prod-image").value = product.imageUrl || "";
-    $("#edit-prod-desc").value = product.description || "";
-
-    $("#admin-edit-product-modal")?.classList.add("active");
-  }
-
-  async function handleEditProductSubmit(e) {
-    e.preventDefault();
-    const btn = $("#edit-product-submit-btn");
-    const id = $("#edit-product-id").value;
-
-    const updates = {
-      name: $("#edit-prod-name").value.trim(),
-      category: $("#edit-prod-category").value,
-      brand: $("#edit-prod-brand").value.trim(),
-      model: $("#edit-prod-model").value.trim(),
-      serialNumber: $("#edit-prod-serial")?.value.trim() || "",
-      imei1: $("#edit-prod-imei1")?.value.trim() || "",
-      imei2: $("#edit-prod-imei2")?.value.trim() || "",
-      purchasePrice: parseFloat($("#edit-prod-cost").value) || 0,
-      sellingPrice: parseFloat($("#edit-prod-price").value) || 0,
-      imageUrl: $("#edit-prod-image").value.trim(),
-      description: $("#edit-prod-desc").value.trim()
-    };
-
-    try {
-      btn.disabled = true;
-      btn.textContent = "Updating...";
-
-      await zeshAPI.updateProduct(id, updates);
-      showToast("Product updated successfully!", "success");
-
-      $("#admin-edit-product-modal")?.classList.remove("active");
-      loadInventoryView();
-    } catch (err) {
-      showToast(err.message || "Failed to update product", "error");
-    } finally {
-      btn.disabled = false;
-      btn.textContent = "Update Product Information";
-    }
-  }
-
   // CSV Exporter Helper
   function exportToCsv(filename, rows) {
     const processRow = (row) =>
@@ -1892,6 +1834,215 @@
     } finally {
       btn.disabled = false;
       btn.textContent = "Update Product Information";
+    }
+  }
+
+  /* ==========================================================================
+     Live Camera Barcode & IMEI Scanner Controller
+     ========================================================================== */
+
+  let html5QrCodeScanner = null;
+  let currentScannerTargetFieldId = null;
+  let currentScannerTargetLabel = "";
+  let currentScannerMode = "field"; // "field", "smart-box", or "pos"
+  let currentScannerContext = "add"; // "add" or "edit"
+  let currentCameraFacing = "environment";
+  let isScanningActive = false;
+
+  function playScanBeep() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(1850, ctx.currentTime);
+      gain.gain.setValueAtTime(0.35, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.12);
+    } catch (e) {}
+  }
+
+  async function openBarcodeScanner(options = {}) {
+    const modal = $("#admin-barcode-scanner-modal");
+    if (!modal) return;
+
+    currentScannerMode = options.mode || "field";
+    currentScannerTargetFieldId = options.targetFieldId || null;
+    currentScannerTargetLabel = options.label || (currentScannerMode === "pos" ? "POS Barcode" : "Auto-Detect");
+    currentScannerContext = options.context || "add";
+
+    const labelEl = $("#scanner-target-label");
+    if (labelEl) labelEl.textContent = currentScannerTargetLabel;
+
+    const feedbackEl = $("#scanner-feedback-msg");
+    if (feedbackEl) feedbackEl.textContent = "";
+
+    modal.classList.add("active");
+    await startHtml5Scanner();
+  }
+
+  async function closeBarcodeScanner() {
+    isScanningActive = false;
+    if (html5QrCodeScanner) {
+      try {
+        await html5QrCodeScanner.stop();
+        html5QrCodeScanner.clear();
+      } catch (e) {}
+      html5QrCodeScanner = null;
+    }
+    $("#admin-barcode-scanner-modal")?.classList.remove("active");
+  }
+
+  async function startHtml5Scanner() {
+    if (typeof Html5Qrcode === "undefined") {
+      showToast("Loading barcode scanner library, please wait...", "info");
+      return;
+    }
+
+    const readerEl = document.getElementById("barcode-scanner-reader");
+    if (!readerEl) return;
+
+    if (html5QrCodeScanner) {
+      try {
+        await html5QrCodeScanner.stop();
+        html5QrCodeScanner.clear();
+      } catch (e) {}
+      html5QrCodeScanner = null;
+    }
+
+    html5QrCodeScanner = new Html5Qrcode("barcode-scanner-reader");
+    isScanningActive = true;
+
+    const config = {
+      fps: 20,
+      qrbox: { width: 300, height: 160 },
+      aspectRatio: 1.0,
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E,
+        Html5QrcodeSupportedFormats.QR_CODE,
+        Html5QrcodeSupportedFormats.DATA_MATRIX
+      ]
+    };
+
+    try {
+      await html5QrCodeScanner.start(
+        { facingMode: currentCameraFacing },
+        config,
+        (decodedText) => {
+          if (!isScanningActive) return;
+          handleSuccessfulBarcodeScan(decodedText.trim());
+        },
+        () => {}
+      );
+    } catch (err) {
+      console.error("Camera scanner start failed:", err);
+      showToast("Camera access failed. Please ensure camera permissions are allowed in browser settings.", "error");
+      closeBarcodeScanner();
+    }
+  }
+
+  function handleSuccessfulBarcodeScan(code) {
+    if (!code) return;
+    isScanningActive = false;
+    playScanBeep();
+
+    const feedbackEl = $("#scanner-feedback-msg");
+    if (feedbackEl) feedbackEl.textContent = `✓ Scanned: ${code}`;
+
+    // Mode 1: Targeted Field Scan (e.g. user clicked 📷 next to IMEI 1, IMEI 2, S/N, or SKU)
+    if (currentScannerMode === "field" && currentScannerTargetFieldId) {
+      const targetInput = document.getElementById(currentScannerTargetFieldId);
+      if (targetInput) {
+        targetInput.value = code;
+        targetInput.classList.add("scanned-highlight");
+        setTimeout(() => targetInput.classList.remove("scanned-highlight"), 1500);
+        showToast(`✓ Scanned ${currentScannerTargetLabel}: ${code}`, "success");
+      }
+      setTimeout(closeBarcodeScanner, 350);
+      return;
+    }
+
+    // Mode 2: POS Counter Scan (Direct add product to active bill)
+    if (currentScannerMode === "pos") {
+      handlePosBarcodeScanned(code);
+      setTimeout(closeBarcodeScanner, 350);
+      return;
+    }
+
+    // Mode 3: Smart Box Quick Scan (Auto-detects whether it's IMEI 1, IMEI 2, or S/N)
+    if (currentScannerMode === "smart-box") {
+      const prefix = currentScannerContext === "edit" ? "edit-prod-" : "add-prod-";
+      const sInput = document.getElementById(prefix + "serial");
+      const i1Input = document.getElementById(prefix + "imei1");
+      const i2Input = document.getElementById(prefix + "imei2");
+
+      const cleanNum = code.replace(/\D/g, "");
+
+      // 15-digit numeric pattern is standard mobile IMEI
+      if (cleanNum.length === 15) {
+        if (i1Input && !i1Input.value.trim()) {
+          i1Input.value = cleanNum;
+          i1Input.classList.add("scanned-highlight");
+          setTimeout(() => i1Input.classList.remove("scanned-highlight"), 1500);
+          showToast(`✓ Auto-detected IMEI 1: ${cleanNum}`, "success");
+        } else if (i2Input && !i2Input.value.trim()) {
+          i2Input.value = cleanNum;
+          i2Input.classList.add("scanned-highlight");
+          setTimeout(() => i2Input.classList.remove("scanned-highlight"), 1500);
+          showToast(`✓ Auto-detected IMEI 2: ${cleanNum}`, "success");
+        } else if (i1Input) {
+          i1Input.value = cleanNum;
+          i1Input.classList.add("scanned-highlight");
+          setTimeout(() => i1Input.classList.remove("scanned-highlight"), 1500);
+          showToast(`✓ Updated IMEI 1: ${cleanNum}`, "success");
+        }
+      } else {
+        // Alphanumeric code or non-15 digit is Serial Number (S/N)
+        if (sInput) {
+          sInput.value = code;
+          sInput.classList.add("scanned-highlight");
+          setTimeout(() => sInput.classList.remove("scanned-highlight"), 1500);
+          showToast(`✓ Auto-detected Serial (S/N): ${code}`, "success");
+        }
+      }
+
+      setTimeout(closeBarcodeScanner, 400);
+    }
+  }
+
+  function handlePosBarcodeScanned(code) {
+    if (!code) return;
+    const clean = code.trim().toUpperCase();
+    const match = posProducts.find(p =>
+      (p.sku && p.sku.toUpperCase() === clean) ||
+      (p.barcode && p.barcode.toUpperCase() === clean) ||
+      (p.imei1 && p.imei1 === clean) ||
+      (p.serialNumber && p.serialNumber.toUpperCase() === clean)
+    );
+
+    if (match) {
+      addProductToPosBill(match._id);
+      showToast(`Scanned & Added: ${match.name}`, "success");
+      const input = $("#pos-search-input");
+      if (input) input.value = "";
+      renderPosProducts();
+    } else {
+      const input = $("#pos-search-input");
+      if (input) {
+        input.value = clean;
+        renderPosProducts();
+      }
+      showToast(`Scanned code: ${clean} (Not found in inventory)`, "info");
     }
   }
 
@@ -2602,6 +2753,30 @@
           }
         }
       }
+    });
+
+    // Barcode & IMEI Camera Scanner Triggers
+    $$(".btn-scan-field").forEach(btn => {
+      btn.addEventListener("click", () => {
+        openBarcodeScanner({ targetFieldId: btn.dataset.target, label: btn.dataset.label, mode: "field" });
+      });
+    });
+
+    $$(".btn-smart-box-scan").forEach(btn => {
+      btn.addEventListener("click", () => {
+        openBarcodeScanner({ mode: "smart-box", context: btn.dataset.context, label: "Box Auto-Detect" });
+      });
+    });
+
+    $("#pos-camera-scan-btn")?.addEventListener("click", () => {
+      openBarcodeScanner({ mode: "pos", label: "POS Box Barcode" });
+    });
+
+    $("#close-barcode-scanner-btn")?.addEventListener("click", closeBarcodeScanner);
+    $("#scanner-cancel-btn")?.addEventListener("click", closeBarcodeScanner);
+    $("#scanner-switch-camera-btn")?.addEventListener("click", async () => {
+      currentCameraFacing = currentCameraFacing === "environment" ? "user" : "environment";
+      await startHtml5Scanner();
     });
 
     // Global Keyboard Shortcuts

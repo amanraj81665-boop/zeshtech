@@ -4930,5 +4930,46 @@ select {
   }
 }
 
+/* ==========================================================================
+   CAMERA BARCODE & IMEI SCANNER STYLES
+   ========================================================================== */
+
+@keyframes scanLaserAnim {
+  0% { top: 12%; opacity: 0.3; }
+  50% { top: 88%; opacity: 1; }
+  100% { top: 12%; opacity: 0.3; }
+}
+
+@keyframes scanFieldPulse {
+  0% { border-color: #22c55e; box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.4); }
+  50% { border-color: #22c55e; box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.6); }
+  100% { border-color: var(--dark-border); box-shadow: none; }
+}
+
+.scanned-highlight {
+  animation: scanFieldPulse 1.2s ease !important;
+}
+
+.btn-scan-field, .btn-scan-inline {
+  transition: all 0.15s ease;
+}
+
+.btn-scan-field:hover, .btn-scan-inline:hover {
+  transform: scale(1.05);
+  opacity: 0.95;
+}
+
+.btn-smart-box-scan:hover {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+}
+
+#barcode-scanner-reader-wrap video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 10px;
+}
+
 
 
