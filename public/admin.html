@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..800;1,9..40,400..800&family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="/css/style.css?v=3.3">
+  <link rel="stylesheet" href="/css/style.css?v=3.5">
 </head>
 <body class="admin-body">
 
@@ -1191,20 +1191,20 @@
 
   <!-- Live Camera Barcode & IMEI Scanner Modal -->
   <div class="modal-backdrop" id="admin-barcode-scanner-modal" style="z-index: 9999;">
-    <div class="modal-dialog modal-dialog-small" style="background: #0f172a; color: white; border: 1px solid #3b82f6; box-shadow: 0 20px 40px rgba(0,0,0,0.85); max-width: 460px; max-height: 94vh; overflow-y: auto;">
+    <div class="modal-dialog modal-dialog-small" style="background: #0f172a; color: white; border: 1px solid #3b82f6; box-shadow: 0 20px 40px rgba(0,0,0,0.85); max-width: 450px; overflow: hidden;">
       <button class="modal-close-btn" id="close-barcode-scanner-btn" style="background:#1f2937; color:white;">✕</button>
-      <div class="modal-body" style="padding: 20px;">
+      <div class="modal-body" style="padding: 18px;">
         <!-- Header -->
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
           <span style="font-size:22px;">📷</span>
           <h2 style="font-size: 17px; color: white; margin: 0;" id="scanner-modal-title">Barcode &amp; IMEI Scanner</h2>
         </div>
-        <p style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;" id="scanner-modal-subtitle">
+        <p style="font-size: 12px; color: #94a3b8; margin-bottom: 10px;" id="scanner-modal-subtitle">
           Scan box barcode (IMEI 1 / IMEI 2 / Serial Number) with live camera or photo snap.
         </p>
 
         <!-- Active Target Pill -->
-        <div style="display:flex; align-items:center; justify-content:space-between; background:#1e293b; padding:8px 12px; border-radius:8px; margin-bottom:12px; border:1px solid #334155;">
+        <div style="display:flex; align-items:center; justify-content:space-between; background:#1e293b; padding:7px 12px; border-radius:8px; margin-bottom:10px; border:1px solid #334155;">
           <span style="font-size:12px; color:#cbd5e1;">Target Field:</span>
           <strong id="scanner-target-label" style="font-size:12px; color:#38bdf8; font-family:var(--font-mono); background:#090d16; padding:2px 8px; border-radius:4px; border:1px solid #1e3a8a;">
             Auto-Detect
@@ -1212,7 +1212,7 @@
         </div>
 
         <!-- Notification Banner (For HTTP / Permission guidance) -->
-        <div id="scanner-status-banner" style="display:none; padding:10px 12px; background:rgba(59, 130, 246, 0.12); border:1px solid #3b82f6; border-radius:8px; margin-bottom:12px; font-size:12px; color:#93c5fd; line-height:1.4;">
+        <div id="scanner-status-banner" style="display:none; padding:10px 12px; background:rgba(59, 130, 246, 0.12); border:1px solid #3b82f6; border-radius:8px; margin-bottom:10px; font-size:12px; color:#93c5fd; line-height:1.4;">
           <div style="display:flex; align-items:flex-start; gap:8px;">
             <span style="font-size:16px;">💡</span>
             <div id="scanner-status-text">Tip: On mobile phones, you can use the direct camera snapshot button below to snap the barcode!</div>
@@ -1220,8 +1220,8 @@
         </div>
 
         <!-- Camera Scanner Viewport -->
-        <div id="barcode-scanner-reader-wrap" style="position:relative; width:100%; border-radius:12px; overflow:hidden; background:#000; min-height:220px; border:2px solid #3b82f6;">
-          <div id="barcode-scanner-reader" style="width:100%; min-height:220px;"></div>
+        <div id="barcode-scanner-reader-wrap" style="position:relative; width:100%; height:220px; border-radius:12px; overflow:hidden; background:#000; border:2px solid #3b82f6;">
+          <div id="barcode-scanner-reader" style="width:100%; height:220px; overflow:hidden;"></div>
           <!-- Red/Green Laser Targeting Line Animation -->
           <div id="scanner-laser-line" style="position:absolute; left:6%; right:6%; height:2px; background:linear-gradient(90deg, transparent, #ef4444, #22c55e, #ef4444, transparent); box-shadow:0 0 10px #22c55e; animation: scanLaserAnim 2s infinite ease-in-out; pointer-events:none; z-index:10;"></div>
         </div>
@@ -1269,9 +1269,9 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Scripts -->
-  <script src="/js/quagga.min.js?v=3.4"></script>
-  <script src="/js/html5-qrcode.min.js?v=3.4"></script>
-  <script src="/js/api.js?v=3.4"></script>
-  <script src="/js/admin.js?v=3.4"></script>
+  <script src="/js/quagga.min.js?v=3.5"></script>
+  <script src="/js/html5-qrcode.min.js?v=3.5"></script>
+  <script src="/js/api.js?v=3.5"></script>
+  <script src="/js/admin.js?v=3.5"></script>
 </body>
 </html>

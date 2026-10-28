@@ -4931,13 +4931,94 @@ select {
 }
 
 /* ==========================================================================
-   CAMERA BARCODE & IMEI SCANNER STYLES
+   CAMERA BARCODE & IMEI SCANNER STYLES (Rock-solid, zero shaking/jitter)
    ========================================================================== */
 
+#admin-barcode-scanner-modal {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  padding: 16px !important;
+}
+
+#admin-barcode-scanner-modal .modal-dialog {
+  margin: auto !important;
+  max-height: 94vh !important;
+  overflow-y: hidden !important;
+  transform: none !important;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+#admin-barcode-scanner-modal.active .modal-dialog {
+  transform: none !important;
+}
+
+#barcode-scanner-reader-wrap {
+  position: relative !important;
+  width: 100% !important;
+  height: 220px !important;
+  min-height: 220px !important;
+  max-height: 220px !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  background: #000 !important;
+  border: 2px solid #3b82f6 !important;
+  contain: strict !important;
+}
+
+#barcode-scanner-reader {
+  width: 100% !important;
+  height: 220px !important;
+  min-height: 220px !important;
+  max-height: 220px !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+#barcode-scanner-reader video,
+#barcode-scanner-reader-wrap video {
+  width: 100% !important;
+  height: 220px !important;
+  min-height: 220px !important;
+  max-height: 220px !important;
+  object-fit: cover !important;
+  border-radius: 10px !important;
+  display: block !important;
+}
+
+#barcode-scanner-reader-wrap canvas {
+  display: none !important;
+}
+
+#barcode-scanner-reader-wrap img {
+  max-width: 100% !important;
+  max-height: 220px !important;
+  object-fit: contain !important;
+  margin: 0 auto;
+  display: block;
+}
+
+/* GPU Accelerated Laser Reticle (Zero reflow, never causes modal to shake!) */
+#scanner-laser-line {
+  position: absolute !important;
+  left: 6% !important;
+  right: 6% !important;
+  top: 0 !important;
+  height: 2px !important;
+  background: linear-gradient(90deg, transparent, #ef4444 20%, #22c55e 50%, #ef4444 80%, transparent) !important;
+  box-shadow: 0 0 10px #22c55e, 0 0 4px #ef4444 !important;
+  pointer-events: none !important;
+  z-index: 10 !important;
+  will-change: transform !important;
+  animation: scanLaserAnim 2s infinite ease-in-out !important;
+}
+
 @keyframes scanLaserAnim {
-  0% { top: 12%; opacity: 0.3; }
-  50% { top: 88%; opacity: 1; }
-  100% { top: 12%; opacity: 0.3; }
+  0% { transform: translateY(16px); opacity: 0.3; }
+  50% { transform: translateY(195px); opacity: 1; }
+  100% { transform: translateY(16px); opacity: 0.3; }
 }
 
 @keyframes scanFieldPulse {
@@ -4962,30 +5043,6 @@ select {
 .btn-smart-box-scan:hover {
   filter: brightness(1.15);
   transform: translateY(-1px);
-}
-
-#barcode-scanner-reader-wrap video {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-  border-radius: 10px;
-}
-
-#barcode-scanner-reader {
-  width: 100% !important;
-  min-height: 200px;
-}
-
-#barcode-scanner-reader-wrap canvas {
-  display: none !important;
-}
-
-#barcode-scanner-reader-wrap img {
-  max-width: 100% !important;
-  max-height: 240px !important;
-  object-fit: contain !important;
-  margin: 0 auto;
-  display: block;
 }
 
 #scanner-snap-btn:hover {
