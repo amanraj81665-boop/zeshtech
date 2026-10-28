@@ -1838,7 +1838,7 @@
   }
 
   /* ==========================================================================
-     Live Camera Barcode & IMEI Scanner Controller
+     Live Camera Barcode & IMEI Scanner Controller (Live Stream + Direct Photo Snap)
      ========================================================================== */
 
   let html5QrCodeScanner = null;
@@ -1867,6 +1867,39 @@
     } catch (e) {}
   }
 
+  function getScannerSupportedFormats() {
+    if (typeof Html5QrcodeSupportedFormats !== "undefined") {
+      return [
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E,
+        Html5QrcodeSupportedFormats.QR_CODE,
+        Html5QrcodeSupportedFormats.DATA_MATRIX
+      ];
+    }
+    return undefined;
+  }
+
+  function ensureHtml5ScannerInstance() {
+    if (html5QrCodeScanner) return html5QrCodeScanner;
+    if (typeof Html5Qrcode === "undefined") return null;
+
+    const formats = getScannerSupportedFormats();
+    const config = {
+      verbose: false,
+      experimentalFeatures: {
+        useBarCodeDetectorIfSupported: true
+      }
+    };
+    if (formats) config.formatsToSupport = formats;
+
+    html5QrCodeScanner = new Html5Qrcode("barcode-scanner-reader", config);
+    return html5QrCodeScanner;
+  }
+
   async function openBarcodeScanner(options = {}) {
     const modal = $("#admin-barcode-scanner-modal");
     if (!modal) return;
@@ -1882,6 +1915,9 @@
     const feedbackEl = $("#scanner-feedback-msg");
     if (feedbackEl) feedbackEl.textContent = "";
 
+    const manualInput = $("#scanner-manual-input");
+    if (manualInput) manualInput.value = "";
+
     modal.classList.add("active");
     await startHtml5Scanner();
   }
@@ -1890,7 +1926,9 @@
     isScanningActive = false;
     if (html5QrCodeScanner) {
       try {
-        await html5QrCodeScanner.stop();
+        if (html5QrCodeScanner.isScanning) {
+          await html5QrCodeScanner.stop();
+        }
         html5QrCodeScanner.clear();
       } catch (e) {}
       html5QrCodeScanner = null;
@@ -1899,44 +1937,79 @@
   }
 
   async function startHtml5Scanner() {
-    if (typeof Html5Qrcode === "undefined") {
-      showToast("Loading barcode scanner library, please wait...", "info");
+    const readerWrap = document.getElementById("barcode-scanner-reader-wrap");
+    const statusBanner = document.getElementById("scanner-status-banner");
+    const statusText = document.getElementById("scanner-status-text");
+    const switchBtn = document.getElementById("scanner-switch-camera-btn");
+
+    // Check mediaDevices & secure context (browsers block live getUserMedia on non-localhost HTTP)
+    const hasMedia = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+    const isSecureOrLocal = window.isSecureContext || location.hostname === "localhost" || location.hostname === "127.0.0.1";
+
+    if (!hasMedia || !isSecureOrLocal) {
+      // Live video not supported in this browser context (e.g. mobile on HTTP IP address)
+      if (readerWrap) readerWrap.style.display = "none";
+      if (switchBtn) switchBtn.style.display = "none";
+      if (statusBanner) {
+        statusBanner.style.display = "block";
+        if (statusText) {
+          statusText.innerHTML = "<strong>Mobile Browser Security Notice:</strong> Live video requires HTTPS. Tap <strong>📸 Snap Box Photo</strong> below to snap barcode directly with your phone camera!";
+        }
+      }
+      const feedbackEl = $("#scanner-feedback-msg");
+      if (feedbackEl) feedbackEl.textContent = "👉 Tap 'Snap Box Photo' to snap barcode";
       return;
     }
 
-    const readerEl = document.getElementById("barcode-scanner-reader");
-    if (!readerEl) return;
+    // Live video stream is available
+    if (readerWrap) readerWrap.style.display = "block";
+    if (statusBanner) statusBanner.style.display = "none";
+    if (switchBtn) switchBtn.style.display = "flex";
 
     if (html5QrCodeScanner) {
       try {
-        await html5QrCodeScanner.stop();
+        if (html5QrCodeScanner.isScanning) {
+          await html5QrCodeScanner.stop();
+        }
         html5QrCodeScanner.clear();
       } catch (e) {}
       html5QrCodeScanner = null;
     }
 
-    html5QrCodeScanner = new Html5Qrcode("barcode-scanner-reader");
+    ensureHtml5ScannerInstance();
+    if (!html5QrCodeScanner) {
+      showToast("Initializing scanner...", "info");
+      return;
+    }
+
     isScanningActive = true;
 
-    const config = {
-      fps: 20,
-      qrbox: { width: 300, height: 160 },
-      aspectRatio: 1.0,
-      formatsToSupport: [
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.CODE_39,
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
-        Html5QrcodeSupportedFormats.QR_CODE,
-        Html5QrcodeSupportedFormats.DATA_MATRIX
-      ]
-    };
-
     try {
+      let cameraToUse = { facingMode: currentCameraFacing };
+      try {
+        const devices = await Html5Qrcode.getCameras();
+        if (devices && devices.length > 0) {
+          if (currentCameraFacing === "environment") {
+            const back = devices.find(d => /back|rear|environment|primary/i.test(d.label));
+            cameraToUse = back ? back.id : devices[devices.length - 1].id;
+          } else {
+            const front = devices.find(d => /front|user|facing/i.test(d.label));
+            cameraToUse = front ? front.id : devices[0].id;
+          }
+        }
+      } catch (e) {}
+
+      const config = {
+        fps: 20,
+        aspectRatio: 1.33,
+        videoConstraints: {
+          width: { min: 640, ideal: 1280, max: 1920 },
+          height: { min: 480, ideal: 720, max: 1080 }
+        }
+      };
+
       await html5QrCodeScanner.start(
-        { facingMode: currentCameraFacing },
+        cameraToUse,
         config,
         (decodedText) => {
           if (!isScanningActive) return;
@@ -1945,10 +2018,131 @@
         () => {}
       );
     } catch (err) {
-      console.error("Camera scanner start failed:", err);
-      showToast("Camera access failed. Please ensure camera permissions are allowed in browser settings.", "error");
-      closeBarcodeScanner();
+      console.warn("Live camera start failed, falling back to Snap Photo mode:", err);
+      // DO NOT close modal! Gracefully show camera snap buttons!
+      if (readerWrap) readerWrap.style.display = "none";
+      if (switchBtn) switchBtn.style.display = "none";
+      if (statusBanner) {
+        statusBanner.style.display = "block";
+        if (statusText) {
+          statusText.innerHTML = "Live camera preview unavailable (" + (err.message || err || "permission denied") + ").<br>Tap <strong>📸 Snap Box Photo</strong> below to capture barcode directly!";
+        }
+      }
+      const feedbackEl = $("#scanner-feedback-msg");
+      if (feedbackEl) feedbackEl.textContent = "👉 Tap 'Snap Box Photo' to capture barcode";
     }
+  }
+
+  function normalizeImageForBarcode(file, maxDimension = 1400) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        let w = img.width;
+        let h = img.height;
+        if (w > maxDimension || h > maxDimension) {
+          if (w > h) {
+            h = Math.round((h * maxDimension) / w);
+            w = maxDimension;
+          } else {
+            w = Math.round((w * maxDimension) / h);
+            h = maxDimension;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+        canvas.toBlob((blob) => resolve(blob), "image/jpeg", 0.92);
+      };
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+  }
+
+  async function processBarcodeImage(file) {
+    if (!file) return;
+    const feedbackEl = $("#scanner-feedback-msg");
+    if (feedbackEl) feedbackEl.textContent = "⏳ Scanning image for barcode...";
+    showToast("Analyzing barcode photo...", "info");
+
+    try {
+      // Step 1: Native BarcodeDetector (Supported in modern Chrome Android & Desktop)
+      if ("BarcodeDetector" in window) {
+        try {
+          const detector = new window.BarcodeDetector({
+            formats: ["code_128", "code_39", "ean_13", "ean_8", "upc_a", "upc_e", "qr_code", "data_matrix"]
+          });
+          const bitmap = await createImageBitmap(file);
+          const detected = await detector.detect(bitmap);
+          if (detected && detected.length > 0 && detected[0].rawValue) {
+            handleSuccessfulBarcodeScan(detected[0].rawValue.trim());
+            return;
+          }
+        } catch (bdErr) {
+          console.warn("Native BarcodeDetector pass failed, trying Html5Qrcode:", bdErr);
+        }
+      }
+
+      // Step 2: Ensure scanner instance exists
+      ensureHtml5ScannerInstance();
+
+      // Step 3: Decode directly via html5QrCodeScanner.scanFile
+      try {
+        const decodedText = await html5QrCodeScanner.scanFile(file, false);
+        if (decodedText) {
+          handleSuccessfulBarcodeScan(decodedText.trim());
+          return;
+        }
+      } catch (scanErr) {
+        console.warn("Direct scanFile pass failed, trying normalized canvas pass:", scanErr);
+      }
+
+      // Step 4: Scale down onto normalized canvas for ZXing barcode engine (max 1400px)
+      const normalizedBlob = await normalizeImageForBarcode(file);
+      if (normalizedBlob) {
+        if ("BarcodeDetector" in window) {
+          try {
+            const detector = new window.BarcodeDetector({
+              formats: ["code_128", "code_39", "ean_13", "ean_8", "upc_a", "upc_e", "qr_code", "data_matrix"]
+            });
+            const bitmap = await createImageBitmap(normalizedBlob);
+            const detected = await detector.detect(bitmap);
+            if (detected && detected.length > 0 && detected[0].rawValue) {
+              handleSuccessfulBarcodeScan(detected[0].rawValue.trim());
+              return;
+            }
+          } catch (e) {}
+        }
+
+        const normalizedFile = new File([normalizedBlob], "barcode.jpg", { type: "image/jpeg" });
+        const decoded = await html5QrCodeScanner.scanFile(normalizedFile, false);
+        if (decoded) {
+          handleSuccessfulBarcodeScan(decoded.trim());
+          return;
+        }
+      }
+
+      if (feedbackEl) feedbackEl.textContent = "❌ Barcode not detected. Please take a closer photo with good lighting.";
+      showToast("Barcode not detected. Please try a closer, clearer photo.", "error");
+    } catch (err) {
+      console.error("Barcode image processing error:", err);
+      if (feedbackEl) feedbackEl.textContent = "❌ Could not read barcode. Try snapping closer.";
+      showToast("Could not read barcode from photo. Please try a closer shot.", "error");
+    }
+  }
+
+  function handleManualBarcodeSubmit() {
+    const input = $("#scanner-manual-input");
+    if (!input || !input.value.trim()) {
+      showToast("Please enter a barcode or IMEI number first", "info");
+      return;
+    }
+    const val = input.value.trim();
+    handleSuccessfulBarcodeScan(val);
+    input.value = "";
   }
 
   function handleSuccessfulBarcodeScan(code) {
@@ -2777,6 +2971,38 @@
     $("#scanner-switch-camera-btn")?.addEventListener("click", async () => {
       currentCameraFacing = currentCameraFacing === "environment" ? "user" : "environment";
       await startHtml5Scanner();
+    });
+
+    // Native Camera Snap & Gallery File triggers
+    $("#scanner-snap-btn")?.addEventListener("click", () => {
+      $("#scanner-camera-snap-input")?.click();
+    });
+
+    $("#scanner-upload-btn")?.addEventListener("click", () => {
+      $("#scanner-gallery-upload-input")?.click();
+    });
+
+    $("#scanner-camera-snap-input")?.addEventListener("change", (e) => {
+      if (e.target.files && e.target.files[0]) {
+        processBarcodeImage(e.target.files[0]);
+        e.target.value = "";
+      }
+    });
+
+    $("#scanner-gallery-upload-input")?.addEventListener("change", (e) => {
+      if (e.target.files && e.target.files[0]) {
+        processBarcodeImage(e.target.files[0]);
+        e.target.value = "";
+      }
+    });
+
+    // Manual Barcode / IMEI text submit
+    $("#scanner-manual-submit-btn")?.addEventListener("click", handleManualBarcodeSubmit);
+    $("#scanner-manual-input")?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleManualBarcodeSubmit();
+      }
     });
 
     // Global Keyboard Shortcuts

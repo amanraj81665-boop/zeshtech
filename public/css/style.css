@@ -4971,5 +4971,31 @@ select {
   border-radius: 10px;
 }
 
+#barcode-scanner-reader {
+  width: 100% !important;
+  min-height: 200px;
+}
+
+#barcode-scanner-reader-wrap canvas {
+  display: none !important;
+}
+
+#barcode-scanner-reader-wrap img {
+  max-width: 100% !important;
+  max-height: 240px !important;
+  object-fit: contain !important;
+  margin: 0 auto;
+  display: block;
+}
+
+#scanner-snap-btn:hover {
+  filter: brightness(1.1);
+}
+
+#scanner-snap-btn:active, #scanner-upload-btn:active {
+  transform: scale(0.97);
+}
+
+
 
 
