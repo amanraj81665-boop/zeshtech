@@ -1838,8 +1838,58 @@
   }
 
   /* ==========================================================================
-     Live Camera Barcode & IMEI Scanner Controller (Live Stream + Direct Photo Snap)
+     Live Camera Barcode & IMEI Scanner Controller (Triple Engine: Native + Quagga2 + Html5Qrcode)
      ========================================================================== */
+
+  // Loud, crisp POS barcode scanner beep (dual WebAudio oscillator + 8-bit WAV audio fallback)
+  const POS_BEEP_WAV_BASE64 = "data:audio/wav;base64,UklGRuQDAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YcADAACA9qUVOdThSQ2S+JINSeHUORWl9oAJWurGKx628m0IbfK2HivG6loJf/alFTnU4UkNkviSDUnh1DkVpfaACVrqxisetvJtCG3yth4rxupaCX/2pRU51OFJDZL4kg1J4dQ5FaX2gAla6sYrHrbybQht8rYeK8bqWgl/9qUVOdThSQ2S+JINSeHUORWl9n8JWurGKx628m0IbfK2HivG6loJf/alFTnU4UkNkviSDUnh1DkVpfaACVrqxisetvJtCG3yth4rxupaCX/2pRU51OFJDZL4kg1J4dQ5FaX2fwla6sYrHrbybQht8rYeK8bqWgl/9qUVOdThSQ2S+JINSeHUORWl9oAJWurGKx628m0IbfK2HivG6loJgPalFTnU4UkNkviSDUnh1DkVpfaACVrqxisetvJtCG3yth4rxupaCX/2pRU51OFJDZL4kg1J4dQ5FaX2gAla6sYrHrbybQht8rYeK8bqWgl/9qUVOdThSQ2S+JINSeHUORWl9oAJWurGKx628m0IbfK2HivG6loJf/alFTnU4UkNkviSDUnh1DkVpfaACVrqxisetvJtCG3yth4rxupaCYD2pRU51OFJDZL4kg1J4dQ5FaX2fwla6sYrHrbybQht8rYeK8bqWgl/9qUVOdThSQ2S+JINSeHUORWl9oAJWurGKx628m0IbfK2HivG6loJf/alFTnU4UkNkviSDUnh1DkVpfaACVrqxisetvJtCG3yth4rxupaCYD2pRU51OFJDZL4kg1J4dQ5FaX2gAla6sYrHrbybQht8rYeK8bqWgl/9qUVOdThSQ2S+JINSeHUORWl9oAJWurGKx628m0IbfK2HivG6loJf/alFTnU4UkNkviSDUnh1DkVpfaACVrqxisetvJtCG3yth4rxupaCX/2pRU51OFJDZL4kg1J4dQ5FaX2gAla6sYrHrbybQht8rYeK8bqWgl/9qUVOdThSQ2S+JINSeHUORWl9oAJWurGKx628m0IbfK2HivG6loJf/alFTnU4UkNkviSDUnh1DkVpfaACVrqxisetvJtCG3yth4rxupaCX/2pRU51OFJDZL4kg1J4dQ5FaX2gAla6sYrHrbybQht8rYeK8bqWgl/9qUVOdThSQ2S+JINSeHUORWl9oAJWurGKx628m0IbfK2HivG6loJgPalFTnU4UkNkviSDUnh1DkVpfZ/CVrqxisetvJtCG3yth4rxupaCYD2pRU51OFJDZL4kg1J4dQ5FaX2gAla6sYrHrbybQht8rYeK8bqWgk=";
+  let scanAudioCtx = null;
+
+  function initScanAudio() {
+    try {
+      if (!scanAudioCtx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) scanAudioCtx = new AudioCtx();
+      }
+      if (scanAudioCtx && scanAudioCtx.state === "suspended") {
+        scanAudioCtx.resume();
+      }
+    } catch (e) {}
+  }
+
+  function playScanBeep() {
+    // 1. Web Audio Frequency Chirp (High pitch POS chime)
+    try {
+      initScanAudio();
+      if (scanAudioCtx) {
+        const osc = scanAudioCtx.createOscillator();
+        const gain = scanAudioCtx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(1900, scanAudioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(2500, scanAudioCtx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.5, scanAudioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, scanAudioCtx.currentTime + 0.16);
+        osc.connect(gain);
+        gain.connect(scanAudioCtx.destination);
+        osc.start(scanAudioCtx.currentTime);
+        osc.stop(scanAudioCtx.currentTime + 0.16);
+      }
+    } catch (e) {}
+
+    // 2. Guaranteed Audio Element Fallback
+    try {
+      const audio = new Audio(POS_BEEP_WAV_BASE64);
+      audio.volume = 0.9;
+      audio.play().catch(() => {});
+    } catch (e) {}
+
+    // 3. Physical Haptic Vibration Feedback on Mobile Devices
+    try {
+      if (navigator.vibrate) {
+        navigator.vibrate([70, 30, 70]);
+      }
+    } catch (e) {}
+  }
 
   let html5QrCodeScanner = null;
   let currentScannerTargetFieldId = null;
@@ -1848,24 +1898,6 @@
   let currentScannerContext = "add"; // "add" or "edit"
   let currentCameraFacing = "environment";
   let isScanningActive = false;
-
-  function playScanBeep() {
-    try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(1850, ctx.currentTime);
-      gain.gain.setValueAtTime(0.35, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.12);
-    } catch (e) {}
-  }
 
   function getScannerSupportedFormats() {
     if (typeof Html5QrcodeSupportedFormats !== "undefined") {
@@ -1901,19 +1933,23 @@
   }
 
   async function openBarcodeScanner(options = {}) {
+    initScanAudio();
     const modal = $("#admin-barcode-scanner-modal");
     if (!modal) return;
 
     currentScannerMode = options.mode || "field";
     currentScannerTargetFieldId = options.targetFieldId || null;
-    currentScannerTargetLabel = options.label || (currentScannerMode === "pos" ? "POS Barcode" : "Auto-Detect");
+    currentScannerTargetLabel = options.label || (currentScannerMode === "pos" ? "POS Barcode" : "Box Auto-Detect");
     currentScannerContext = options.context || "add";
 
     const labelEl = $("#scanner-target-label");
     if (labelEl) labelEl.textContent = currentScannerTargetLabel;
 
     const feedbackEl = $("#scanner-feedback-msg");
-    if (feedbackEl) feedbackEl.textContent = "";
+    if (feedbackEl) {
+      feedbackEl.style.color = "#22c55e";
+      feedbackEl.textContent = "";
+    }
 
     const manualInput = $("#scanner-manual-input");
     if (manualInput) manualInput.value = "";
@@ -1942,26 +1978,27 @@
     const statusText = document.getElementById("scanner-status-text");
     const switchBtn = document.getElementById("scanner-switch-camera-btn");
 
-    // Check mediaDevices & secure context (browsers block live getUserMedia on non-localhost HTTP)
+    // Check mediaDevices & secure context
     const hasMedia = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
     const isSecureOrLocal = window.isSecureContext || location.hostname === "localhost" || location.hostname === "127.0.0.1";
 
     if (!hasMedia || !isSecureOrLocal) {
-      // Live video not supported in this browser context (e.g. mobile on HTTP IP address)
       if (readerWrap) readerWrap.style.display = "none";
       if (switchBtn) switchBtn.style.display = "none";
       if (statusBanner) {
         statusBanner.style.display = "block";
         if (statusText) {
-          statusText.innerHTML = "<strong>Mobile Browser Security Notice:</strong> Live video requires HTTPS. Tap <strong>📸 Snap Box Photo</strong> below to snap barcode directly with your phone camera!";
+          statusText.innerHTML = "<strong>Camera Ready:</strong> Tap the blue <strong>📸 Snap Box Photo</strong> button below to open your phone camera and scan instantly!";
         }
       }
       const feedbackEl = $("#scanner-feedback-msg");
-      if (feedbackEl) feedbackEl.textContent = "👉 Tap 'Snap Box Photo' to snap barcode";
+      if (feedbackEl) {
+        feedbackEl.style.color = "#38bdf8";
+        feedbackEl.textContent = "👉 Tap 'Snap Box Photo' to capture box barcode";
+      }
       return;
     }
 
-    // Live video stream is available
     if (readerWrap) readerWrap.style.display = "block";
     if (statusBanner) statusBanner.style.display = "none";
     if (switchBtn) switchBtn.style.display = "flex";
@@ -1977,10 +2014,7 @@
     }
 
     ensureHtml5ScannerInstance();
-    if (!html5QrCodeScanner) {
-      showToast("Initializing scanner...", "info");
-      return;
-    }
+    if (!html5QrCodeScanner) return;
 
     isScanningActive = true;
 
@@ -1999,13 +2033,15 @@
         }
       } catch (e) {}
 
+      // Optimized qrbox horizontal slot specifically shaped for phone box barcodes
       const config = {
-        fps: 20,
-        aspectRatio: 1.33,
-        videoConstraints: {
-          width: { min: 640, ideal: 1280, max: 1920 },
-          height: { min: 480, ideal: 720, max: 1080 }
-        }
+        fps: 25,
+        qrbox: (viewWidth, viewHeight) => {
+          const w = Math.min(Math.floor(viewWidth * 0.92), 360);
+          const h = Math.min(Math.floor(viewHeight * 0.55), 180);
+          return { width: Math.max(w, 220), height: Math.max(h, 90) };
+        },
+        aspectRatio: 1.333333
       };
 
       await html5QrCodeScanner.start(
@@ -2018,44 +2054,53 @@
         () => {}
       );
     } catch (err) {
-      console.warn("Live camera start failed, falling back to Snap Photo mode:", err);
-      // DO NOT close modal! Gracefully show camera snap buttons!
+      console.warn("Live camera start failed, switching to photo mode:", err);
       if (readerWrap) readerWrap.style.display = "none";
       if (switchBtn) switchBtn.style.display = "none";
       if (statusBanner) {
         statusBanner.style.display = "block";
         if (statusText) {
-          statusText.innerHTML = "Live camera preview unavailable (" + (err.message || err || "permission denied") + ").<br>Tap <strong>📸 Snap Box Photo</strong> below to capture barcode directly!";
+          statusText.innerHTML = "Live camera preview unavailable.<br>Tap <strong>📸 Snap Box Photo</strong> below to capture barcode directly!";
         }
       }
       const feedbackEl = $("#scanner-feedback-msg");
-      if (feedbackEl) feedbackEl.textContent = "👉 Tap 'Snap Box Photo' to capture barcode";
+      if (feedbackEl) {
+        feedbackEl.style.color = "#38bdf8";
+        feedbackEl.textContent = "👉 Tap 'Snap Box Photo' to capture barcode";
+      }
     }
   }
 
-  function normalizeImageForBarcode(file, maxDimension = 1400) {
+  function renderTransformedImage(file, { angle = 0, contrast = 1.0, maxDim = 1200 } = {}) {
     return new Promise((resolve) => {
       const img = new Image();
       const url = URL.createObjectURL(file);
       img.onload = () => {
         URL.revokeObjectURL(url);
-        let w = img.width;
-        let h = img.height;
-        if (w > maxDimension || h > maxDimension) {
-          if (w > h) {
-            h = Math.round((h * maxDimension) / w);
-            w = maxDimension;
-          } else {
-            w = Math.round((w * maxDimension) / h);
-            h = maxDimension;
-          }
-        }
+        let origW = img.width;
+        let origH = img.height;
+        let scale = Math.min(1, maxDim / Math.max(origW, origH));
+        let w = Math.round(origW * scale);
+        let h = Math.round(origH * scale);
+
         const canvas = document.createElement("canvas");
-        canvas.width = w;
-        canvas.height = h;
         const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, w, h);
-        canvas.toBlob((blob) => resolve(blob), "image/jpeg", 0.92);
+
+        if (angle === 90 || angle === 270) {
+          canvas.width = h;
+          canvas.height = w;
+        } else {
+          canvas.width = w;
+          canvas.height = h;
+        }
+
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate((angle * Math.PI) / 180);
+        if (contrast !== 1.0) {
+          ctx.filter = `contrast(${contrast})`;
+        }
+        ctx.drawImage(img, -w / 2, -h / 2, w, h);
+        canvas.toBlob((blob) => resolve(blob), "image/jpeg", 0.9);
       };
       img.onerror = () => resolve(null);
       img.src = url;
@@ -2064,74 +2109,252 @@
 
   async function processBarcodeImage(file) {
     if (!file) return;
+    initScanAudio();
+
     const feedbackEl = $("#scanner-feedback-msg");
-    if (feedbackEl) feedbackEl.textContent = "⏳ Scanning image for barcode...";
-    showToast("Analyzing barcode photo...", "info");
+    if (feedbackEl) {
+      feedbackEl.style.color = "#38bdf8";
+      feedbackEl.textContent = "⏳ Analyzing phone box barcode...";
+    }
+    showToast("Scanning box barcode...", "info");
+
+    // Stop live camera to release device and avoid "Cannot start file scan - ongoing camera scan" error!
+    if (html5QrCodeScanner && html5QrCodeScanner.isScanning) {
+      try {
+        await html5QrCodeScanner.stop();
+      } catch (e) {}
+    }
+
+    const detectedCodes = [];
+
+    function addDetectedCode(val) {
+      if (!val) return;
+      const clean = String(val).trim();
+      if (clean && !detectedCodes.includes(clean)) {
+        detectedCodes.push(clean);
+      }
+    }
 
     try {
-      // Step 1: Native BarcodeDetector (Supported in modern Chrome Android & Desktop)
+      // Pass 1: Browser Native BarcodeDetector (Hardware Accelerated)
       if ("BarcodeDetector" in window) {
         try {
-          const detector = new window.BarcodeDetector({
-            formats: ["code_128", "code_39", "ean_13", "ean_8", "upc_a", "upc_e", "qr_code", "data_matrix"]
-          });
-          const bitmap = await createImageBitmap(file);
-          const detected = await detector.detect(bitmap);
-          if (detected && detected.length > 0 && detected[0].rawValue) {
-            handleSuccessfulBarcodeScan(detected[0].rawValue.trim());
-            return;
+          const supported = await window.BarcodeDetector.getSupportedFormats();
+          const wanted = ["code_128", "code_39", "ean_13", "ean_8", "upc_a", "upc_e", "qr_code", "data_matrix"];
+          const formatsToUse = wanted.filter(f => supported.includes(f));
+          if (formatsToUse.length > 0) {
+            const detector = new window.BarcodeDetector({ formats: formatsToUse });
+            const bitmap = await createImageBitmap(file);
+            const results = await detector.detect(bitmap);
+            if (results && results.length > 0) {
+              results.forEach(r => addDetectedCode(r.rawValue));
+            }
           }
         } catch (bdErr) {
-          console.warn("Native BarcodeDetector pass failed, trying Html5Qrcode:", bdErr);
+          console.warn("Native BarcodeDetector pass:", bdErr);
         }
       }
 
-      // Step 2: Ensure scanner instance exists
-      ensureHtml5ScannerInstance();
-
-      // Step 3: Decode directly via html5QrCodeScanner.scanFile
-      try {
-        const decodedText = await html5QrCodeScanner.scanFile(file, false);
-        if (decodedText) {
-          handleSuccessfulBarcodeScan(decodedText.trim());
-          return;
-        }
-      } catch (scanErr) {
-        console.warn("Direct scanFile pass failed, trying normalized canvas pass:", scanErr);
-      }
-
-      // Step 4: Scale down onto normalized canvas for ZXing barcode engine (max 1400px)
-      const normalizedBlob = await normalizeImageForBarcode(file);
-      if (normalizedBlob) {
-        if ("BarcodeDetector" in window) {
-          try {
-            const detector = new window.BarcodeDetector({
-              formats: ["code_128", "code_39", "ean_13", "ean_8", "upc_a", "upc_e", "qr_code", "data_matrix"]
+      // Pass 2: Quagga2 Dedicated 1D Code 128 & Barcode Locator
+      if (typeof Quagga !== "undefined") {
+        try {
+          const objectUrl = URL.createObjectURL(file);
+          const quaggaCode = await new Promise((resolve) => {
+            Quagga.decodeSingle({
+              src: objectUrl,
+              numOfWorkers: 0,
+              locate: true,
+              locator: {
+                patchSize: "medium",
+                halfSample: true
+              },
+              decoder: {
+                readers: [
+                  "code_128_reader",
+                  "code_39_reader",
+                  "ean_reader",
+                  "upc_reader"
+                ]
+              }
+            }, (res) => {
+              URL.revokeObjectURL(objectUrl);
+              if (res && res.codeResult && res.codeResult.code) {
+                resolve(res.codeResult.code);
+              } else {
+                resolve(null);
+              }
             });
-            const bitmap = await createImageBitmap(normalizedBlob);
-            const detected = await detector.detect(bitmap);
-            if (detected && detected.length > 0 && detected[0].rawValue) {
-              handleSuccessfulBarcodeScan(detected[0].rawValue.trim());
-              return;
+          });
+          if (quaggaCode) addDetectedCode(quaggaCode);
+        } catch (qErr) {
+          console.warn("Quagga pass error:", qErr);
+        }
+      }
+
+      // Pass 3: Multi-Angle Rotations (0, 90, 270 deg) & High-Contrast ZXing / Quagga
+      const angles = [0, 90, 270];
+      for (const angle of angles) {
+        if (detectedCodes.length >= 2) break; // Found both IMEIs, done!
+        try {
+          const processedBlob = await renderTransformedImage(file, { angle, contrast: 1.35, maxDim: 1400 });
+          if (processedBlob) {
+            if (typeof Quagga !== "undefined" && angle !== 0) {
+              const rotatedUrl = URL.createObjectURL(processedBlob);
+              const qCode = await new Promise((resolve) => {
+                Quagga.decodeSingle({
+                  src: rotatedUrl,
+                  numOfWorkers: 0,
+                  locate: true,
+                  decoder: { readers: ["code_128_reader", "code_39_reader", "ean_reader"] }
+                }, (res) => {
+                  URL.revokeObjectURL(rotatedUrl);
+                  resolve(res?.codeResult?.code || null);
+                });
+              });
+              if (qCode) addDetectedCode(qCode);
             }
+
+            ensureHtml5ScannerInstance();
+            if (html5QrCodeScanner) {
+              const pFile = new File([processedBlob], `scan_${angle}.jpg`, { type: "image/jpeg" });
+              try {
+                const zCode = await html5QrCodeScanner.scanFile(pFile, false);
+                if (zCode) addDetectedCode(zCode);
+              } catch (e) {}
+            }
+          }
+        } catch (e) {}
+      }
+
+      // Pass 4: Direct scanFile with Html5Qrcode (with TRY_HARDER enabled)
+      if (detectedCodes.length === 0) {
+        ensureHtml5ScannerInstance();
+        if (html5QrCodeScanner) {
+          try {
+            const directCode = await html5QrCodeScanner.scanFile(file, false);
+            if (directCode) addDetectedCode(directCode);
           } catch (e) {}
         }
-
-        const normalizedFile = new File([normalizedBlob], "barcode.jpg", { type: "image/jpeg" });
-        const decoded = await html5QrCodeScanner.scanFile(normalizedFile, false);
-        if (decoded) {
-          handleSuccessfulBarcodeScan(decoded.trim());
-          return;
-        }
       }
 
-      if (feedbackEl) feedbackEl.textContent = "❌ Barcode not detected. Please take a closer photo with good lighting.";
-      showToast("Barcode not detected. Please try a closer, clearer photo.", "error");
+      // Evaluate and auto-fill data!
+      if (detectedCodes.length > 0) {
+        handleBatchBarcodeResults(detectedCodes);
+      } else {
+        if (feedbackEl) {
+          feedbackEl.style.color = "#f87171";
+          feedbackEl.textContent = "❌ Barcode not detected. Please take a closer photo with good lighting or type below.";
+        }
+        showToast("Barcode not detected. Please try a closer, well-lit photo.", "error");
+      }
     } catch (err) {
-      console.error("Barcode image processing error:", err);
-      if (feedbackEl) feedbackEl.textContent = "❌ Could not read barcode. Try snapping closer.";
-      showToast("Could not read barcode from photo. Please try a closer shot.", "error");
+      console.error("Barcode processing error:", err);
+      if (feedbackEl) {
+        feedbackEl.style.color = "#f87171";
+        feedbackEl.textContent = "❌ Could not process image. Try snapping closer.";
+      }
+      showToast("Could not read barcode. Please try a closer shot.", "error");
     }
+  }
+
+  function handleBatchBarcodeResults(codes) {
+    if (!codes || codes.length === 0) return;
+    playScanBeep();
+
+    const imeis = [];
+    const serials = [];
+    const others = [];
+
+    // Classify all detected codes from the box
+    codes.forEach(c => {
+      const clean = c.replace(/\s+/g, " ").trim();
+      // Strip common prefixes found on phone box barcodes (e.g. "S/N: JX...", "IMEI1: 35...", "MEID: ...")
+      const stripped = clean.replace(/^(SN|S\/N|SERIAL|IMEI1?|IMEI2?|MEID)[\s:]*/i, "").trim();
+      const numOnly = stripped.replace(/\D/g, "");
+
+      if (numOnly.length === 15) {
+        // Standard 15-digit IMEI
+        if (!imeis.includes(numOnly)) imeis.push(numOnly);
+      } else if (/^[A-Za-z0-9]{8,18}$/.test(stripped) && !serials.includes(stripped)) {
+        serials.push(stripped);
+      } else {
+        if (!others.includes(stripped)) others.push(stripped);
+      }
+    });
+
+    const prefix = currentScannerContext === "edit" ? "edit-prod-" : "add-prod-";
+    const sInput = document.getElementById(prefix + "serial");
+    const i1Input = document.getElementById(prefix + "imei1");
+    const i2Input = document.getElementById(prefix + "imei2");
+    const skuInput = document.getElementById(prefix + "sku");
+
+    const feedbackEl = $("#scanner-feedback-msg");
+    const reportParts = [];
+
+    // Mode A: Targeted Field Scan (user clicked specific 📷 button next to IMEI 1, S/N, etc.)
+    if (currentScannerMode === "field" && currentScannerTargetFieldId) {
+      const targetInput = document.getElementById(currentScannerTargetFieldId);
+      if (targetInput) {
+        let chosenVal = codes[0];
+        if (currentScannerTargetFieldId.includes("imei")) {
+          chosenVal = imeis[0] || codes[0];
+        } else if (currentScannerTargetFieldId.includes("serial")) {
+          chosenVal = serials[0] || codes[0];
+        }
+        targetInput.value = chosenVal;
+        targetInput.classList.add("scanned-highlight");
+        setTimeout(() => targetInput.classList.remove("scanned-highlight"), 1500);
+        showToast(`✓ Scanned ${currentScannerTargetLabel}: ${chosenVal}`, "success");
+        if (feedbackEl) {
+          feedbackEl.style.color = "#22c55e";
+          feedbackEl.textContent = `✓ Scanned ${currentScannerTargetLabel}: ${chosenVal}`;
+        }
+      }
+      setTimeout(closeBarcodeScanner, 400);
+      return;
+    }
+
+    // Mode B: POS Counter Scan
+    if (currentScannerMode === "pos") {
+      const codeToMatch = imeis[0] || serials[0] || codes[0];
+      handlePosBarcodeScanned(codeToMatch);
+      setTimeout(closeBarcodeScanner, 400);
+      return;
+    }
+
+    // Mode C: Smart Box Quick Scan (Auto-Fills ALL matching box fields at once!)
+    if (imeis.length >= 1 && i1Input) {
+      i1Input.value = imeis[0];
+      i1Input.classList.add("scanned-highlight");
+      setTimeout(() => i1Input.classList.remove("scanned-highlight"), 1500);
+      reportParts.push(`IMEI 1: ${imeis[0]}`);
+    }
+    if (imeis.length >= 2 && i2Input) {
+      i2Input.value = imeis[1];
+      i2Input.classList.add("scanned-highlight");
+      setTimeout(() => i2Input.classList.remove("scanned-highlight"), 1500);
+      reportParts.push(`IMEI 2: ${imeis[1]}`);
+    }
+    if (serials.length >= 1 && sInput) {
+      sInput.value = serials[0];
+      sInput.classList.add("scanned-highlight");
+      setTimeout(() => sInput.classList.remove("scanned-highlight"), 1500);
+      reportParts.push(`S/N: ${serials[0]}`);
+    }
+    if (others.length >= 1 && skuInput && !skuInput.value.trim()) {
+      skuInput.value = others[0];
+      skuInput.classList.add("scanned-highlight");
+      setTimeout(() => skuInput.classList.remove("scanned-highlight"), 1500);
+      reportParts.push(`Barcode: ${others[0]}`);
+    }
+
+    const summary = reportParts.length > 0 ? reportParts.join(" | ") : `Scanned: ${codes[0]}`;
+    if (feedbackEl) {
+      feedbackEl.style.color = "#22c55e";
+      feedbackEl.textContent = `✓ Auto-Filled: ${summary}`;
+    }
+    showToast(`✓ Box Scanned: ${summary}`, "success");
+    setTimeout(closeBarcodeScanner, 500);
   }
 
   function handleManualBarcodeSubmit() {
@@ -2148,70 +2371,7 @@
   function handleSuccessfulBarcodeScan(code) {
     if (!code) return;
     isScanningActive = false;
-    playScanBeep();
-
-    const feedbackEl = $("#scanner-feedback-msg");
-    if (feedbackEl) feedbackEl.textContent = `✓ Scanned: ${code}`;
-
-    // Mode 1: Targeted Field Scan (e.g. user clicked 📷 next to IMEI 1, IMEI 2, S/N, or SKU)
-    if (currentScannerMode === "field" && currentScannerTargetFieldId) {
-      const targetInput = document.getElementById(currentScannerTargetFieldId);
-      if (targetInput) {
-        targetInput.value = code;
-        targetInput.classList.add("scanned-highlight");
-        setTimeout(() => targetInput.classList.remove("scanned-highlight"), 1500);
-        showToast(`✓ Scanned ${currentScannerTargetLabel}: ${code}`, "success");
-      }
-      setTimeout(closeBarcodeScanner, 350);
-      return;
-    }
-
-    // Mode 2: POS Counter Scan (Direct add product to active bill)
-    if (currentScannerMode === "pos") {
-      handlePosBarcodeScanned(code);
-      setTimeout(closeBarcodeScanner, 350);
-      return;
-    }
-
-    // Mode 3: Smart Box Quick Scan (Auto-detects whether it's IMEI 1, IMEI 2, or S/N)
-    if (currentScannerMode === "smart-box") {
-      const prefix = currentScannerContext === "edit" ? "edit-prod-" : "add-prod-";
-      const sInput = document.getElementById(prefix + "serial");
-      const i1Input = document.getElementById(prefix + "imei1");
-      const i2Input = document.getElementById(prefix + "imei2");
-
-      const cleanNum = code.replace(/\D/g, "");
-
-      // 15-digit numeric pattern is standard mobile IMEI
-      if (cleanNum.length === 15) {
-        if (i1Input && !i1Input.value.trim()) {
-          i1Input.value = cleanNum;
-          i1Input.classList.add("scanned-highlight");
-          setTimeout(() => i1Input.classList.remove("scanned-highlight"), 1500);
-          showToast(`✓ Auto-detected IMEI 1: ${cleanNum}`, "success");
-        } else if (i2Input && !i2Input.value.trim()) {
-          i2Input.value = cleanNum;
-          i2Input.classList.add("scanned-highlight");
-          setTimeout(() => i2Input.classList.remove("scanned-highlight"), 1500);
-          showToast(`✓ Auto-detected IMEI 2: ${cleanNum}`, "success");
-        } else if (i1Input) {
-          i1Input.value = cleanNum;
-          i1Input.classList.add("scanned-highlight");
-          setTimeout(() => i1Input.classList.remove("scanned-highlight"), 1500);
-          showToast(`✓ Updated IMEI 1: ${cleanNum}`, "success");
-        }
-      } else {
-        // Alphanumeric code or non-15 digit is Serial Number (S/N)
-        if (sInput) {
-          sInput.value = code;
-          sInput.classList.add("scanned-highlight");
-          setTimeout(() => sInput.classList.remove("scanned-highlight"), 1500);
-          showToast(`✓ Auto-detected Serial (S/N): ${code}`, "success");
-        }
-      }
-
-      setTimeout(closeBarcodeScanner, 400);
-    }
+    handleBatchBarcodeResults([code]);
   }
 
   function handlePosBarcodeScanned(code) {
