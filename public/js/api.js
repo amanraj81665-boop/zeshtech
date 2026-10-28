@@ -8,36 +8,52 @@ const API_BASE = "/api";
 ========================================= */
 
 const api = {
-  token: sessionStorage.getItem("zesh_admin_token") || localStorage.getItem("zesh_admin_token") || "",
+  token: localStorage.getItem("zesh_admin_token") || sessionStorage.getItem("zesh_admin_token") || localStorage.getItem("zesh_token") || "",
 
-  setToken(token, persist = false) {
+  getToken() {
+    if (!this.token) {
+      this.token = localStorage.getItem("zesh_admin_token") ||
+                   sessionStorage.getItem("zesh_admin_token") ||
+                   localStorage.getItem("zesh_token") ||
+                   sessionStorage.getItem("zesh_token") ||
+                   "";
+    }
+    return this.token;
+  },
+
+  setToken(token, persist = true) {
     this.token = token || "";
     if (this.token) {
       sessionStorage.setItem("zesh_admin_token", this.token);
-      if (persist) localStorage.setItem("zesh_admin_token", this.token);
+      localStorage.setItem("zesh_admin_token", this.token);
+      localStorage.setItem("zesh_token", this.token);
     } else {
       sessionStorage.removeItem("zesh_admin_token");
       localStorage.removeItem("zesh_admin_token");
       sessionStorage.removeItem("zesh_admin_user");
+      localStorage.removeItem("zesh_admin_user");
+      localStorage.removeItem("zesh_token");
     }
   },
 
   getUser() {
     try {
-      return JSON.parse(sessionStorage.getItem("zesh_admin_user") || "null");
+      const stored = sessionStorage.getItem("zesh_admin_user") || localStorage.getItem("zesh_admin_user");
+      return JSON.parse(stored || "null");
     } catch {
       return null;
     }
   },
 
   async request(path, options = {}) {
+    const token = this.getToken();
     const headers = {
       "Content-Type": "application/json",
       ...(options.headers || {})
     };
 
-    if (this.token) {
-      headers.Authorization = `Bearer ${this.token}`;
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
     }
 
     const response = await fetch(`${API_BASE}${path}`, {
@@ -50,6 +66,9 @@ const api = {
     if (!response.ok) {
       if (response.status === 401) {
         this.setToken("");
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("zesh:auth_expired", { detail: { path } }));
+        }
       }
       throw new Error(data.message || `Request failed with status ${response.status}`);
     }
@@ -58,7 +77,7 @@ const api = {
   },
 
   // Authentication
-  async login(email, password, remember = false) {
+  async login(email, password, remember = true) {
     const data = await this.request("/auth/login", {
       method: "POST",
       body: JSON.stringify({ email, password })
@@ -68,8 +87,9 @@ const api = {
       throw new Error("Admin privileges required to access the Owner Portal.");
     }
 
-    this.setToken(data.token, remember);
+    this.setToken(data.token, true);
     sessionStorage.setItem("zesh_admin_user", JSON.stringify(data.user));
+    localStorage.setItem("zesh_admin_user", JSON.stringify(data.user));
     return data.user;
   },
 
@@ -146,9 +166,10 @@ const api = {
     const formData = new FormData();
     formData.append("image", file);
 
+    const token = this.getToken();
     const headers = {};
-    if (this.token) {
-      headers.Authorization = `Bearer ${this.token}`;
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
     }
 
     const res = await fetch(`${API_BASE}/uploads/product-image`, {
@@ -166,11 +187,13 @@ const api = {
 
   async uploadProductImages(files) {
     const formData = new FormData();
-    Array.from(files).forEach(f => formData.append("images", f));
+    const fileList = Array.from(files || []);
+    fileList.forEach(f => formData.append("images", f));
 
+    const token = this.getToken();
     const headers = {};
-    if (this.token) {
-      headers.Authorization = `Bearer ${this.token}`;
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
     }
 
     const res = await fetch(`${API_BASE}/uploads/product-images`, {

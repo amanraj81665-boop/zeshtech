@@ -1608,12 +1608,140 @@
     }
   }
 
+  // Image File Management State for Admin
+  let addProductImageFiles = [];
+  let editProductImageFiles = [];
+  let editProductExistingImages = [];
+
+  function renderAddProductImagesPreview() {
+    const previewBox = $("#add-product-files-preview");
+    const countLabel = $("#add-prod-file-count");
+    const clearBtn = $("#add-prod-clear-files-btn");
+    if (!previewBox) return;
+    previewBox.innerHTML = "";
+
+    if (countLabel) {
+      countLabel.textContent = `${addProductImageFiles.length} photo${addProductImageFiles.length === 1 ? "" : "s"} ready`;
+    }
+    if (clearBtn) {
+      clearBtn.style.display = addProductImageFiles.length > 0 ? "inline-block" : "none";
+    }
+
+    addProductImageFiles.forEach((file, index) => {
+      const wrap = document.createElement("div");
+      wrap.style.cssText = "position:relative; width:64px; height:64px; border-radius:8px; overflow:hidden; border:1px solid #3b82f6; background:#0f172a; flex-shrink:0;";
+      const isPrimary = index === 0;
+
+      const img = document.createElement("img");
+      img.style.cssText = "width:100%; height:100%; object-fit:contain;";
+      const reader = new FileReader();
+      reader.onload = (ev) => { img.src = ev.target.result; };
+      reader.readAsDataURL(file);
+
+      const delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.textContent = "✕";
+      delBtn.title = "Remove this photo";
+      delBtn.style.cssText = "position:absolute; top:2px; right:2px; width:18px; height:18px; border-radius:50%; background:#ef4444; color:#fff; border:none; font-size:10px; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; line-height:1;";
+      delBtn.onclick = (e) => {
+        e.stopPropagation();
+        addProductImageFiles.splice(index, 1);
+        renderAddProductImagesPreview();
+      };
+
+      const badge = document.createElement("span");
+      badge.textContent = isPrimary ? "Cover" : `#${index + 1}`;
+      badge.style.cssText = `position:absolute; bottom:2px; left:2px; font-size:9px; background:${isPrimary ? '#2563eb' : 'rgba(0,0,0,0.7)'}; color:#fff; padding:1px 4px; border-radius:4px; font-weight:600;`;
+
+      wrap.appendChild(img);
+      wrap.appendChild(delBtn);
+      wrap.appendChild(badge);
+      previewBox.appendChild(wrap);
+    });
+  }
+
+  function renderEditProductImagesPreview() {
+    const existingBox = $("#edit-product-existing-preview");
+    const newBox = $("#edit-product-files-preview");
+    const countLabel = $("#edit-prod-file-count");
+    const clearBtn = $("#edit-prod-clear-files-btn");
+
+    if (countLabel) {
+      countLabel.textContent = `${editProductImageFiles.length} new photo(s)`;
+    }
+    if (clearBtn) {
+      clearBtn.style.display = editProductImageFiles.length > 0 ? "inline-block" : "none";
+    }
+
+    if (existingBox) {
+      existingBox.innerHTML = "";
+      editProductExistingImages.forEach((imgUrl, index) => {
+        const wrap = document.createElement("div");
+        wrap.style.cssText = "position:relative; width:56px; height:56px; border-radius:8px; overflow:hidden; border:1px solid #475569; background:#0f172a; flex-shrink:0;";
+        wrap.innerHTML = `
+          <img src="${escapeHTML(imgUrl)}" style="width:100%; height:100%; object-fit:contain;">
+          <span style="position:absolute; bottom:2px; left:2px; font-size:8px; background:${index === 0 ? '#2563eb' : 'rgba(0,0,0,0.6)'}; color:#fff; padding:1px 3px; border-radius:3px;">${index === 0 ? 'Cover' : '#' + (index + 1)}</span>
+        `;
+        const delBtn = document.createElement("button");
+        delBtn.type = "button";
+        delBtn.textContent = "✕";
+        delBtn.title = "Delete existing image";
+        delBtn.style.cssText = "position:absolute; top:2px; right:2px; width:16px; height:16px; border-radius:50%; background:#ef4444; color:#fff; border:none; font-size:9px; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;";
+        delBtn.onclick = (e) => {
+          e.stopPropagation();
+          editProductExistingImages.splice(index, 1);
+          renderEditProductImagesPreview();
+        };
+        wrap.appendChild(delBtn);
+        existingBox.appendChild(wrap);
+      });
+    }
+
+    if (newBox) {
+      newBox.innerHTML = "";
+      editProductImageFiles.forEach((file, index) => {
+        const wrap = document.createElement("div");
+        wrap.style.cssText = "position:relative; width:56px; height:56px; border-radius:8px; overflow:hidden; border:1px solid #38bdf8; background:#0f172a; flex-shrink:0;";
+        const img = document.createElement("img");
+        img.style.cssText = "width:100%; height:100%; object-fit:contain;";
+        const reader = new FileReader();
+        reader.onload = (ev) => { img.src = ev.target.result; };
+        reader.readAsDataURL(file);
+
+        const delBtn = document.createElement("button");
+        delBtn.type = "button";
+        delBtn.textContent = "✕";
+        delBtn.style.cssText = "position:absolute; top:2px; right:2px; width:16px; height:16px; border-radius:50%; background:#ef4444; color:#fff; border:none; font-size:9px; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;";
+        delBtn.onclick = (e) => {
+          e.stopPropagation();
+          editProductImageFiles.splice(index, 1);
+          renderEditProductImagesPreview();
+        };
+
+        const badge = document.createElement("span");
+        badge.textContent = "New";
+        badge.style.cssText = "position:absolute; bottom:2px; left:2px; font-size:8px; background:#10b981; color:#fff; padding:1px 3px; border-radius:3px; font-weight:600;";
+
+        wrap.appendChild(img);
+        wrap.appendChild(delBtn);
+        wrap.appendChild(badge);
+        newBox.appendChild(wrap);
+      });
+    }
+  }
+
   // Add Product Form
   async function handleAddProductSubmit(e) {
     e.preventDefault();
     const form = e.target;
     const btn = $("#add-product-submit-btn");
     const errBox = $("#add-product-error");
+
+    if (!zeshAPI.getToken()) {
+      showToast("Please log in to your Admin account first", "error");
+      showLoginScreen();
+      return;
+    }
 
     const formData = new FormData(form);
     const productPayload = {
@@ -1629,7 +1757,8 @@
       sellingPrice: parseFloat(formData.get("sellingPrice")),
       stockQuantity: parseInt(formData.get("stockQuantity"), 10),
       description: formData.get("description")?.trim() || "",
-      imageUrl: formData.get("imageUrl")?.trim() || ""
+      imageUrl: formData.get("imageUrl")?.trim() || "",
+      images: []
     };
 
     try {
@@ -1637,22 +1766,24 @@
       btn.textContent = "Saving to Catalogue...";
       if (errBox) errBox.classList.add("hidden");
 
-      // Check if file upload is selected (single or multiple)
-      const fileInput = $("#add-product-file-input");
-      if (fileInput && fileInput.files && fileInput.files.length > 0) {
-        if (fileInput.files.length === 1) {
-          btn.textContent = "Uploading image to Cloudinary...";
-          const uploadRes = await zeshAPI.uploadProductImage(fileInput.files[0]);
-          if (uploadRes && uploadRes.imageUrl) {
-            productPayload.imageUrl = uploadRes.imageUrl;
-            productPayload.images = [uploadRes.imageUrl];
+      // Check if user selected photos via the multi-file manager or file input
+      if (addProductImageFiles.length > 0) {
+        btn.textContent = `Uploading ${addProductImageFiles.length} photo(s) to Cloudinary...`;
+        const uploadRes = await zeshAPI.uploadProductImages(addProductImageFiles);
+        if (uploadRes && uploadRes.imageUrls && uploadRes.imageUrls.length > 0) {
+          productPayload.images = uploadRes.imageUrls;
+          if (!productPayload.imageUrl) {
+            productPayload.imageUrl = uploadRes.imageUrls[0];
           }
-        } else {
-          btn.textContent = `Uploading ${fileInput.files.length} images to Cloudinary...`;
+        }
+      } else {
+        const fileInput = $("#add-product-file-input");
+        if (fileInput && fileInput.files && fileInput.files.length > 0) {
+          btn.textContent = `Uploading ${fileInput.files.length} photo(s) to Cloudinary...`;
           const uploadRes = await zeshAPI.uploadProductImages(fileInput.files);
           if (uploadRes && uploadRes.imageUrls) {
             productPayload.images = uploadRes.imageUrls;
-            productPayload.imageUrl = uploadRes.imageUrls[0];
+            if (!productPayload.imageUrl) productPayload.imageUrl = uploadRes.imageUrls[0];
           }
         }
       }
@@ -1661,6 +1792,8 @@
       showToast(`Product "${productPayload.name}" created!`, "success");
 
       form.reset();
+      addProductImageFiles = [];
+      renderAddProductImagesPreview();
       $("#admin-add-product-modal")?.classList.remove("active");
       loadInventoryView();
       loadOverview();
@@ -1675,6 +1808,90 @@
     } finally {
       btn.disabled = false;
       btn.textContent = "Save to Catalogue";
+    }
+  }
+
+  function openEditProductModal(productId) {
+    const product = inventoryList.find(p => p._id === productId);
+    if (!product) return;
+
+    $("#edit-product-id").value = product._id;
+    $("#edit-prod-name").value = product.name || "";
+    $("#edit-prod-sku").value = product.sku || "";
+    $("#edit-prod-category").value = product.category || "Mobile";
+    $("#edit-prod-brand").value = product.brand || "";
+    $("#edit-prod-model").value = product.model || "";
+    if ($("#edit-prod-serial")) $("#edit-prod-serial").value = product.serialNumber || "";
+    if ($("#edit-prod-imei1")) $("#edit-prod-imei1").value = product.imei1 || "";
+    if ($("#edit-prod-imei2")) $("#edit-prod-imei2").value = product.imei2 || "";
+    $("#edit-prod-cost").value = product.purchasePrice || 0;
+    $("#edit-prod-price").value = product.sellingPrice || 0;
+    $("#edit-prod-image").value = product.imageUrl || "";
+    $("#edit-prod-desc").value = product.description || "";
+
+    // Load existing images
+    editProductExistingImages = Array.isArray(product.images) && product.images.length > 0
+      ? [...product.images]
+      : (product.imageUrl ? [product.imageUrl] : []);
+    editProductImageFiles = [];
+    renderEditProductImagesPreview();
+
+    $("#admin-edit-product-modal")?.classList.add("active");
+  }
+
+  async function handleEditProductSubmit(e) {
+    e.preventDefault();
+    const btn = $("#edit-product-submit-btn");
+    const id = $("#edit-product-id").value;
+
+    if (!zeshAPI.getToken()) {
+      showToast("Please log in to your Admin account first", "error");
+      showLoginScreen();
+      return;
+    }
+
+    const updates = {
+      name: $("#edit-prod-name").value.trim(),
+      category: $("#edit-prod-category").value,
+      brand: $("#edit-prod-brand").value.trim(),
+      model: $("#edit-prod-model").value.trim(),
+      serialNumber: $("#edit-prod-serial")?.value.trim() || "",
+      imei1: $("#edit-prod-imei1")?.value.trim() || "",
+      imei2: $("#edit-prod-imei2")?.value.trim() || "",
+      purchasePrice: parseFloat($("#edit-prod-cost").value) || 0,
+      sellingPrice: parseFloat($("#edit-prod-price").value) || 0,
+      imageUrl: $("#edit-prod-image").value.trim(),
+      description: $("#edit-prod-desc").value.trim(),
+      images: [...editProductExistingImages]
+    };
+
+    try {
+      btn.disabled = true;
+      btn.textContent = "Updating...";
+
+      // Upload newly added files if any
+      if (editProductImageFiles.length > 0) {
+        btn.textContent = `Uploading ${editProductImageFiles.length} new photo(s)...`;
+        const uploadRes = await zeshAPI.uploadProductImages(editProductImageFiles);
+        if (uploadRes && uploadRes.imageUrls) {
+          updates.images = [...updates.images, ...uploadRes.imageUrls];
+        }
+      }
+
+      if (!updates.imageUrl && updates.images.length > 0) {
+        updates.imageUrl = updates.images[0];
+      }
+
+      await zeshAPI.updateProduct(id, updates);
+      showToast("Product updated successfully!", "success");
+
+      $("#admin-edit-product-modal")?.classList.remove("active");
+      loadInventoryView();
+    } catch (err) {
+      showToast(err.message || "Failed to update product", "error");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Update Product Information";
     }
   }
 
@@ -2160,22 +2377,45 @@
     });
     $("#add-product-form")?.addEventListener("submit", handleAddProductSubmit);
 
-    // Multi-image file preview
+    // Multi-image file accumulation & live preview for Add Product
     $("#add-product-file-input")?.addEventListener("change", (e) => {
-      const previewBox = $("#add-product-files-preview");
-      if (!previewBox) return;
-      previewBox.innerHTML = "";
-      const files = Array.from(e.target.files || []);
-      files.forEach((file) => {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          const wrap = document.createElement("div");
-          wrap.style.cssText = "position:relative; width:52px; height:52px; border-radius:8px; overflow:hidden; border:1px solid #3b82f6; background:#0f172a;";
-          wrap.innerHTML = `<img src="${ev.target.result}" style="width:100%; height:100%; object-fit:contain;">`;
-          previewBox.appendChild(wrap);
-        };
-        reader.readAsDataURL(file);
+      const newFiles = Array.from(e.target.files || []);
+      newFiles.forEach((f) => {
+        if (!addProductImageFiles.some(existing => existing.name === f.name && existing.size === f.size)) {
+          addProductImageFiles.push(f);
+        }
       });
+      // Clear value so the user can tap Choose Files again to add more photos/camera shots
+      e.target.value = "";
+      renderAddProductImagesPreview();
+    });
+
+    $("#add-prod-clear-files-btn")?.addEventListener("click", () => {
+      addProductImageFiles = [];
+      renderAddProductImagesPreview();
+    });
+
+    // Multi-image file accumulation & live preview for Edit Product
+    $("#edit-product-file-input")?.addEventListener("change", (e) => {
+      const newFiles = Array.from(e.target.files || []);
+      newFiles.forEach((f) => {
+        if (!editProductImageFiles.some(existing => existing.name === f.name && existing.size === f.size)) {
+          editProductImageFiles.push(f);
+        }
+      });
+      e.target.value = "";
+      renderEditProductImagesPreview();
+    });
+
+    $("#edit-prod-clear-files-btn")?.addEventListener("click", () => {
+      editProductImageFiles = [];
+      renderEditProductImagesPreview();
+    });
+
+    // Handle session expiration across all admin operations
+    window.addEventListener("zesh:auth_expired", () => {
+      showToast("Your admin session has expired. Please authenticate to continue.", "error");
+      showLoginScreen();
     });
 
     // Edit Product Modal

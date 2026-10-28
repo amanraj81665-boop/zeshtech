@@ -12,19 +12,18 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
     fileSize: 10 * 1024 * 1024,
-    files: 8
+    files: 10
   },
   fileFilter(req, file, callback) {
-    const allowedTypes = [
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-      "image/avif"
-    ];
+    const mt = (file.mimetype || "").toLowerCase();
+    const isImage = mt.startsWith("image/") ||
+      [".jpg", ".jpeg", ".png", ".webp", ".avif", ".heic", ".heif"].some(ext =>
+        (file.originalname || "").toLowerCase().endsWith(ext)
+      );
 
-    if (!allowedTypes.includes(file.mimetype)) {
+    if (!isImage) {
       return callback(
-        new Error("Only JPG, PNG, WEBP and AVIF images are allowed.")
+        new Error("Only standard image formats (JPG, PNG, WEBP, AVIF, HEIC) are allowed.")
       );
     }
 
@@ -60,14 +59,16 @@ function uploadToCloudinary(buffer) {
   });
 }
 
+// Single Image Upload
 router.post(
   "/product-image",
   authMiddleware,
   requireAdmin,
-  upload.single("image"),
+  upload.any(),
   async (req, res) => {
     try {
-      if (!req.file) {
+      const file = (req.files && req.files[0]) || req.file;
+      if (!file) {
         return res.status(400).json({
           success: false,
           message: "Please select an image."
@@ -85,7 +86,7 @@ router.post(
         });
       }
 
-      const result = await uploadToCloudinary(req.file.buffer);
+      const result = await uploadToCloudinary(file.buffer);
 
       return res.status(201).json({
         success: true,
@@ -105,12 +106,12 @@ router.post(
   }
 );
 
-// Multi-image upload for Product Gallery & Color Variants
+// Multi-image upload for Product Gallery & Color Variants (Supports multiple files from any input)
 router.post(
   "/product-images",
   authMiddleware,
   requireAdmin,
-  upload.array("images", 8),
+  upload.any(),
   async (req, res) => {
     try {
       const files = req.files || (req.file ? [req.file] : []);
@@ -138,7 +139,7 @@ router.post(
 
       return res.status(201).json({
         success: true,
-        message: `${imageUrls.length} images uploaded successfully.`,
+        message: `${imageUrls.length} image(s) uploaded successfully.`,
         imageUrls,
         imageUrl: imageUrls[0]
       });

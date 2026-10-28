@@ -190,8 +190,18 @@
     for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) & 0xffffffff;
     const abs = Math.abs(hash);
     const rating = (4.3 + (abs % 7) * 0.1).toFixed(1); // 4.3 to 4.9
-    const reviews = 240 + (abs % 1850);
-    return { rating, reviews: reviews.toLocaleString("en-IN") };
+    const ratingsCount = 240 + (abs % 1850);
+    const reviewsCount = Math.round(ratingsCount / 3.8);
+    const ratingsFormatted = ratingsCount.toLocaleString("en-IN");
+    const reviewsFormatted = reviewsCount.toLocaleString("en-IN");
+    return {
+      rating,
+      ratingsCount,
+      reviewsCount,
+      ratingsFormatted,
+      reviewsFormatted,
+      reviews: ratingsFormatted
+    };
   }
 
   function applyFiltersAndRender() {
@@ -341,20 +351,39 @@
   }
 
   // Smart Color & Multi-Angle Image Resolver for Smartphones & Tech
-  function getProductColorVariants(product, allProds = []) {
+  function getProductColorVariants(product, allProds = [], specs = null) {
     const brand = (product.brand || "").toLowerCase();
     const name = (product.name || "").toLowerCase();
     const baseImg = product.imageUrl || imageFallback;
     const variants = [];
     const seenColors = new Set();
 
-    // 1. Current color from title
-    const currentColorMatch = product.name.match(/-\s*([A-Za-z\s]+?)(?:\(|$)/i);
-    const currentColorName = currentColorMatch ? currentColorMatch[1].trim() : (product.brand ? `${product.brand} Signature` : "Original Color");
+    // 1. Current color from specs, description or title
+    let currentColorName = specs?.color || "";
+    if (!currentColorName) {
+      const colorInDesc = (product.description || "").match(/(?:Colour|Color)\s*[:\t\-]?\s*([^\n\r,]+)/i);
+      if (colorInDesc && colorInDesc[1]) currentColorName = colorInDesc[1].trim();
+    }
+    if (!currentColorName) {
+      const currentColorMatch = product.name.match(/-\s*([A-Za-z\s]+?)(?:\(|$)/i);
+      currentColorName = currentColorMatch ? currentColorMatch[1].trim() : (product.brand ? `${product.brand} Signature` : "Standard Finish");
+    }
     variants.push({ color: currentColorName, image: baseImg });
     seenColors.add(currentColorName.toLowerCase());
 
-    // 2. Look for sibling color variants in the catalog
+    // 2. If product has multi-images uploaded by admin, add them as angle/variant photos
+    if (Array.isArray(product.images) && product.images.length > 1) {
+      product.images.forEach((imgUrl, i) => {
+        if (i === 0) return;
+        const angleLabel = i === 1 ? "Back View" : i === 2 ? "Side View" : `Angle #${i + 1}`;
+        if (!seenColors.has(angleLabel.toLowerCase())) {
+          seenColors.add(angleLabel.toLowerCase());
+          variants.push({ color: angleLabel, image: imgUrl });
+        }
+      });
+    }
+
+    // 3. Look for sibling color variants in the catalog
     const baseNameTokens = name.replace(/-\s*([A-Za-z\s]+?)(?:\(|$)/i, "").trim().split(" ").filter(w => w.length > 2);
     const siblings = allProds.filter(p => {
       if (p._id === product._id) return false;
@@ -411,6 +440,79 @@
     }
 
     return variants.slice(0, 4);
+  }
+
+  // Resolve Real & Dynamic Storage/RAM Variants
+  function getProductVariants(product, allProds = [], specs = null) {
+    const currentRamRom = specs?.ramRom || "Standard Variant";
+    const { mrp, discountPct } = calculateDiscount(product.sellingPrice);
+
+    // Search allProds for variants of the same phone family
+    const brand = (product.brand || "").toLowerCase();
+    const rawName = (product.name || "").toLowerCase();
+    // Strip ram/rom/color in parentheses or after dash
+    const baseName = rawName.replace(/\(.*?\)/g, "").replace(/-\s*.*$/, "").trim();
+
+    const variantsList = [
+      {
+        id: product._id,
+        title: currentRamRom,
+        price: product.sellingPrice,
+        mrp: mrp,
+        discountPct: discountPct,
+        isActive: true,
+        isRealProduct: true
+      }
+    ];
+
+    const siblings = allProds.filter(p => {
+      if (String(p._id) === String(product._id)) return false;
+      const pBrand = (p.brand || "").toLowerCase();
+      const pRaw = (p.name || "").toLowerCase();
+      const pBase = pRaw.replace(/\(.*?\)/g, "").replace(/-\s*.*$/, "").trim();
+      return pBrand === brand && (pBase === baseName || (baseName.length > 3 && pBase.includes(baseName)));
+    });
+
+    siblings.forEach(sib => {
+      const sibSpecs = window.ZeshSpecs ? window.ZeshSpecs.getPhoneSpecs(sib) : null;
+      const sibTitle = sibSpecs?.ramRom || sib.name.match(/\d+GB\/\d+GB/i)?.[0] || sib.name;
+      const sibDisc = calculateDiscount(sib.sellingPrice);
+      if (!variantsList.some(v => v.title.toLowerCase() === sibTitle.toLowerCase())) {
+        variantsList.push({
+          id: sib._id,
+          title: sibTitle,
+          price: sib.sellingPrice,
+          mrp: sibDisc.mrp,
+          discountPct: sibDisc.discountPct,
+          isActive: false,
+          isRealProduct: true
+        });
+      }
+    });
+
+    // If only 1 real variant in inventory and it's a mobile, show an intelligent option
+    if (variantsList.length === 1 && product.category === "Mobile") {
+      const parsedRam = parseInt(specs?.ram || "4", 10) || 4;
+      const parsedRom = parseInt(specs?.rom || "128", 10) || 128;
+      const nextRam = parsedRam === 4 ? 6 : parsedRam === 6 ? 8 : 12;
+      const nextRom = parsedRom === 64 ? 128 : parsedRom === 128 ? 256 : 512;
+      const nextPrice = product.sellingPrice + 2000;
+      const nextMrp = mrp + 3000;
+      const nextDisc = Math.round(((nextMrp - nextPrice) / nextMrp) * 100);
+
+      variantsList.push({
+        id: null,
+        title: `${nextRam}GB RAM | ${nextRom}GB Storage`,
+        price: nextPrice,
+        mrp: nextMrp,
+        discountPct: nextDisc,
+        isActive: false,
+        isRealProduct: false,
+        note: "Store Order"
+      });
+    }
+
+    return variantsList;
   }
 
   let active360SpinRaf = null;
@@ -470,17 +572,19 @@
       const isOut = stock <= 0;
       const img = product.imageUrl || imageFallback;
       const { mrp, discountPct } = calculateDiscount(product.sellingPrice);
-      const { rating, reviews } = getProductRating(product);
+      const ratingInfo = getProductRating(product);
+      const { rating, ratingsFormatted, reviewsFormatted } = ratingInfo;
 
       // Get rich specs from our Knowledge Base or intelligent generator
       const specs = window.ZeshSpecs ? window.ZeshSpecs.getPhoneSpecs(product) : null;
 
       // Color variants with real photos
-      const colorVariants = getProductColorVariants(product, allProducts);
+      const colorVariants = getProductColorVariants(product, allProducts, specs);
       const selectedColor = colorVariants[0]?.color || "Standard Finish";
 
       // Variant extraction
       const ramRomText = specs?.ramRom || "8 GB RAM | 128 GB ROM";
+      const variantsList = getProductVariants(product, allProducts, specs);
 
       // Category Badges (accurate for phones, TVs, washing machines, audio)
       const posterBadges = specs?.customBadges || [
@@ -528,6 +632,17 @@
                 <div class="fk-main-image-wrap" id="fk-main-image-wrap">
                   <img src="${escapeHTML(img)}" alt="${escapeHTML(product.name)}" class="fk-main-img" id="fk-main-img" onerror="this.onerror=null;this.src='${imageFallback}';">
                 </div>
+
+                <!-- Multi-Image Gallery Thumbnails (if multiple photos available) -->
+                ${(Array.isArray(product.images) && product.images.length > 1) ? `
+                  <div class="fk-gallery-thumbs-row" style="display:flex; gap:8px; justify-content:center; margin-top:10px; overflow-x:auto; padding:4px 0;">
+                    ${product.images.map((im, idx) => `
+                      <button type="button" class="fk-gallery-thumb-btn ${idx === 0 ? 'active' : ''}" data-img="${escapeHTML(im)}" style="width:52px; height:52px; border-radius:8px; border:2px solid ${idx === 0 ? '#2563eb' : '#cbd5e1'}; background:#fff; padding:2px; cursor:pointer; flex-shrink:0;">
+                        <img src="${escapeHTML(im)}" style="width:100%; height:100%; object-fit:contain; border-radius:6px;">
+                      </button>
+                    `).join("")}
+                  </div>
+                ` : ""}
 
                 <!-- 360° Interactive 3D Rotation Stage -->
                 <div class="fk-360-stage" id="fk-360-stage" style="display:none;">
@@ -594,21 +709,13 @@
               <div class="fk-variants-section">
                 <div class="fk-section-subhead">Variant: <b>${escapeHTML(ramRomText)}</b></div>
                 <div class="fk-variant-boxes-row">
-                  <div class="fk-variant-box active">
-                    <div class="fk-variant-title">${escapeHTML(ramRomText)}</div>
-                    <div class="fk-variant-discount">↓${discountPct}% <span class="fk-mrp-strike">${money(mrp)}</span></div>
-                    <div class="fk-variant-price">${money(product.sellingPrice)}</div>
-                  </div>
-                  <div class="fk-variant-box">
-                    <div class="fk-variant-title">128 GB + 6 GB</div>
-                    <div class="fk-variant-discount">↓46% <span class="fk-mrp-strike">${money(mrp - 2000)}</span></div>
-                    <div class="fk-variant-price">${money(Math.max(product.sellingPrice - 2000, 11999))}</div>
-                  </div>
-                  <div class="fk-variant-box">
-                    <div class="fk-variant-title">256 GB + 8 GB</div>
-                    <div class="fk-variant-discount">↓44% <span class="fk-mrp-strike">${money(mrp + 4000)}</span></div>
-                    <div class="fk-variant-price">${money(product.sellingPrice + 3000)}</div>
-                  </div>
+                  ${variantsList.map(v => `
+                    <div class="fk-variant-box ${v.isActive ? 'active' : ''}" data-variant-id="${v.id || ''}" style="${v.isRealProduct && !v.isActive ? 'cursor:pointer;' : ''}">
+                      <div class="fk-variant-title">${escapeHTML(v.title)}</div>
+                      <div class="fk-variant-discount">↓${v.discountPct}% <span class="fk-mrp-strike">${money(v.mrp)}</span></div>
+                      <div class="fk-variant-price">${money(v.price)} ${v.note ? `<small style="font-size:10px; color:#2563eb; display:block; margin-top:2px;">(${v.note})</small>` : ''}</div>
+                    </div>
+                  `).join("")}
                 </div>
               </div>
 
@@ -620,7 +727,7 @@
                   <span>${rating}</span>
                   <span style="font-size:10px;">★</span>
                 </span>
-                <span class="fk-rating-count">${reviews.toLocaleString()} Ratings &amp; ${(reviews / 3.8).toFixed(0)} Reviews</span>
+                <span class="fk-rating-count">${ratingsFormatted} Ratings &amp; ${reviewsFormatted} Reviews</span>
                 <span class="card-badge-pill assured-badge" style="margin-left: 8px;">
                   <span class="star-sparkle">★</span> Zesh Assured
                 </span>
@@ -907,6 +1014,39 @@
           const view360Img = modalContent.querySelector("#fk-360-img");
           if (view360Img && chosenImg) {
             view360Img.src = chosenImg;
+          }
+        });
+      });
+
+      // 1b. Multi-Image Gallery Thumbnails click handler
+      modalContent.querySelectorAll(".fk-gallery-thumb-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          modalContent.querySelectorAll(".fk-gallery-thumb-btn").forEach(b => {
+            b.classList.remove("active");
+            b.style.borderColor = "#cbd5e1";
+          });
+          btn.classList.add("active");
+          btn.style.borderColor = "#2563eb";
+          const chosenImg = btn.dataset.img;
+          const mainImg = modalContent.querySelector("#fk-main-img");
+          if (mainImg && chosenImg) {
+            mainImg.style.opacity = "0.4";
+            setTimeout(() => {
+              mainImg.src = chosenImg;
+              mainImg.style.opacity = "1";
+            }, 100);
+          }
+          const v360 = modalContent.querySelector("#fk-360-img");
+          if (v360 && chosenImg) v360.src = chosenImg;
+        });
+      });
+
+      // 1c. RAM / Storage Variant Box clicks (switch to sibling variant if real product)
+      modalContent.querySelectorAll(".fk-variant-box").forEach(box => {
+        box.addEventListener("click", () => {
+          const varId = box.dataset.variantId;
+          if (varId && String(varId) !== String(product._id)) {
+            openQuickView(varId);
           }
         });
       });

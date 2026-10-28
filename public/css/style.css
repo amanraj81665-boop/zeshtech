@@ -3008,6 +3008,47 @@ select {
   transform: scale(1.05);
 }
 
+/* Multi-Image Gallery Thumbnails Row */
+.fk-gallery-thumbs-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+  margin: 10px 0 14px;
+  overflow-x: auto;
+  padding: 4px;
+  width: 100%;
+}
+
+.fk-gallery-thumb-btn {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  border: 2px solid #cbd5e1;
+  background: #ffffff;
+  padding: 2px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.fk-gallery-thumb-btn:hover {
+  border-color: #3b82f6;
+  transform: translateY(-2px);
+}
+
+.fk-gallery-thumb-btn.active {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+}
+
+.fk-gallery-thumb-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
 /* Specs Poster Overlay (Screenshot 1) */
 .fk-specs-poster-overlay {
   width: 100%;

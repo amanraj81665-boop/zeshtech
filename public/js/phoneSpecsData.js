@@ -799,6 +799,49 @@ window.ZeshSpecs = (function () {
       cons: ["Mono speaker"]
     },
 
+    "redmi 15a": {
+      brand: "Redmi",
+      model: "Redmi 15A 5G",
+      chipset: "Octa-Core 5G Processor",
+      cpu: "Octa-Core (High Performance Cores)",
+      gpu: "Mali-G57 MC2 GPU",
+      display: '17.53 cm (6.9") 120Hz Smooth HD+ Adaptive Display',
+      resolution: "1640 x 720 Pixels HD+",
+      refreshRate: "120Hz Adaptive",
+      rearCamera: "32MP AI Dual Camera with Night Mode",
+      frontCamera: "8MP AI Selfie Camera",
+      video: "1080p @ 30fps Full HD",
+      battery: "6300 mAh (Typical) Massive Battery with 15W Fast Charging",
+      os: "Xiaomi HyperOS based on Android 14",
+      uiName: "Xiaomi HyperOS",
+      ramRom: "4GB RAM | 128GB Storage",
+      build: "IP52-rated Splash Resistant Body in Ace Black",
+      sim: "Dual 5G SIM (Nano SIM + Nano SIM)",
+      weight: "192 g",
+      inBox: "Handset, Fast Charger, USB Type-C Cable, SIM Eject Tool, Quick Guide",
+      zeshScore: 9.3,
+      categoryTags: ["battery", "value"],
+      bestForBadge: "🔋 6300mAh Battery Champion",
+      cameraScore: 8.8,
+      gamingScore: 8.9,
+      uiScore: 9.2,
+      batteryScore: 9.9,
+      highlights: [
+        "Massive 6300 mAh (Typical) Battery — Up to 2.5 Days Backup",
+        "17.53 cm (6.9-inch class) 120Hz Smooth Adaptive Display",
+        "32MP AI Dual Camera with Crisp Night & Portrait Modes",
+        "Xiaomi HyperOS with Ultra-Fluid 5G Performance"
+      ],
+      customBadges: [
+        { icon: "🔋", title: "6300 mAh", subtitle: "2.5-Day Battery" },
+        { icon: "📸", title: "32MP AI", subtitle: "Dual Camera" },
+        { icon: "📱", title: '6.9" 120Hz', subtitle: "Smooth Screen" },
+        { icon: "⚡", title: "Xiaomi HyperOS", subtitle: "Fluid 5G OS" }
+      ],
+      pros: ["Huge 6300mAh battery", "Big 6.9\" 120Hz screen", "Fast Xiaomi HyperOS"],
+      cons: ["15W standard charging speed"]
+    },
+
     "redmi 15": {
       brand: "Redmi",
       model: "Redmi 15 5G",
@@ -1023,6 +1066,120 @@ window.ZeshSpecs = (function () {
   };
 
   /**
+   * Smart Parser: Extracts RAM, ROM, Battery, Camera, Display, OS, and Color
+   * from product description or product title if explicitly provided by admin.
+   */
+  function parseCustomSpecs(text, name = "") {
+    if (!text && !name) return {};
+    const combined = `${name || ""}\n${text || ""}`;
+    const specs = {};
+
+    // RAM & ROM combined patterns: e.g. "6GB/128GB", "6/128", "8GB + 256GB", "4GB RAM | 64GB ROM"
+    let parsedRam = "";
+    let parsedRom = "";
+
+    const slashMatch = combined.match(/\b(\d+)\s*(?:GB)?\s*[/+]\s*(\d+)\s*(?:GB)?\b/i);
+    if (slashMatch) {
+      const r = parseInt(slashMatch[1], 10);
+      const s = parseInt(slashMatch[2], 10);
+      if (r <= 24 && s >= 16) {
+        parsedRam = `${r}GB`;
+        parsedRom = `${s}GB`;
+      }
+    }
+
+    if (!parsedRam) {
+      const ramMatch = combined.match(/(?:RAM|Memory)\s*[:\t\-]?\s*(\d+)\s*(?:GB)?/i) ||
+                       combined.match(/(\d+)\s*GB\s*(?:RAM|LPDDR)/i);
+      if (ramMatch && ramMatch[1]) {
+        parsedRam = `${ramMatch[1]}GB`;
+      }
+    }
+
+    if (!parsedRom) {
+      const romMatch = combined.match(/(?:Internal\s*Storage|Storage|ROM)\s*[:\t\-]?\s*(\d+\s*(?:GB|TB))/i) ||
+                       combined.match(/(\d+\s*(?:GB|TB))\s*(?:ROM|Storage|Internal)/i);
+      if (romMatch && romMatch[1]) {
+        parsedRom = romMatch[1].toUpperCase().replace(/\s+/, "");
+      }
+    }
+
+    if (parsedRam && parsedRom) {
+      specs.ramRom = `${parsedRam} RAM | ${parsedRom} Storage`;
+      specs.ram = parsedRam;
+      specs.rom = parsedRom;
+    } else if (parsedRam) {
+      specs.ramRom = `${parsedRam} RAM`;
+      specs.ram = parsedRam;
+    } else if (parsedRom) {
+      specs.ramRom = `${parsedRom} Storage`;
+      specs.rom = parsedRom;
+    }
+
+    // Color parsing
+    const colMatch = combined.match(/(?:Colour|Color)\s*[:\t\-]?\s*([^\n\r,]+)/i);
+    if (colMatch && colMatch[1]) {
+      specs.color = colMatch[1].trim();
+    }
+
+    // Battery parsing
+    const batMatch = combined.match(/Battery\s*[:\t\-]?\s*([^\n\r]+)/i) ||
+                     combined.match(/(\d{4,5}\s*mAh[^\n\r,]*)/i);
+    if (batMatch && batMatch[1]) {
+      const rawBat = batMatch[1].split(/[,;\n]/)[0].replace(/\(Typical\)/i, "").trim();
+      if (rawBat) specs.battery = rawBat.includes("mAh") ? rawBat : `${rawBat} mAh`;
+    }
+
+    // Charging parsing
+    const chgMatch = combined.match(/(?:Charging\s*Support|Fast\s*Charging|Charging)\s*[:\t\-]?\s*([^\n\r,]+)/i);
+    if (chgMatch && chgMatch[1] && specs.battery && !specs.battery.toLowerCase().includes("charg")) {
+      specs.battery = `${specs.battery} with ${chgMatch[1].trim()} Fast Charging`;
+    }
+
+    // Rear Camera parsing
+    const rearMatch = combined.match(/(?:Rear\s*Camera|Primary\s*Camera|Main\s*Camera)\s*[:\t\-]?\s*([^\n\r]+)/i) ||
+                      combined.match(/(\d+\s*MP[^\n\r,]*(?:Camera|Dual|Triple|Quad|OIS)?)/i);
+    if (rearMatch && rearMatch[1]) {
+      specs.rearCamera = rearMatch[1].split(/[,;\n]/)[0].trim();
+    }
+
+    // Front Camera parsing
+    const frontMatch = combined.match(/(?:Front\s*Camera|Selfie\s*Camera|Secondary\s*Camera)\s*[:\t\-]?\s*([^\n\r]+)/i);
+    if (frontMatch && frontMatch[1]) {
+      specs.frontCamera = frontMatch[1].split(/[,;\n]/)[0].trim();
+    }
+
+    // Display parsing
+    const dispMatch = combined.match(/Display\s*[:\t\-]?\s*([^\n\r]+)/i) ||
+                      combined.match(/Screen\s*[:\t\-]?\s*([^\n\r]+)/i);
+    if (dispMatch && dispMatch[1]) {
+      specs.display = dispMatch[1].split(/[\n\r]/)[0].trim();
+    }
+
+    // Refresh rate parsing
+    const rrMatch = combined.match(/(?:Refresh\s*Rate|Screen\s*Refresh)\s*[:\t\-]?\s*([^\n\r]+)/i) ||
+                    combined.match(/(\d{2,3}\s*Hz)/i);
+    if (rrMatch && rrMatch[1]) {
+      specs.refreshRate = rrMatch[1].split(/[,;\n]/)[0].trim();
+    }
+
+    // Processor / Chipset parsing
+    const procMatch = combined.match(/(?:Processor|Chipset|CPU)\s*[:\t\-]?\s*([^\n\r]+)/i);
+    if (procMatch && procMatch[1]) {
+      specs.chipset = procMatch[1].split(/[\n\r]/)[0].trim();
+    }
+
+    // Operating System parsing
+    const osMatch = combined.match(/(?:Operating\s*System|OS|Software)\s*[:\t\-]?\s*([^\n\r]+)/i);
+    if (osMatch && osMatch[1]) {
+      specs.os = osMatch[1].split(/[\n\r]/)[0].trim();
+      specs.uiName = specs.os;
+    }
+
+    return specs;
+  }
+
+  /**
    * Helper: Matches product name/model against our specs database,
    * or falls back to an intelligent spec generator based on attributes.
    */
@@ -1032,10 +1189,43 @@ window.ZeshSpecs = (function () {
     const modelLower = (product.model || "").toLowerCase();
     const combined = `${nameLower} ${modelLower}`;
 
-    // Exact or partial key match in specsDB
-    for (const [key, val] of Object.entries(specsDB)) {
-      if (combined.includes(key)) {
-        return { ...val, originalProduct: product, categoryType: "mobile" };
+    // Exact or word-boundary key match in specsDB (sorted by key length descending)
+    const sortedEntries = Object.entries(specsDB).sort((a, b) => b[0].length - a[0].length);
+    for (const [key, val] of sortedEntries) {
+      // Check word boundary so e.g. "redmi 15" does not falsely match "redmi 15a"
+      const regex = new RegExp("(?:^|[^a-z0-9])" + key.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&") + "(?:$|[^a-z0-9])", "i");
+      if (regex.test(combined) || combined === key) {
+        const custom = parseCustomSpecs(product.description, product.name);
+        const resolvedRamRom = custom.ramRom || val.ramRom;
+        const resolvedBattery = custom.battery || val.battery;
+        const resolvedCamera = custom.rearCamera || val.rearCamera;
+        const resolvedDisplay = custom.display || val.display;
+        const resolvedOS = custom.os || val.os;
+
+        const customBadges = val.customBadges || [
+          { icon: "🔋", title: resolvedBattery.split("with")[0].trim(), subtitle: "Long Lasting Battery" },
+          { icon: "📸", title: resolvedCamera.split("+")[0].split("Camera")[0].trim() || "AI Camera", subtitle: "AI Portrait Camera" },
+          { icon: "📱", title: resolvedDisplay.includes('"') ? resolvedDisplay.split('"')[0] + '"' : (resolvedDisplay.split("(")[0].trim() || "Smooth Display"), subtitle: `${custom.refreshRate || val.refreshRate || "120Hz"} Display` },
+          { icon: "⚡", title: resolvedRamRom.split("|")[0].trim() || "Fast RAM", subtitle: (custom.chipset || val.chipset || "Fast Processor").split("(")[0].trim() }
+        ];
+
+        return {
+          ...val,
+          model: product.model || product.name,
+          ramRom: resolvedRamRom,
+          battery: resolvedBattery,
+          rearCamera: resolvedCamera,
+          frontCamera: custom.frontCamera || val.frontCamera,
+          display: resolvedDisplay,
+          refreshRate: custom.refreshRate || val.refreshRate,
+          chipset: custom.chipset || val.chipset,
+          os: resolvedOS,
+          uiName: custom.uiName || val.uiName,
+          color: custom.color || "",
+          customBadges,
+          originalProduct: product,
+          categoryType: "mobile"
+        };
       }
     }
 
@@ -1228,23 +1418,51 @@ window.ZeshSpecs = (function () {
     // 5. SMARTPHONES & MOBILE PHONES (Dynamic Generator)
     const is5G = combined.includes("5g") || price >= 18000;
     const isAMOLED = price >= 23000;
+    const custom = parseCustomSpecs(product.description, product.name);
+
+    const ramRom = custom.ramRom || product.name.match(/\d+GB\/\d+GB/i)?.[0] || "6GB RAM | 128GB Storage";
+    const battery = custom.battery || (price >= 25000 ? "5000 mAh High-Density Battery with 67W Turbo" : "5000 mAh All-Day Battery with Fast Charging");
+    const rearCamera = custom.rearCamera || (price >= 30000 ? "50MP/64MP OIS Main Camera + Ultra Wide" : "50MP AI Dual Camera");
+    const frontCamera = custom.frontCamera || (price >= 30000 ? "32MP HD Selfie Camera" : "16MP AI Selfie");
+    const display = custom.display || (isAMOLED ? '6.67" 120Hz Super AMOLED Full HD+, HDR10+' : '6.56" 90Hz Smooth Display');
+    const refreshRate = custom.refreshRate || (isAMOLED ? "120Hz" : "90Hz");
+    const chipset = custom.chipset || (price >= 50000 ? "Flagship Octa-Core (3nm/4nm)" : price >= 25000 ? "High Performance 5G Octa-Core (6nm)" : "Octa-Core Power Efficient Processor");
+    const os = custom.os || `${brand} Custom OS based on Android 14`;
+    const uiName = custom.uiName || `${brand} UI`;
+
+    const posterBadges = [
+      { icon: "🔋", title: battery.split("with")[0].trim(), subtitle: "Long Lasting Battery" },
+      { icon: "📸", title: rearCamera.split("+")[0].split("Camera")[0].trim() || "AI Camera", subtitle: "AI Portrait Camera" },
+      { icon: "📱", title: display.includes('"') ? display.split('"')[0] + '"' : (display.split("(")[0].trim() || "Smooth Screen"), subtitle: `${refreshRate} Display` },
+      { icon: "⚡", title: ramRom.split("|")[0].trim() || "Fast RAM", subtitle: chipset.split("(")[0].trim() || "High Performance" }
+    ];
+
+    const highlights = [
+      `${custom.display ? custom.display : (is5G ? "Lightning Fast 5G" : "Reliable 4G Dual SIM")} • ${refreshRate}`,
+      `${rearCamera} with Night Mode & AI Capture`,
+      `${battery}`,
+      `${os} • Official ${brand} Brand Warranty`
+    ];
 
     return {
       brand: brand,
       model: product.model || product.name,
-      chipset: price >= 50000 ? "Flagship Octa-Core (3nm/4nm)" : price >= 25000 ? "High Performance 5G Octa-Core (6nm)" : "Octa-Core Power Efficient Processor",
+      chipset,
       cpu: "Octa-Core (High Performance Cores)",
       gpu: "Advanced Mobile Gaming GPU",
-      display: isAMOLED ? '6.67" 120Hz Super AMOLED Full HD+, HDR10+' : '6.56" 90Hz Smooth Display',
+      display,
       resolution: isAMOLED ? "2400 x 1080 Pixels FHD+" : "1600 x 720 Pixels HD+",
-      refreshRate: isAMOLED ? "120Hz" : "90Hz",
-      rearCamera: price >= 30000 ? "50MP/64MP OIS Main Camera + Ultra Wide" : "50MP AI Dual Camera",
-      frontCamera: price >= 30000 ? "32MP HD Selfie Camera" : "16MP AI Selfie",
+      refreshRate,
+      rearCamera,
+      frontCamera,
       video: price >= 30000 ? "4K @ 30fps Ultra Steady" : "1080p @ 30fps",
-      battery: "5000 mAh All-Day Battery with Fast Charging",
-      os: `${brand} Custom OS based on Android 14`,
-      uiName: `${brand} UI`,
-      ramRom: product.name.match(/\d+GB\/\d+GB/i)?.[0] || "6GB RAM | 128GB Storage",
+      battery,
+      os,
+      uiName,
+      ramRom,
+      ram: custom.ram || "",
+      rom: custom.rom || "",
+      color: custom.color || "",
       build: "Ergonomic Splash Resistant Body with Fingerprint Scanner",
       sim: is5G ? "Dual 5G SIM" : "Dual 4G VoLTE SIM",
       weight: "185 g",
@@ -1256,12 +1474,8 @@ window.ZeshSpecs = (function () {
       gamingScore: Math.min(9.5, Number((7.5 + (price / 35000)).toFixed(1))),
       uiScore: 8.8,
       batteryScore: 9.2,
-      highlights: [
-        `${is5G ? "Lightning Fast 5G" : "Reliable 4G Dual SIM"} connectivity`,
-        "50MP AI High Resolution Camera with Night Mode",
-        "5000 mAh Long-Life Battery with Fast Charging",
-        "1 Year Brand Warranty with Store Support in Barh"
-      ],
+      highlights,
+      customBadges: posterBadges,
       pros: ["Excellent value for price", "Sturdy build quality", "Official brand warranty"],
       cons: ["Fast selling stock"],
       originalProduct: product
