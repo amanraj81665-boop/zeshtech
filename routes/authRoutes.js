@@ -9,6 +9,7 @@ const {
   hashPassword,
   verifyPassword
 } = require("../utils/password");
+const { sendPasswordResetEmail } = require("../utils/mailer");
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_MIN = 8;
@@ -56,6 +57,14 @@ router.get("/status", (req, res) => {
   res.json({
     success: true,
     message: "ZESH-TECH authentication routes working"
+  });
+});
+
+// Expose public auth configuration (e.g. Google Client ID)
+router.get("/config", (req, res) => {
+  res.json({
+    success: true,
+    googleClientId: process.env.GOOGLE_CLIENT_ID || ""
   });
 });
 
@@ -572,7 +581,14 @@ router.post("/forgot-password/send-otp", async (req, res) => {
     forgotPasswordOtpStore.set(cleanEmail, { otp, expiresAt });
     console.log(`[Forgot Password OTP] Generated for ${cleanEmail}: ${otp}`);
 
-    // WhatsApp alert message
+    // Dispatch real email to user's inbox
+    const mailResult = await sendPasswordResetEmail({
+      toEmail: cleanEmail,
+      otp,
+      userName: user.name
+    });
+
+    // WhatsApp alert message as secondary option
     const targetPhone = (user.phone || "").replace(/\D/g, "").slice(-10) || "7903746116";
     const waText = encodeURIComponent(
       `🔐 *ZESH-TECH Password Reset*\n\nAccount: *${cleanEmail}*\nYour 6-Digit Password Reset OTP is: *${otp}*\n\n(Valid for 10 minutes). Do not share this OTP with anyone.`
@@ -581,9 +597,13 @@ router.post("/forgot-password/send-otp", async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: `Password reset OTP generated for ${cleanEmail}`,
+      message: mailResult.emailSent
+        ? `A 6-digit OTP has been sent directly to your email inbox (${cleanEmail}). Please check your Inbox and Spam folder.`
+        : `Password reset OTP generated. ${mailResult.notice || ""}`,
       email: cleanEmail,
-      otp,
+      emailSent: mailResult.emailSent,
+      // Provide OTP in response only if email transport is unconfigured to prevent lockout during setup
+      otp: mailResult.emailSent ? undefined : otp,
       targetPhone: targetPhone ? `+91 ${targetPhone.slice(0, 2)}••••${targetPhone.slice(-4)}` : "",
       whatsappLink,
       expiresInSeconds: 600

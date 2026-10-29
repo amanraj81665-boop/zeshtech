@@ -97,6 +97,11 @@ const api = {
     this.setToken("");
   },
 
+  // Auth Configuration (Google Client ID etc.)
+  getAuthConfig() {
+    return this.request("/auth/config");
+  },
+
   // Forgot Password
   sendForgotPasswordOtp(email) {
     return this.request("/auth/forgot-password/send-otp", {
@@ -230,6 +235,11 @@ const api = {
   getDailyRegister(date = "") {
     const qs = date ? `?date=${encodeURIComponent(date)}` : "";
     return this.request(`/bills/daily-register${qs}`);
+  },
+
+  // Auth Configuration (Google Client ID etc.)
+  getAuthConfig() {
+    return this.request("/auth/config");
   },
 
   getWarrantyLocker(phone = "") {
@@ -465,6 +475,11 @@ const customerAPI = {
 
   getOrder(id) {
     return this.request(`/orders/${encodeURIComponent(id)}`);
+  },
+
+  // Auth Configuration (Google Client ID etc.)
+  getAuthConfig() {
+    return this.request("/auth/config");
   },
 
   getWarrantyLocker(phone = "") {

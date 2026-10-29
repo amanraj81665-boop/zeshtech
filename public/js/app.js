@@ -3218,6 +3218,7 @@
       $("#auth-google-view")?.classList.add("hidden");
       $("#auth-whatsapp-view")?.classList.add("hidden");
       $("#auth-social-view")?.classList.add("hidden");
+      $("#auth-forgot-view")?.classList.add("hidden");
     }
 
     // "Back to login options" in all sub-views
@@ -3243,12 +3244,75 @@
 
     // Setup 6-digit OTP input auto-advance
     setupOtpDigitInputs();
+
+    // 4. Customer Forgot Password Real Email Setup
+    setupCustomerForgotPassword();
+
+    // Initialize Google Identity Services (GIS)
+    initGoogleIdentityServices();
   });
 
   // ==========================================================================
   // 1. Google Native App-Style Account Chooser & GIS Logic
   // ==========================================================================
   const GOOGLE_ACCOUNTS_STORAGE_KEY = "zesh_device_google_accounts";
+  let googleClientIdConfig = "";
+  let isGisInitialized = false;
+
+  async function initGoogleIdentityServices() {
+    try {
+      if (!googleClientIdConfig && window.zeshCustomerAPI?.getAuthConfig) {
+        const cfg = await zeshCustomerAPI.getAuthConfig();
+        if (cfg?.googleClientId) {
+          googleClientIdConfig = cfg.googleClientId.trim();
+        }
+      }
+    } catch (e) {
+      console.log("Auth config load note:", e.message);
+    }
+
+    if (googleClientIdConfig && window.google?.accounts?.id && !isGisInitialized) {
+      try {
+        window.google.accounts.id.initialize({
+          client_id: googleClientIdConfig,
+          callback: async (response) => {
+            try {
+              showToast("Verifying Google account...", "info");
+              const user = await zeshCustomerAPI.verifyGoogleAuth(response.credential);
+              saveGoogleAccount(user.name, user.email, user.avatar);
+              $("#auth-modal-backdrop")?.classList.remove("active");
+              $("#auth-google-view")?.classList.add("hidden");
+              $("#auth-main-view")?.classList.remove("hidden");
+              updateCustomerAuthHeader();
+              showToast(`Welcome, ${user.name}! Signed in via Google.`, "success");
+            } catch (err) {
+              console.error("GIS callback error:", err);
+              showToast(err.message || "Google sign-in failed", "error");
+            }
+          },
+          auto_select: false,
+          cancel_on_tap_outside: true
+        });
+        isGisInitialized = true;
+
+        const officialBtnContainer = $("#google-official-btn-container");
+        if (officialBtnContainer) {
+          officialBtnContainer.innerHTML = "";
+          window.google.accounts.id.renderButton(officialBtnContainer, {
+            theme: "outline",
+            size: "large",
+            type: "standard",
+            shape: "pill",
+            text: "continue_with",
+            logo_alignment: "left",
+            width: "280"
+          });
+        }
+      } catch (err) {
+        console.warn("GIS initialization warning:", err.message);
+      }
+    }
+  }
 
   function getSavedGoogleAccounts() {
     try {
@@ -3268,7 +3332,7 @@
         email,
         avatar: avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}`
       });
-      localStorage.setItem(GOOGLE_ACCOUNTS_STORAGE_KEY, JSON.stringify(accounts.slice(0, 3)));
+      localStorage.setItem(GOOGLE_ACCOUNTS_STORAGE_KEY, JSON.stringify(accounts.slice(0, 4)));
     } catch (e) {
       console.warn("Could not save Google account locally:", e);
     }
@@ -3278,11 +3342,13 @@
     $("#auth-main-view")?.classList.add("hidden");
     $("#auth-whatsapp-view")?.classList.add("hidden");
     $("#auth-social-view")?.classList.add("hidden");
+    $("#auth-forgot-view")?.classList.add("hidden");
     $("#auth-google-view")?.classList.remove("hidden");
     $("#google-alert-msg")?.classList.add("hidden");
 
-    // Try Google Identity Services (GIS One-Tap) if loaded
-    if (window.google?.accounts?.id) {
+    // Initialize or trigger Google Identity Services
+    initGoogleIdentityServices();
+    if (googleClientIdConfig && window.google?.accounts?.id) {
       try {
         window.google.accounts.id.prompt((notification) => {
           if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
@@ -3294,13 +3360,13 @@
       }
     }
 
-    // Render Saved Accounts list on device (like native mobile apps)
+    // Render Saved Accounts list on device (1-Tap instant login)
     const listContainer = $("#google-saved-accounts-list");
     if (listContainer) {
       let saved = getSavedGoogleAccounts();
       if (!saved.length) {
         saved = [
-          { name: "Sign in with Google", email: "Enter your Gmail to continue", avatar: "" }
+          { name: "Google Account Login", email: "Select or enter your Gmail to continue", avatar: "" }
         ];
       }
 
@@ -3322,44 +3388,51 @@
           const email = card.getAttribute("data-email");
           const name = card.getAttribute("data-name");
           if (email && email.includes("@")) {
-            $("#google-name-input").value = name;
-            $("#google-email-input").value = email;
-            $("#google-quick-form")?.dispatchEvent(new Event("submit"));
+            triggerGoogleAccountLogin(name, email);
           } else {
-            $("#google-name-input")?.focus();
+            $("#google-email-input")?.focus();
           }
         });
       });
     }
 
-    $("#google-name-input")?.focus();
+    // Wire "+ @gmail" suffix chip
+    const suffixBtn = $("#google-gmail-suffix-btn");
+    if (suffixBtn) {
+      suffixBtn.onclick = () => {
+        const emailInput = $("#google-email-input");
+        if (emailInput) {
+          let val = emailInput.value.trim();
+          if (val && !val.includes("@")) {
+            emailInput.value = val + "@gmail.com";
+          }
+          emailInput.focus();
+        }
+      };
+    }
+
+    $("#google-email-input")?.focus();
   }
 
-  async function handleGoogleFormSubmit(e) {
-    e.preventDefault();
+  async function triggerGoogleAccountLogin(name, email) {
     const alertMsg = $("#google-alert-msg");
     const submitBtn = $("#google-submit-btn");
-    const nameInput = $("#google-name-input");
-    const emailInput = $("#google-email-input");
 
-    const name = (nameInput?.value || "").trim();
-    const rawEmail = (emailInput?.value || "").trim().toLowerCase();
-
-    if (!name) {
-      if (alertMsg) {
-        alertMsg.textContent = "Please enter your full name.";
-        alertMsg.classList.remove("hidden");
-      }
-      nameInput?.focus();
-      return;
-    }
-    if (!rawEmail || !rawEmail.includes("@")) {
+    const cleanEmail = (email || "").trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes("@")) {
       if (alertMsg) {
         alertMsg.textContent = "Please enter a valid Gmail or Google account email.";
         alertMsg.classList.remove("hidden");
       }
-      emailInput?.focus();
+      $("#google-email-input")?.focus();
       return;
+    }
+
+    // Auto-derive clean display name from email (e.g. aman.raj -> Aman Raj)
+    let cleanName = (name || "").trim();
+    if (!cleanName || cleanName.toLowerCase().includes("sign in") || cleanName.toLowerCase().includes("google user") || cleanName.toLowerCase().includes("google account")) {
+      const userPart = cleanEmail.split("@")[0].replace(/[._0-9-]/g, " ").trim();
+      cleanName = userPart ? userPart.replace(/\b\w/g, c => c.toUpperCase()) : "Google Customer";
     }
 
     try {
@@ -3369,7 +3442,7 @@
       }
       if (alertMsg) alertMsg.classList.add("hidden");
 
-      const user = await zeshCustomerAPI.socialLogin("google", { name, email: rawEmail });
+      const user = await zeshCustomerAPI.socialLogin("google", { name: cleanName, email: cleanEmail });
       saveGoogleAccount(user.name, user.email, user.avatar);
 
       $("#auth-modal-backdrop")?.classList.remove("active");
@@ -3389,10 +3462,187 @@
         submitBtn.disabled = false;
         submitBtn.innerHTML = `
           <svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/></svg>
-          <span>Sign In with Google</span>
+          <span>Continue with Google</span>
         `;
       }
     }
+  }
+
+  async function handleGoogleFormSubmit(e) {
+    e.preventDefault();
+    const emailInput = $("#google-email-input");
+    const rawEmail = (emailInput?.value || "").trim().toLowerCase();
+    await triggerGoogleAccountLogin("", rawEmail);
+  }
+
+  // ==========================================================================
+  // 4. Customer Forgot Password with Real Email OTP
+  // ==========================================================================
+  let customerForgotEmail = "";
+
+  function setupCustomerForgotPassword() {
+    $("#open-customer-forgot-btn")?.addEventListener("click", () => {
+      $("#auth-main-view")?.classList.add("hidden");
+      $("#auth-google-view")?.classList.add("hidden");
+      $("#auth-whatsapp-view")?.classList.add("hidden");
+      $("#auth-social-view")?.classList.add("hidden");
+      $("#auth-forgot-view")?.classList.remove("hidden");
+
+      $("#customer-forgot-step1-alert")?.classList.add("hidden");
+      $("#customer-forgot-step2-alert")?.classList.add("hidden");
+      $("#customer-forgot-step2-success")?.classList.add("hidden");
+      $("#customer-forgot-step1-form")?.classList.remove("hidden");
+      $("#customer-forgot-step2-form")?.classList.add("hidden");
+
+      const enteredEmail = $("#auth-email-input")?.value.trim();
+      if (enteredEmail && $("#customer-forgot-email")) {
+        $("#customer-forgot-email").value = enteredEmail;
+      }
+    });
+
+    // Step 1: Send OTP to real mailbox
+    $("#customer-forgot-step1-form")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = ($("#customer-forgot-email")?.value || "").trim().toLowerCase();
+      const btn = $("#customer-forgot-send-btn");
+      const alertBox = $("#customer-forgot-step1-alert");
+
+      if (!email || !email.includes("@")) {
+        if (alertBox) {
+          alertBox.textContent = "Please enter a valid email address.";
+          alertBox.classList.remove("hidden");
+        }
+        return;
+      }
+
+      try {
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = `<span>Sending OTP to your mailbox...</span>`;
+        }
+        alertBox?.classList.add("hidden");
+
+        const res = await zeshCustomerAPI.sendForgotPasswordOtp(email);
+        customerForgotEmail = email;
+
+        if ($("#customer-forgot-target-email")) {
+          $("#customer-forgot-target-email").textContent = email;
+        }
+
+        const fallbackBox = $("#customer-forgot-fallback-otp-box");
+        const fallbackOtp = $("#customer-forgot-fallback-otp");
+        if (res.otp && fallbackBox && fallbackOtp) {
+          fallbackOtp.textContent = res.otp;
+          fallbackBox.classList.remove("hidden");
+        } else if (fallbackBox) {
+          fallbackBox.classList.add("hidden");
+        }
+
+        showToast(res.message || "OTP sent to your email!", "success");
+
+        $("#customer-forgot-step1-form")?.classList.add("hidden");
+        $("#customer-forgot-step2-form")?.classList.remove("hidden");
+        $("#customer-forgot-otp")?.focus();
+      } catch (err) {
+        console.error("Forgot password send-otp error:", err);
+        if (alertBox) {
+          alertBox.textContent = err.message || "Could not send OTP. Please check your email.";
+          alertBox.classList.remove("hidden");
+        }
+        showToast(err.message || "Failed to send reset OTP", "error");
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<span>Send Reset OTP to Email</span>`;
+        }
+      }
+    });
+
+    // Step 2: Verify OTP and reset password
+    $("#customer-forgot-step2-form")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const otp = ($("#customer-forgot-otp")?.value || "").trim();
+      const newPass = $("#customer-forgot-new-pass")?.value || "";
+      const confirmPass = $("#customer-forgot-confirm-pass")?.value || "";
+      const btn = $("#customer-forgot-reset-btn");
+      const alertBox = $("#customer-forgot-step2-alert");
+      const successBox = $("#customer-forgot-step2-success");
+
+      if (!otp || otp.length !== 6) {
+        if (alertBox) {
+          alertBox.textContent = "Please enter the complete 6-digit OTP.";
+          alertBox.classList.remove("hidden");
+        }
+        $("#customer-forgot-otp")?.focus();
+        return;
+      }
+
+      if (newPass.length < 8) {
+        if (alertBox) {
+          alertBox.textContent = "Password must be at least 8 characters.";
+          alertBox.classList.remove("hidden");
+        }
+        $("#customer-forgot-new-pass")?.focus();
+        return;
+      }
+
+      if (newPass !== confirmPass) {
+        if (alertBox) {
+          alertBox.textContent = "Passwords do not match.";
+          alertBox.classList.remove("hidden");
+        }
+        $("#customer-forgot-confirm-pass")?.focus();
+        return;
+      }
+
+      try {
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = `<span>Resetting Password...</span>`;
+        }
+        alertBox?.classList.add("hidden");
+        successBox?.classList.add("hidden");
+
+        const res = await zeshCustomerAPI.resetPasswordWithOtp(customerForgotEmail, otp, newPass);
+
+        if (successBox) {
+          successBox.textContent = res.message || "Password successfully reset! Logging you in...";
+          successBox.classList.remove("hidden");
+        }
+
+        showToast("Password reset successfully!", "success");
+
+        // Auto login user with new password
+        try {
+          await zeshCustomerAPI.login(customerForgotEmail, newPass);
+          setTimeout(() => {
+            $("#auth-modal-backdrop")?.classList.remove("active");
+            hideAllAuthSubviews();
+            updateCustomerAuthHeader();
+            showToast("Welcome back! Signed in with new password.", "success");
+          }, 800);
+        } catch {
+          setTimeout(() => {
+            hideAllAuthSubviews();
+            $("#auth-email-input").value = customerForgotEmail;
+            $("#auth-password-input").value = "";
+            $("#auth-password-input")?.focus();
+          }, 1000);
+        }
+      } catch (err) {
+        console.error("Forgot password reset error:", err);
+        if (alertBox) {
+          alertBox.textContent = err.message || "Failed to reset password. Please check OTP.";
+          alertBox.classList.remove("hidden");
+        }
+        showToast(err.message || "Password reset failed", "error");
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<span>Reset Password & Sign In</span>`;
+        }
+      }
+    });
   }
 
   // ==========================================================================

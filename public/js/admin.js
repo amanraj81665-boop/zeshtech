@@ -200,11 +200,15 @@
         const res = await zeshAPI.sendForgotPasswordOtp(email);
         forgotPasswordEmail = email;
 
-        showToast("Password reset OTP generated!", "success");
+        showToast(res.message || "Password reset OTP generated!", "success");
 
         // Display OTP on screen & wire WhatsApp link
         if ($("#forgot-otp-display")) {
-          $("#forgot-otp-display").textContent = res.otp || "Sent via WhatsApp";
+          if (res.emailSent) {
+            $("#forgot-otp-display").innerHTML = '<span style="font-size: 13px; color: #38bdf8; font-weight: 700; letter-spacing: normal;">✓ Dispatched to Email Mailbox</span>';
+          } else {
+            $("#forgot-otp-display").textContent = res.otp || "Sent via Mailbox";
+          }
         }
         if ($("#forgot-whatsapp-link") && res.whatsappLink) {
           $("#forgot-whatsapp-link").href = res.whatsappLink;

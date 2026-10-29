@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..800;1,9..40,400..800&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="/css/style.css?v=4.4">
+  <link rel="stylesheet" href="/css/style.css?v=4.5">
 
   <!-- Official Google Identity Services (GIS) Web SDK -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -846,6 +846,10 @@
 
           <div id="auth-alert-msg" class="badge badge-danger hidden" style="width: 100%; padding: 10px; margin-bottom: 16px; border-radius: var(--radius-md);"></div>
 
+          <div style="display: flex; justify-content: flex-end; margin-top: -6px; margin-bottom: 14px;">
+            <button type="button" id="open-customer-forgot-btn" style="background: none; border: none; color: #2563eb; cursor: pointer; font-size: 12px; font-weight: 700; padding: 0; text-decoration: underline;">Forgot Password?</button>
+          </div>
+
           <button type="submit" class="btn btn-primary btn-full btn-large" id="auth-submit-btn">Sign In</button>
         </form>
         </div>
@@ -857,8 +861,8 @@
             <span>Back to login options</span>
           </button>
 
-          <div style="text-align: center; margin-bottom: 18px;">
-            <svg style="width: 36px; height: 36px; margin: 0 auto 8px;" viewBox="0 0 24 24">
+          <div style="text-align: center; margin-bottom: 16px;">
+            <svg style="width: 38px; height: 38px; margin: 0 auto 6px;" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
               <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
@@ -868,25 +872,27 @@
             <p style="font-size: 12.5px; color: var(--text-muted); margin: 0;">to continue to <strong>ZESH-TECH</strong></p>
           </div>
 
-          <!-- Saved Account List (Real app feel) -->
+          <!-- Official Google Identity Services Button Container (When Client ID configured) -->
+          <div id="google-official-btn-container" style="display: flex; justify-content: center; margin-bottom: 12px;"></div>
+
+          <!-- Saved Account List on Device (1-Tap instant login) -->
           <div id="google-saved-accounts-list" style="margin-bottom: 12px;"></div>
 
+          <!-- 1-Step Gmail Direct Sign In (No name required!) -->
           <form id="google-quick-form">
-            <div class="field" style="margin-bottom: 12px;">
-              <label style="font-size: 12px; font-weight: 700;">Your Real Full Name *</label>
-              <input type="text" id="google-name-input" placeholder="e.g. Rahul Sharma" required autocomplete="name">
-            </div>
-
-            <div class="field" style="margin-bottom: 14px;">
-              <label style="font-size: 12px; font-weight: 700;">Google / Gmail Address *</label>
-              <input type="email" id="google-email-input" placeholder="yourname@gmail.com" required autocomplete="email">
+            <div class="field" style="margin-bottom: 10px;">
+              <label style="font-size: 12px; font-weight: 700;">Or enter your Google / Gmail address</label>
+              <div style="position: relative;">
+                <input type="email" id="google-email-input" placeholder="yourname@gmail.com" required autocomplete="email" style="padding-right: 85px;">
+                <button type="button" id="google-gmail-suffix-btn" style="position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: var(--surface-alt); border: 1px solid var(--border); border-radius: 4px; padding: 3px 8px; font-size: 11px; font-weight: 700; color: #2563eb; cursor: pointer;">+ @gmail</button>
+              </div>
             </div>
 
             <div id="google-alert-msg" class="badge badge-danger hidden" style="width: 100%; padding: 10px; margin-bottom: 12px; border-radius: var(--radius-md);"></div>
 
             <button type="submit" class="btn btn-full btn-large" id="google-submit-btn" style="background: #4285F4; color: white; font-weight: 800; font-size: 14px; padding: 13px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; gap: 8px;">
               <svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/></svg>
-              <span>Sign In with Google</span>
+              <span>Continue with Google</span>
             </button>
           </form>
         </div>
@@ -1016,11 +1022,75 @@
             </button>
           </form>
         </div>
+
+        <!-- 4. Dedicated Customer Forgot Password View with Real Email OTP -->
+        <div id="auth-forgot-view" class="hidden">
+          <button type="button" class="btn-back-to-auth btn btn-small" id="forgot-back-btn" style="background: none; border: none; color: var(--primary); padding: 0; margin-bottom: 16px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+            <span>Back to sign in</span>
+          </button>
+
+          <div style="text-align: center; margin-bottom: 18px;">
+            <div style="width: 44px; height: 44px; border-radius: 50%; background: rgba(37, 99, 235, 0.1); color: #2563eb; display: grid; place-items: center; margin: 0 auto 10px;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <h3 style="font-size: 19px; font-weight: 800; margin: 0 0 4px;">Reset Password</h3>
+            <p style="font-size: 12.5px; color: var(--text-muted); margin: 0;">We will send a 6-digit verification OTP directly to your email inbox.</p>
+          </div>
+
+          <!-- Step 1: Enter Email -->
+          <form id="customer-forgot-step1-form">
+            <div class="field" style="margin-bottom: 14px;">
+              <label style="font-size: 12px; font-weight: 700;">Your Registered Email Address *</label>
+              <input type="email" id="customer-forgot-email" placeholder="yourname@gmail.com" required autocomplete="email">
+            </div>
+
+            <div id="customer-forgot-step1-alert" class="badge badge-danger hidden" style="width: 100%; padding: 10px; margin-bottom: 12px; border-radius: var(--radius-md);"></div>
+
+            <button type="submit" class="btn btn-primary btn-full btn-large" id="customer-forgot-send-btn" style="font-weight: 800;">
+              <span>Send Reset OTP to Email</span>
+            </button>
+          </form>
+
+          <!-- Step 2: Enter OTP & New Password -->
+          <form id="customer-forgot-step2-form" class="hidden" style="margin-top: 6px;">
+            <div style="background: rgba(37, 99, 235, 0.06); border: 1px solid rgba(37, 99, 235, 0.2); border-radius: 8px; padding: 12px; margin-bottom: 14px; text-align: center;">
+              <div style="font-size: 12px; color: #1e40af; font-weight: 700;">OTP sent to your mailbox:</div>
+              <div style="font-size: 13.5px; font-weight: 800; color: #0f172a; margin-top: 2px;" id="customer-forgot-target-email">user@gmail.com</div>
+              <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Check your Gmail Inbox &amp; Spam folder</div>
+              <div id="customer-forgot-fallback-otp-box" class="hidden" style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(37,99,235,0.25);">
+                <span style="font-size: 11px; color: #64748b;">Your OTP: </span>
+                <strong id="customer-forgot-fallback-otp" style="font-family: var(--font-mono); font-size: 15px; color: #0284c7; letter-spacing: 2px;"></strong>
+              </div>
+            </div>
+
+            <div class="field" style="margin-bottom: 12px;">
+              <label style="font-size: 12px; font-weight: 700;">Enter 6-Digit Email OTP *</label>
+              <input type="text" id="customer-forgot-otp" placeholder="123456" maxlength="6" required style="font-size: 18px; letter-spacing: 4px; text-align: center; font-weight: 800; font-family: var(--font-mono);">
+            </div>
+
+            <div class="field" style="margin-bottom: 12px;">
+              <label style="font-size: 12px; font-weight: 700;">New Password (Min 8 Characters) *</label>
+              <input type="password" id="customer-forgot-new-pass" minlength="8" required placeholder="New secure password">
+            </div>
+
+            <div class="field" style="margin-bottom: 14px;">
+              <label style="font-size: 12px; font-weight: 700;">Confirm New Password *</label>
+              <input type="password" id="customer-forgot-confirm-pass" minlength="8" required placeholder="Re-enter new password">
+            </div>
+
+            <div id="customer-forgot-step2-alert" class="badge badge-danger hidden" style="width: 100%; padding: 10px; margin-bottom: 12px; border-radius: var(--radius-md);"></div>
+            <div id="customer-forgot-step2-success" class="badge badge-success hidden" style="width: 100%; padding: 10px; margin-bottom: 12px; border-radius: var(--radius-md);"></div>
+
+            <button type="submit" class="btn btn-primary btn-full btn-large" id="customer-forgot-reset-btn" style="font-weight: 800;">
+              <span>Reset Password &amp; Sign In</span>
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   </div>
 
-  
   <!-- Customer Digital Warranty & Bills Locker Modal -->
   <div class="modal-backdrop" id="warranty-locker-modal" onclick="if(event.target === this) this.classList.remove('active');">
     <div class="modal-dialog modal-dialog-large" style="max-width: 680px;">
@@ -1346,7 +1416,7 @@
       </div>
       <div style="display: flex; align-items: center; gap: 10px; font-size: 11px; color: #94a3b8;">
         <span style="display: inline-flex; align-items: center; gap: 5px; color: #34d399; font-weight: 700;">
-          <span class="live-dot pulse-dot" style="width: 7px; height: 7px;"></span> Production Certified (v4.4 Final)
+          <span class="live-dot pulse-dot" style="width: 7px; height: 7px;"></span> Production Certified (v4.5 Final)
         </span>
         <span>•</span>
         <span style="color: #cbd5e1; font-weight: 600;">Zesh-Tech Enterprise Retail Suite</span>
@@ -1386,9 +1456,9 @@
   </nav>
 
   <!-- Scripts with Cache Busting -->
-  <script src="/js/phoneSpecsData.js?v=4.4"></script>
-  <script src="/js/api.js?v=4.4"></script>
-  <script src="/js/app.js?v=4.4"></script>
+  <script src="/js/phoneSpecsData.js?v=4.5"></script>
+  <script src="/js/api.js?v=4.5"></script>
+  <script src="/js/app.js?v=4.5"></script>
   <script>
     // PWA Service Worker Registration
     if ('serviceWorker' in navigator) {
