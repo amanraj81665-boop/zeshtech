@@ -86,11 +86,12 @@ app.use("/api/uploads", uploadRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/bills", billRoutes);
 app.use("/api/admin", adminUsersRoutes);
-// Frontend static files with production caching headers
+// Frontend static files with production caching headers & dotfiles enabled for .well-known
 app.use(
   express.static(path.join(__dirname, "public"), {
     etag: true,
     lastModified: true,
+    dotfiles: "allow",
     setHeaders: (res, filePath) => {
       if (filePath.endsWith(".html")) {
         res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
