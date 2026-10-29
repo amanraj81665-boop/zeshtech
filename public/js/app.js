@@ -805,6 +805,21 @@
                 <div class="fk-protect-promise">✓ 100% Genuine Brand Product • Free Store Pickup • Express Delivery (Barh &amp; Patna)</div>
               </div>
 
+              <!-- Action Buttons Row (Buy Now, Add to Bag, Compare) - Right below price -->
+              <div class="fk-actions-bottom-row">
+                <button class="btn btn-primary fk-btn-buy direct-buy-btn" data-id="${escapeHTML(product._id)}" ${isOut ? "disabled" : ""}>
+                  ⚡ Instant Buy Now
+                </button>
+                <button class="btn btn-secondary fk-btn-bag add-to-bag-btn" data-id="${escapeHTML(product._id)}" ${isOut ? "disabled" : ""}>
+                  🛒 Add to Bag
+                </button>
+                ${product.category === "Mobile" ? `
+                  <button class="btn btn-dark fk-btn-compare compare-this-btn" data-id="${escapeHTML(product._id)}" type="button">
+                    ⚖️ Compare in Budget
+                  </button>
+                ` : ""}
+              </div>
+
               <!-- ZESH MEGA SAVINGS Apply Offers Box -->
               <div class="fk-wow-deal-box">
                 <div class="fk-wow-header" id="fk-toggle-wow-deal" role="button" tabindex="0">
@@ -1034,21 +1049,6 @@
                   </div>
                 </div>
               ` : ""}
-
-              <!-- Action Buttons Row (Buy Now, Add to Bag, Compare) -->
-              <div class="fk-actions-bottom-row">
-                <button class="btn btn-primary fk-btn-buy direct-buy-btn" data-id="${escapeHTML(product._id)}" ${isOut ? "disabled" : ""}>
-                  ⚡ Instant Buy Now
-                </button>
-                <button class="btn btn-secondary fk-btn-bag add-to-bag-btn" data-id="${escapeHTML(product._id)}" ${isOut ? "disabled" : ""}>
-                  🛒 Add to Bag
-                </button>
-                ${product.category === "Mobile" ? `
-                  <button class="btn btn-dark fk-btn-compare compare-this-btn" data-id="${escapeHTML(product._id)}" type="button">
-                    ⚖️ Compare in Budget
-                  </button>
-                ` : ""}
-              </div>
             </div>
           </div>
         </div>
