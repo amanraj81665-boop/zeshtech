@@ -20,6 +20,9 @@ function publicUser(user) {
     id: user._id.toString(),
     name: user.name,
     email: user.email,
+    phone: user.phone || "",
+    avatar: user.avatar || "",
+    authProvider: user.authProvider || "local",
     role: user.role,
     createdAt: user.createdAt
   };
@@ -715,7 +718,7 @@ router.get("/me", authMiddleware, async (req, res) => {
     }
 
     const user = await User.findById(userId).select(
-      "name email role createdAt"
+      "name email phone avatar authProvider role createdAt"
     );
 
     if (!user) {
@@ -760,7 +763,7 @@ router.patch("/me", authMiddleware, async (req, res) => {
       });
     }
 
-    const { name, currentPassword, newPassword } = req.body || {};
+    const { name, phone, currentPassword, newPassword } = req.body || {};
 
     if (name && typeof name === "string") {
       const cleanName = name.trim();
@@ -771,6 +774,17 @@ router.patch("/me", authMiddleware, async (req, res) => {
         });
       }
       user.name = cleanName;
+    }
+
+    if (typeof phone === "string") {
+      const cleanPhone = phone.trim().replace(/\D/g, "");
+      if (cleanPhone.length > 0 && cleanPhone.length !== 10) {
+        return res.status(400).json({
+          success: false,
+          message: "Phone number must be a valid 10-digit mobile number"
+        });
+      }
+      user.phone = cleanPhone;
     }
 
     if (newPassword) {

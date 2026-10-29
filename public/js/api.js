@@ -456,6 +456,9 @@ const customerAPI = {
     });
     if (data.user) {
       sessionStorage.setItem("zesh_customer_user", JSON.stringify(data.user));
+      if (localStorage.getItem("zesh_customer_token")) {
+        localStorage.setItem("zesh_customer_user", JSON.stringify(data.user));
+      }
     }
     return data.user;
   },

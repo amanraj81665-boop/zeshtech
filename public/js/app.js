@@ -17,6 +17,56 @@
 
   const imageFallback = "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=600&q=80";
 
+  /* ==========================================================================
+     Modal Isolation & Body Scroll Lock (Prevents Background Rubberband Glitch)
+     ========================================================================== */
+  let scrollLockPosition = 0;
+
+  function lockBodyScroll() {
+    if (document.body.classList.contains("modal-open")) return;
+    scrollLockPosition = window.pageYOffset || document.documentElement.scrollTop || 0;
+    document.body.classList.add("modal-open");
+    document.documentElement.classList.add("modal-open");
+    document.body.style.top = `-${scrollLockPosition}px`;
+    document.body.style.position = "fixed";
+    document.body.style.width = "100%";
+  }
+
+  function unlockBodyScroll() {
+    // Only unlock if no modal backdrop or drawer is currently active
+    const activeModals = document.querySelectorAll(".modal-backdrop.active, #cart-drawer.active, #cart-drawer-overlay.active");
+    if (activeModals.length > 0) return;
+
+    if (document.body.classList.contains("modal-open")) {
+      document.body.classList.remove("modal-open");
+      document.documentElement.classList.remove("modal-open");
+      document.body.style.top = "";
+      document.body.style.position = "";
+      document.body.style.width = "";
+      window.scrollTo(0, scrollLockPosition);
+    }
+  }
+
+  // Automatic MutationObserver to keep body scroll lock 100% in sync with all modals
+  try {
+    const modalObserver = new MutationObserver(() => {
+      const active = document.querySelector(".modal-backdrop.active, #cart-drawer.active, #cart-drawer-overlay.active");
+      if (active) {
+        lockBodyScroll();
+      } else {
+        unlockBodyScroll();
+      }
+    });
+
+    modalObserver.observe(document.body, {
+      attributes: true,
+      subtree: true,
+      attributeFilter: ["class"]
+    });
+  } catch (err) {
+    console.warn("Modal observer init warning:", err);
+  }
+
   // Application State
   let allProducts = [];
   let cart = [];
@@ -1798,18 +1848,44 @@
     $("#checkout-subtotal-val").textContent = money(subtotal);
     $("#checkout-grand-total-val").textContent = money(subtotal);
 
-    // Pre-fill if customer profile exists
-    const customer = zeshCustomerAPI.user;
-    if (customer && customer.name) {
-      const nameInput = $("#checkout-name");
-      if (nameInput && !nameInput.value) nameInput.value = customer.name;
+    // Pre-fill if customer profile or saved delivery address exists
+    const customer = zeshCustomerAPI.user || {};
+    let savedAddr = null;
+    try {
+      const raw = localStorage.getItem("zesh_saved_address");
+      if (raw) savedAddr = JSON.parse(raw);
+    } catch (e) {}
+
+    const nameInput = $("#checkout-name");
+    if (nameInput && !nameInput.value) {
+      nameInput.value = customer.name || savedAddr?.name || "";
     }
 
-    try {
-      const savedPin = localStorage.getItem("zesh_delivery_pincode");
-      const pinInput = $("#checkout-pincode");
-      if (pinInput && savedPin && !pinInput.value) pinInput.value = savedPin;
-    } catch (e) {}
+    const phoneInput = $("#checkout-phone");
+    if (phoneInput && !phoneInput.value) {
+      phoneInput.value = customer.phone || savedAddr?.phone || "";
+    }
+
+    const addrInput = $("#checkout-address");
+    if (addrInput && !addrInput.value && savedAddr) {
+      const fullAddr = [savedAddr.line1, savedAddr.street].filter(Boolean).join(", ");
+      if (fullAddr) addrInput.value = fullAddr;
+    }
+
+    const cityInput = $("#checkout-city");
+    if (cityInput && !cityInput.value) {
+      cityInput.value = savedAddr?.city || "Barh, Patna";
+    }
+
+    const stateInput = $("#checkout-state");
+    if (stateInput && !stateInput.value) {
+      stateInput.value = savedAddr?.state || "Bihar";
+    }
+
+    const pinInput = $("#checkout-pincode");
+    if (pinInput && !pinInput.value) {
+      pinInput.value = savedAddr?.pincode || localStorage.getItem("zesh_delivery_pincode") || "803213";
+    }
 
     $("#checkout-error-msg")?.classList.add("hidden");
     modal.classList.add("active");
@@ -1905,6 +1981,19 @@
       // If Cash on Delivery or Finance:
       const res = await zeshCustomerAPI.createOrder(orderPayload);
       const createdOrder = res.order;
+
+      // Save address for future 1-click checkout
+      try {
+        const autoSaveAddr = {
+          name: orderPayload.customerName,
+          phone: orderPayload.customerPhone,
+          street: orderPayload.shippingAddress,
+          city: orderPayload.shippingCity,
+          state: orderPayload.shippingState,
+          pincode: orderPayload.shippingPincode
+        };
+        localStorage.setItem("zesh_saved_address", JSON.stringify(autoSaveAddr));
+      } catch (e) {}
 
       // Clear bag and update UI
       cart = [];
@@ -2052,41 +2141,114 @@
     if (!backdrop) return;
 
     backdrop.classList.add("active");
+    lockBodyScroll();
+
+    // Render VIP Header Info
+    renderCustomerVipCard();
+
+    // Switch to orders tab by default
     switchPortalTab("orders");
+
+    // Load orders in background and update metrics
     await loadCustomerOrders();
+
+    // Populate profile and delivery address fields
     populateProfileForm();
+
+    // In background, auto-fetch warranty count if customer has phone
+    loadCustomerWarrantyMetrics();
+  }
+
+  function renderCustomerVipCard() {
+    const user = zeshCustomerAPI.user || {};
+    const name = user.name || "Valued Customer";
+    const email = user.email || "";
+    const phone = user.phone || getSavedCustomerPhone() || "";
+
+    // Generate Initials (e.g. "Aman Raj" -> "AR")
+    const words = name.trim().split(/\s+/);
+    let initials = "ZT";
+    if (words.length >= 2) {
+      initials = (words[0][0] + words[1][0]).toUpperCase();
+    } else if (words.length === 1 && words[0].length > 0) {
+      initials = words[0].slice(0, 2).toUpperCase();
+    }
+
+    const avatarText = $("#profile-avatar-text");
+    if (avatarText) avatarText.textContent = initials;
+
+    const nameEl = $("#profile-display-name");
+    if (nameEl) nameEl.textContent = name;
+
+    const emailEl = $("#profile-display-email");
+    if (emailEl) emailEl.textContent = email;
+
+    const phoneEl = $("#profile-display-phone");
+    if (phoneEl) {
+      phoneEl.textContent = phone ? `+91 ${phone}` : "+91 (Add Mobile)";
+    }
+  }
+
+  function getSavedCustomerPhone() {
+    try {
+      const saved = localStorage.getItem("zesh_saved_address");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.phone) return parsed.phone;
+      }
+    } catch (e) {}
+    return "";
   }
 
   function switchPortalTab(tab) {
+    const tabOrders = $("#tab-btn-orders");
+    const tabWarranty = $("#tab-btn-warranty");
+    const tabProfile = $("#tab-btn-profile");
+
+    const paneOrders = $("#customer-orders-tab");
+    const paneWarranty = $("#customer-warranty-tab");
+    const paneProfile = $("#customer-profile-tab");
+
+    // Reset all tabs
+    [tabOrders, tabWarranty, tabProfile].forEach(btn => btn?.classList.remove("active"));
+    [paneOrders, paneWarranty, paneProfile].forEach(pane => pane?.classList.add("hidden"));
+
     if (tab === "orders") {
-      $("#tab-btn-orders")?.classList.add("active");
-      $("#tab-btn-profile")?.classList.remove("active");
-      $("#customer-orders-tab")?.classList.remove("hidden");
-      $("#customer-profile-tab")?.classList.add("hidden");
-    } else {
-      $("#tab-btn-orders")?.classList.remove("active");
-      $("#tab-btn-profile")?.classList.add("active");
-      $("#customer-orders-tab")?.classList.add("hidden");
-      $("#customer-profile-tab")?.classList.remove("hidden");
+      tabOrders?.classList.add("active");
+      paneOrders?.classList.remove("hidden");
+    } else if (tab === "warranty") {
+      tabWarranty?.classList.add("active");
+      paneWarranty?.classList.remove("hidden");
+      loadCustomerWarrantyVault();
+    } else if (tab === "profile") {
+      tabProfile?.classList.add("active");
+      paneProfile?.classList.remove("hidden");
+      populateProfileForm();
     }
   }
 
   async function loadCustomerOrders() {
     const listContainer = $("#customer-orders-list");
+    const metricCount = $("#profile-metric-orders-count");
     if (!listContainer) return;
 
-    listContainer.innerHTML = `<div style="text-align:center; padding: 24px; color:var(--text-muted);">Fetching your orders from database...</div>`;
+    listContainer.innerHTML = `<div style="text-align:center; padding: 24px; color:var(--text-muted);"><div class="live-dot pulse-dot" style="margin: 0 auto 10px; width: 10px; height: 10px;"></div>Fetching your orders from database...</div>`;
 
     try {
       const res = await zeshCustomerAPI.getMyOrders();
       const orders = res.orders || [];
 
+      if (metricCount) {
+        metricCount.textContent = orders.length;
+      }
+
       if (orders.length === 0) {
         listContainer.innerHTML = `
-          <div style="text-align:center; padding: 40px 20px; background: var(--surface-alt); border-radius: var(--radius-md);">
-            <div style="font-size: 28px; margin-bottom: 8px;">📦</div>
-            <h4 style="font-size: 15px; margin-bottom: 4px;">No orders found</h4>
-            <p style="color: var(--text-muted); font-size: 12px;">You haven't placed any orders yet. Discover our tech products to get started.</p>
+          <div style="text-align:center; padding: 36px 20px; background: var(--surface-alt); border-radius: var(--radius-md); border: 1px dashed var(--border);">
+            <div style="font-size: 32px; margin-bottom: 8px;">📦</div>
+            <h4 style="font-size: 15px; margin-bottom: 4px; font-weight: 800;">No Orders Placed Yet</h4>
+            <p style="color: var(--text-muted); font-size: 12px; margin-bottom: 16px;">Explore our smartphones, tablets, and audio gear to place your first order.</p>
+            <button class="btn btn-primary btn-small" type="button" onclick="document.getElementById('customer-portal-backdrop').classList.remove('active');">Start Shopping Now</button>
           </div>
         `;
         return;
@@ -2104,14 +2266,16 @@
         if (order.status === "Cancelled") statusBadgeClass = "badge-danger";
         if (order.status === "Processing" || order.status === "Shipped") statusBadgeClass = "badge-warning";
 
+        const waText = encodeURIComponent(`Hello ZeshTech, I would like a live status update on my Order #${order.orderNumber} placed on ${dateStr}. Total Amount: ₹${order.total}`);
+
         return `
-          <div style="background: white; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px;">
+          <div style="background: white; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; box-shadow: var(--shadow-xs);">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 12px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px; flex-wrap: wrap; gap: 8px;">
               <div>
-                <strong style="font-family: var(--font-mono); font-size: 13px;">${escapeHTML(order.orderNumber)}</strong>
-                <div style="font-size: 11px; color: var(--text-muted);">Placed on ${dateStr} • ${escapeHTML(order.paymentMethod || 'COD')}</div>
+                <strong style="font-family: var(--font-mono); font-size: 14px; color: var(--text);">${escapeHTML(order.orderNumber)}</strong>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Placed on ${dateStr} • ${escapeHTML(order.paymentMethod || 'COD')}</div>
               </div>
-              <span class="badge ${statusBadgeClass}">${escapeHTML(order.status)}</span>
+              <span class="badge ${statusBadgeClass}" style="font-weight: 800; padding: 4px 10px; border-radius: 6px;">${escapeHTML(order.status)}</span>
             </div>
 
             <!-- Milestone Tracker Stepper -->
@@ -2128,7 +2292,17 @@
 
             <div style="display:flex; justify-content:space-between; align-items:center; border-top: 1px dashed var(--border); padding-top: 10px; font-size: 14px; font-weight: 700;">
               <span>Total Payable</span>
-              <span style="color: var(--primary);">${money(order.total)}</span>
+              <span style="color: var(--primary); font-size: 16px;">${money(order.total)}</span>
+            </div>
+
+            <!-- Customer Order Actions -->
+            <div class="profile-order-actions-row">
+              <a href="https://wa.me/917903746116?text=${waText}" target="_blank" rel="noopener" class="profile-wa-track-btn">
+                <span>💬 Track on WhatsApp</span>
+              </a>
+              <button type="button" class="btn btn-outline btn-small" onclick="window.open('/api/bills/order-pdf?order=${encodeURIComponent(order.orderNumber)}', '_blank')">
+                <span>📄 View Digital Bill</span>
+              </button>
             </div>
           </div>
         `;
@@ -2139,48 +2313,231 @@
     }
   }
 
-  function populateProfileForm() {
-    const user = zeshCustomerAPI.user;
-    if (!user) return;
+  async function loadCustomerWarrantyMetrics() {
+    const user = zeshCustomerAPI.user || {};
+    const phone = user.phone || getSavedCustomerPhone();
+    const metricCount = $("#profile-metric-warranty-count");
+    if (!phone || phone.length !== 10) return;
 
+    try {
+      const res = await zeshCustomerAPI.getWarrantyLocker(phone);
+      if (res && res.devices && metricCount) {
+        metricCount.textContent = res.devices.length > 0 ? `${res.devices.length} Handsets` : "0 Linked";
+      }
+    } catch (e) {
+      // Quiet ignore for metrics
+    }
+  }
+
+  async function loadCustomerWarrantyVault() {
+    const container = $("#profile-warranty-content");
+    if (!container) return;
+
+    const user = zeshCustomerAPI.user || {};
+    let phone = user.phone || getSavedCustomerPhone();
+
+    if (!phone || phone.length !== 10) {
+      container.innerHTML = `
+        <div style="text-align: center; padding: 24px; background: white; border: 1px dashed var(--border); border-radius: 12px;">
+          <div style="font-size: 32px; margin-bottom: 8px;">📱</div>
+          <h4 style="font-size: 14px; font-weight: 800; margin-bottom: 6px;">Link Your 10-Digit Mobile Number</h4>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">Please save your 10-digit mobile number in the <b>Profile &amp; Address</b> tab to automatically see your purchased phone's warranty card and IMEI details.</p>
+          <button type="button" class="btn btn-primary btn-small" onclick="switchPortalTab('profile');">
+            Add Mobile Number
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = `
+      <div style="text-align: center; padding: 28px; color: var(--text-muted);">
+        <div class="live-dot pulse-dot" style="margin: 0 auto 10px; width: 10px; height: 10px;"></div>
+        <div>Fetching official brand warranties linked to +91 ${escapeHTML(phone)}...</div>
+      </div>
+    `;
+
+    try {
+      const res = await zeshCustomerAPI.getWarrantyLocker(phone);
+      const devices = res.devices || [];
+
+      if (devices.length === 0) {
+        container.innerHTML = `
+          <div style="background: white; border: 1px dashed var(--border); border-radius: 12px; padding: 24px 16px; text-align: center;">
+            <div style="font-size: 30px; margin-bottom: 6px;">🛡️</div>
+            <div style="font-weight: 800; font-size: 14px; margin-bottom: 4px;">No Devices Registered Yet</div>
+            <p style="font-size: 12px; color: var(--text-muted); max-width: 400px; margin: 0 auto 14px; line-height: 1.5;">
+              No store purchase records found under mobile number <b>+91 ${escapeHTML(phone)}</b>. If you bought your phone in-store, contact our helpdesk to link your invoice.
+            </p>
+            <a href="https://wa.me/917903746116?text=${encodeURIComponent(`Hello ZeshTech, I want to link my smartphone bill to mobile number: ${phone}`)}" target="_blank" rel="noopener" class="btn btn-secondary btn-small" style="color: #22c55e; border-color: #22c55e;">
+              💬 Link Bill via WhatsApp
+            </a>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = `
+        <div style="display: grid; gap: 14px;">
+          ${devices.map(d => {
+            const purchaseDateFormatted = new Date(d.purchaseDate).toLocaleDateString("en-IN", {
+              day: "numeric",
+              month: "short",
+              year: "numeric"
+            });
+            const expiryDateFormatted = new Date(d.warrantyExpiry).toLocaleDateString("en-IN", {
+              day: "numeric",
+              month: "short",
+              year: "numeric"
+            });
+
+            const isExpired = d.daysRemaining <= 0;
+            const badgeColor = isExpired ? "#ef4444" : "#16a34a";
+            const badgeBg = isExpired ? "rgba(239, 68, 68, 0.12)" : "rgba(22, 163, 74, 0.12)";
+            const statusText = isExpired ? "Warranty Expired" : `Active • ${d.daysRemaining} Days Left`;
+
+            return `
+              <div style="background: white; border: 1.5px solid var(--border); border-radius: 12px; padding: 16px; box-shadow: var(--shadow-xs);">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                  <div>
+                    <h4 style="font-size: 15px; font-weight: 800; margin: 0 0 2px 0;">${escapeHTML(d.brand)} ${escapeHTML(d.model)}</h4>
+                    <span style="font-size: 11px; color: var(--text-muted);">Invoice #${escapeHTML(d.billNumber || 'POS-BILL')}</span>
+                  </div>
+                  <span class="badge" style="background: ${badgeBg}; color: ${badgeColor}; font-weight: 800; font-size: 11.5px; padding: 4px 10px; border-radius: 6px;">
+                    ${statusText}
+                  </span>
+                </div>
+
+                <div style="background: var(--surface-alt); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; font-size: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                  <div>
+                    <span style="color: var(--text-muted); display: block; font-size: 10.5px;">IMEI / SERIAL NUMBER</span>
+                    <strong style="font-family: var(--font-mono); font-size: 12px; color: var(--text);">${escapeHTML(d.imei)}</strong>
+                  </div>
+                  <div>
+                    <span style="color: var(--text-muted); display: block; font-size: 10.5px;">COLOR &amp; STORAGE</span>
+                    <strong style="color: var(--text);">${escapeHTML(d.color || 'Standard')} • ${escapeHTML(d.storage || 'Standard')}</strong>
+                  </div>
+                  <div>
+                    <span style="color: var(--text-muted); display: block; font-size: 10.5px;">PURCHASE DATE</span>
+                    <strong>${purchaseDateFormatted}</strong>
+                  </div>
+                  <div>
+                    <span style="color: var(--text-muted); display: block; font-size: 10.5px;">WARRANTY EXPIRES</span>
+                    <strong style="color: ${badgeColor};">${expiryDateFormatted}</strong>
+                  </div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                  <span style="font-size: 11px; color: #16a34a; font-weight: 700;">✓ Official Brand Warranty Active</span>
+                  <a href="https://wa.me/917903746116?text=${encodeURIComponent(`Hello ZeshTech, I need warranty support for my ${d.brand} ${d.model} (IMEI: ${d.imei}). Invoice #${d.billNumber}`)}" target="_blank" rel="noopener" class="btn btn-small" style="background: #22c55e; color: white; border: none; font-size: 11.5px; padding: 6px 12px; border-radius: 6px; font-weight: 700; text-decoration: none;">
+                    💬 Claim Warranty / Service
+                  </a>
+                </div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      `;
+
+    } catch (err) {
+      container.innerHTML = `<div style="text-align:center; padding: 20px; color:var(--danger);">${escapeHTML(err.message)}</div>`;
+    }
+  }
+
+  function populateProfileForm() {
+    const user = zeshCustomerAPI.user || {};
     const nameInput = $("#profile-name-input");
+    const phoneInput = $("#profile-phone-input");
     const emailInput = $("#profile-email-input");
+
     if (nameInput) nameInput.value = user.name || "";
     if (emailInput) emailInput.value = user.email || "";
+    if (phoneInput) phoneInput.value = user.phone || getSavedCustomerPhone() || "";
+
+    // Load saved delivery address
+    try {
+      const saved = localStorage.getItem("zesh_saved_address");
+      if (saved) {
+        const addr = JSON.parse(saved);
+        if ($("#profile-addr-line1")) $("#profile-addr-line1").value = addr.line1 || "";
+        if ($("#profile-addr-street")) $("#profile-addr-street").value = addr.street || "";
+        if ($("#profile-addr-city")) $("#profile-addr-city").value = addr.city || "Barh, Patna";
+        if ($("#profile-addr-state")) $("#profile-addr-state").value = addr.state || "Bihar";
+        if ($("#profile-addr-pincode")) $("#profile-addr-pincode").value = addr.pincode || "803213";
+      }
+    } catch (e) {}
   }
 
   async function handleProfileUpdate(e) {
     e.preventDefault();
     const saveBtn = $("#save-profile-btn");
     const feedback = $("#profile-feedback-msg");
-    const name = $("#profile-name-input").value.trim();
-    const currentPassword = $("#profile-current-pwd").value;
-    const newPassword = $("#profile-new-pwd").value;
+
+    const name = ($("#profile-name-input")?.value || "").trim();
+    const phone = ($("#profile-phone-input")?.value || "").trim().replace(/\D/g, "");
+    const line1 = ($("#profile-addr-line1")?.value || "").trim();
+    const street = ($("#profile-addr-street")?.value || "").trim();
+    const city = ($("#profile-addr-city")?.value || "").trim();
+    const state = ($("#profile-addr-state")?.value || "").trim();
+    const pincode = ($("#profile-addr-pincode")?.value || "").trim();
+
+    const currentPassword = $("#profile-current-pwd")?.value || "";
+    const newPassword = $("#profile-new-pwd")?.value || "";
+
+    if (!name || name.length < 2) {
+      showToast("Please enter a valid full name", "error");
+      return;
+    }
+
+    if (phone && phone.length !== 10) {
+      showToast("Please enter a valid 10-digit mobile number", "error");
+      return;
+    }
 
     try {
-      saveBtn.disabled = true;
-      saveBtn.textContent = "Saving...";
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = "Saving Changes...";
+      }
 
-      const payload = { name };
+      const payload = { name, phone };
       if (newPassword) {
         payload.currentPassword = currentPassword;
         payload.newPassword = newPassword;
       }
 
       await zeshCustomerAPI.updateProfile(payload);
+
+      // Save delivery address locally for 1-click checkout
+      const addressData = { line1, street, city, state, pincode, phone, name };
+      localStorage.setItem("zesh_saved_address", JSON.stringify(addressData));
+      if (pincode) localStorage.setItem("zesh_delivery_pincode", pincode);
+
+      // Re-render VIP Header Card and Auth status
+      renderCustomerVipCard();
       updateCustomerAuthHeader();
 
+      // Reset password fields
+      if ($("#profile-current-pwd")) $("#profile-current-pwd").value = "";
+      if ($("#profile-new-pwd")) $("#profile-new-pwd").value = "";
+
       if (feedback) {
-        feedback.textContent = "Profile updated successfully!";
+        feedback.textContent = "✓ Profile & Default Delivery Address saved successfully!";
         feedback.classList.remove("hidden");
-        setTimeout(() => feedback.classList.add("hidden"), 3000);
+        setTimeout(() => feedback.classList.add("hidden"), 4000);
       }
-      showToast("Profile details updated", "success");
+      showToast("Profile & delivery address updated", "success");
+
+      // Auto update warranty count
+      loadCustomerWarrantyMetrics();
+
     } catch (err) {
       showToast(err.message || "Failed to update profile", "error");
     } finally {
-      saveBtn.disabled = false;
-      saveBtn.textContent = "Save Profile Changes";
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = "💾 Save All Profile & Address Details";
+      }
     }
   }
 
@@ -3181,7 +3538,11 @@
       }
     });
     $("#tab-btn-orders")?.addEventListener("click", () => switchPortalTab("orders"));
+    $("#tab-btn-warranty")?.addEventListener("click", () => switchPortalTab("warranty"));
     $("#tab-btn-profile")?.addEventListener("click", () => switchPortalTab("profile"));
+    $("#metric-tile-orders")?.addEventListener("click", () => switchPortalTab("orders"));
+    $("#metric-tile-warranty")?.addEventListener("click", () => switchPortalTab("warranty"));
+    $("#refresh-warranty-btn")?.addEventListener("click", loadCustomerWarrantyVault);
     $("#customer-profile-form")?.addEventListener("submit", handleProfileUpdate);
     $("#customer-logout-btn")?.addEventListener("click", () => {
       zeshCustomerAPI.logout();
