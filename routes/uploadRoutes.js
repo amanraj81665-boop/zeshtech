@@ -2,16 +2,24 @@
 const express = require("express");
 const multer = require("multer");
 const { Readable } = require("stream");
+const path = require("path");
+const fs = require("fs");
+const crypto = require("crypto");
 
 const cloudinary = require("../config/cloudinary");
 const authMiddleware = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
+const uploadDir = path.join(__dirname, "../public/images/uploads");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 10 * 1024 * 1024,
+    fileSize: 20 * 1024 * 1024, // 20 MB limit to support high-res mobile camera shots
     files: 10
   },
   fileFilter(req, file, callback) {
@@ -42,21 +50,42 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-function uploadToCloudinary(buffer) {
-  return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      {
-        folder: "zesh-tech/products",
-        resource_type: "image"
-      },
-      (error, result) => {
-        if (error) return reject(error);
-        resolve(result);
-      }
-    );
+// Upload to Cloudinary with automatic local disk fallback if network fails
+async function saveImageSafe(file) {
+  const hasCloudinary =
+    process.env.CLOUDINARY_CLOUD_NAME &&
+    process.env.CLOUDINARY_API_KEY &&
+    process.env.CLOUDINARY_API_SECRET;
 
-    Readable.from(buffer).pipe(stream);
-  });
+  if (hasCloudinary) {
+    try {
+      const cRes = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          {
+            folder: "zesh-tech/products",
+            resource_type: "image",
+            quality: "auto",
+            fetch_format: "auto"
+          },
+          (error, result) => {
+            if (error) return reject(error);
+            resolve(result);
+          }
+        );
+        Readable.from(file.buffer).pipe(stream);
+      });
+      return cRes.secure_url;
+    } catch (cErr) {
+      console.warn("Cloudinary upload failed, falling back to local file storage:", cErr.message);
+    }
+  }
+
+  // Local disk fallback
+  const ext = path.extname(file.originalname || "") || ".jpg";
+  const uniqueName = `prod_${Date.now()}_${crypto.randomBytes(4).toString("hex")}${ext}`;
+  const filePath = path.join(uploadDir, uniqueName);
+  await fs.promises.writeFile(filePath, file.buffer);
+  return `/images/uploads/${uniqueName}`;
 }
 
 // Single Image Upload
@@ -75,32 +104,20 @@ router.post(
         });
       }
 
-      if (
-        !process.env.CLOUDINARY_CLOUD_NAME ||
-        !process.env.CLOUDINARY_API_KEY ||
-        !process.env.CLOUDINARY_API_SECRET
-      ) {
-        return res.status(500).json({
-          success: false,
-          message: "Cloudinary environment variables are missing."
-        });
-      }
-
-      const result = await uploadToCloudinary(file.buffer);
+      const imageUrl = await saveImageSafe(file);
 
       return res.status(201).json({
         success: true,
         message: "Image uploaded successfully.",
-        imageUrl: result.secure_url,
-        imageUrls: [result.secure_url],
-        publicId: result.public_id
+        imageUrl,
+        imageUrls: [imageUrl]
       });
     } catch (error) {
-      console.error("Cloudinary upload failed:", error.message);
+      console.error("Image upload failed:", error.message);
 
-      return res.status(502).json({
+      return res.status(500).json({
         success: false,
-        message: "Image upload failed. Check Cloudinary settings."
+        message: error.message || "Image upload failed."
       });
     }
   }
@@ -122,20 +139,11 @@ router.post(
         });
       }
 
-      if (
-        !process.env.CLOUDINARY_CLOUD_NAME ||
-        !process.env.CLOUDINARY_API_KEY ||
-        !process.env.CLOUDINARY_API_SECRET
-      ) {
-        return res.status(500).json({
-          success: false,
-          message: "Cloudinary credentials missing in environment."
-        });
+      const imageUrls = [];
+      for (const f of files) {
+        const url = await saveImageSafe(f);
+        imageUrls.push(url);
       }
-
-      const uploadPromises = files.map(f => uploadToCloudinary(f.buffer));
-      const results = await Promise.all(uploadPromises);
-      const imageUrls = results.map(r => r.secure_url);
 
       return res.status(201).json({
         success: true,
@@ -144,10 +152,10 @@ router.post(
         imageUrl: imageUrls[0]
       });
     } catch (error) {
-      console.error("Cloudinary multi-image upload failed:", error.message);
-      return res.status(502).json({
+      console.error("Multi-image upload failed:", error.message);
+      return res.status(500).json({
         success: false,
-        message: "Multiple image upload failed. Check Cloudinary connection."
+        message: error.message || "Multiple image upload failed."
       });
     }
   }
@@ -158,7 +166,7 @@ router.use((error, req, res, next) => {
     return res.status(400).json({
       success: false,
       message: error.code === "LIMIT_FILE_SIZE"
-        ? "Image must be 5 MB or smaller."
+        ? "Image must be 20 MB or smaller."
         : "Invalid image upload."
     });
   }

@@ -1424,10 +1424,14 @@
         <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
           <td style="padding: 12px 10px;">
             <div style="display: flex; align-items: center; gap: 10px;">
-              <img src="${p.imageUrl || '/images/logo.png'}" alt="" style="width: 36px; height: 36px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); background: #000; flex-shrink: 0;" onerror="this.src='/images/logo.png'">
+              <div style="position:relative; flex-shrink:0;">
+                <img src="${p.imageUrl || '/images/logo.png'}" alt="" style="width: 42px; height: 42px; object-fit: contain; border-radius: 8px; border: 1px solid rgba(255,255,255,0.12); background: #020617; padding: 2px;" onerror="this.src='/images/logo.png'">
+                ${(Array.isArray(p.images) && p.images.length > 1) ? `<span style="position:absolute; bottom:-3px; right:-3px; font-size:8.5px; background:#2563eb; color:#fff; border-radius:4px; padding:0 3px; font-weight:700;">${p.images.length}</span>` : ""}
+              </div>
               <div>
                 <strong style="color: white; font-size: 13px; display:block;">${escapeHTML(p.name)}</strong>
                 <span style="font-family: var(--font-mono); font-size: 11px; color: var(--dark-text-muted);">SKU: ${escapeHTML(p.sku)}</span>
+                ${(Array.isArray(p.images) && p.images.length > 1) ? `<span style="font-size: 10px; color: #38bdf8; font-weight: 700; margin-left: 6px;">• 📷 ${p.images.length} Photos</span>` : ""}
                 ${p.serialNumber ? `<span style="font-family: var(--font-mono); font-size: 10px; color: #38bdf8; margin-left: 6px; font-weight: 700;">• S/N: ${escapeHTML(p.serialNumber)}</span>` : ""}
                 ${p.imei1 ? `<span style="font-family: var(--font-mono); font-size: 10px; color: #94a3b8; margin-left: 6px;">• IMEI: ${escapeHTML(p.imei1)}</span>` : ""}
               </div>
@@ -1559,11 +1563,12 @@
     const previewBox = $("#add-product-files-preview");
     const countLabel = $("#add-prod-file-count");
     const clearBtn = $("#add-prod-clear-files-btn");
+    const urlInput = $("#add-product-img-url");
     if (!previewBox) return;
     previewBox.innerHTML = "";
 
     if (countLabel) {
-      countLabel.textContent = `${addProductImageFiles.length} photo${addProductImageFiles.length === 1 ? "" : "s"} ready`;
+      countLabel.textContent = `${addProductImageFiles.length} photo${addProductImageFiles.length === 1 ? "" : "s"} selected`;
     }
     if (clearBtn) {
       clearBtn.style.display = addProductImageFiles.length > 0 ? "inline-block" : "none";
@@ -1571,20 +1576,32 @@
 
     addProductImageFiles.forEach((file, index) => {
       const wrap = document.createElement("div");
-      wrap.style.cssText = "position:relative; width:64px; height:64px; border-radius:8px; overflow:hidden; border:1px solid #3b82f6; background:#0f172a; flex-shrink:0;";
+      wrap.style.cssText = "position:relative; width:72px; height:72px; border-radius:10px; overflow:hidden; border:2px solid " + (index === 0 ? "#3b82f6" : "#334155") + "; background:#020617; flex-shrink:0; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,0.3);";
+      wrap.title = index === 0 ? "Cover Photo (Primary)" : "Click to set as Cover Photo";
+
       const isPrimary = index === 0;
 
       const img = document.createElement("img");
-      img.style.cssText = "width:100%; height:100%; object-fit:contain;";
+      img.style.cssText = "width:100%; height:100%; object-fit:contain; padding:4px;";
       const reader = new FileReader();
       reader.onload = (ev) => { img.src = ev.target.result; };
       reader.readAsDataURL(file);
+
+      // Click to make this image Cover photo
+      wrap.onclick = () => {
+        if (index > 0) {
+          const [selected] = addProductImageFiles.splice(index, 1);
+          addProductImageFiles.unshift(selected);
+          renderAddProductImagesPreview();
+          showToast(`Photo #${index + 1} set as Primary Cover Photo`, "info");
+        }
+      };
 
       const delBtn = document.createElement("button");
       delBtn.type = "button";
       delBtn.textContent = "✕";
       delBtn.title = "Remove this photo";
-      delBtn.style.cssText = "position:absolute; top:2px; right:2px; width:18px; height:18px; border-radius:50%; background:#ef4444; color:#fff; border:none; font-size:10px; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; line-height:1;";
+      delBtn.style.cssText = "position:absolute; top:3px; right:3px; width:20px; height:20px; border-radius:50%; background:#ef4444; color:#fff; border:none; font-size:11px; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; line-height:1; z-index:3;";
       delBtn.onclick = (e) => {
         e.stopPropagation();
         addProductImageFiles.splice(index, 1);
@@ -1592,8 +1609,8 @@
       };
 
       const badge = document.createElement("span");
-      badge.textContent = isPrimary ? "Cover" : `#${index + 1}`;
-      badge.style.cssText = `position:absolute; bottom:2px; left:2px; font-size:9px; background:${isPrimary ? '#2563eb' : 'rgba(0,0,0,0.7)'}; color:#fff; padding:1px 4px; border-radius:4px; font-weight:600;`;
+      badge.textContent = isPrimary ? "★ Cover" : `#${index + 1}`;
+      badge.style.cssText = `position:absolute; bottom:3px; left:3px; font-size:9px; background:${isPrimary ? '#2563eb' : 'rgba(15,23,42,0.85)'}; color:#fff; padding:1px 5px; border-radius:4px; font-weight:700; z-index:2;`;
 
       wrap.appendChild(img);
       wrap.appendChild(delBtn);
@@ -1617,35 +1634,54 @@
 
     if (existingBox) {
       existingBox.innerHTML = "";
-      editProductExistingImages.forEach((imgUrl, index) => {
-        const wrap = document.createElement("div");
-        wrap.style.cssText = "position:relative; width:56px; height:56px; border-radius:8px; overflow:hidden; border:1px solid #475569; background:#0f172a; flex-shrink:0;";
-        wrap.innerHTML = `
-          <img src="${escapeHTML(imgUrl)}" style="width:100%; height:100%; object-fit:contain;">
-          <span style="position:absolute; bottom:2px; left:2px; font-size:8px; background:${index === 0 ? '#2563eb' : 'rgba(0,0,0,0.6)'}; color:#fff; padding:1px 3px; border-radius:3px;">${index === 0 ? 'Cover' : '#' + (index + 1)}</span>
-        `;
-        const delBtn = document.createElement("button");
-        delBtn.type = "button";
-        delBtn.textContent = "✕";
-        delBtn.title = "Delete existing image";
-        delBtn.style.cssText = "position:absolute; top:2px; right:2px; width:16px; height:16px; border-radius:50%; background:#ef4444; color:#fff; border:none; font-size:9px; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;";
-        delBtn.onclick = (e) => {
-          e.stopPropagation();
-          editProductExistingImages.splice(index, 1);
-          renderEditProductImagesPreview();
-        };
-        wrap.appendChild(delBtn);
-        existingBox.appendChild(wrap);
-      });
+      if (editProductExistingImages.length === 0) {
+        existingBox.innerHTML = `<span style="font-size:11px; color:#64748b;">No stored photos</span>`;
+      } else {
+        editProductExistingImages.forEach((imgUrl, index) => {
+          const wrap = document.createElement("div");
+          wrap.style.cssText = "position:relative; width:68px; height:68px; border-radius:10px; overflow:hidden; border:2px solid " + (index === 0 ? "#2563eb" : "#334155") + "; background:#020617; flex-shrink:0; cursor:pointer;";
+          wrap.title = index === 0 ? "Cover Photo" : "Click to make Cover Photo";
+          wrap.innerHTML = `
+            <img src="${escapeHTML(imgUrl)}" style="width:100%; height:100%; object-fit:contain; padding:4px;" onerror="this.src='/images/logo.png'">
+            <span style="position:absolute; bottom:3px; left:3px; font-size:9px; background:${index === 0 ? '#2563eb' : 'rgba(15,23,42,0.85)'}; color:#fff; padding:1px 4px; border-radius:4px; font-weight:700;">${index === 0 ? '★ Cover' : '#' + (index + 1)}</span>
+          `;
+
+          wrap.onclick = () => {
+            if (index > 0) {
+              const [selected] = editProductExistingImages.splice(index, 1);
+              editProductExistingImages.unshift(selected);
+              if ($("#edit-prod-image")) $("#edit-prod-image").value = selected;
+              renderEditProductImagesPreview();
+              showToast(`Photo #${index + 1} set as Primary Cover Photo`, "info");
+            }
+          };
+
+          const delBtn = document.createElement("button");
+          delBtn.type = "button";
+          delBtn.textContent = "✕";
+          delBtn.title = "Delete this image";
+          delBtn.style.cssText = "position:absolute; top:3px; right:3px; width:18px; height:18px; border-radius:50%; background:#ef4444; color:#fff; border:none; font-size:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; z-index:3;";
+          delBtn.onclick = (e) => {
+            e.stopPropagation();
+            editProductExistingImages.splice(index, 1);
+            if ($("#edit-prod-image")) {
+              $("#edit-prod-image").value = editProductExistingImages[0] || "";
+            }
+            renderEditProductImagesPreview();
+          };
+          wrap.appendChild(delBtn);
+          existingBox.appendChild(wrap);
+        });
+      }
     }
 
     if (newBox) {
       newBox.innerHTML = "";
       editProductImageFiles.forEach((file, index) => {
         const wrap = document.createElement("div");
-        wrap.style.cssText = "position:relative; width:56px; height:56px; border-radius:8px; overflow:hidden; border:1px solid #38bdf8; background:#0f172a; flex-shrink:0;";
+        wrap.style.cssText = "position:relative; width:68px; height:68px; border-radius:10px; overflow:hidden; border:2px dashed #38bdf8; background:#020617; flex-shrink:0;";
         const img = document.createElement("img");
-        img.style.cssText = "width:100%; height:100%; object-fit:contain;";
+        img.style.cssText = "width:100%; height:100%; object-fit:contain; padding:4px;";
         const reader = new FileReader();
         reader.onload = (ev) => { img.src = ev.target.result; };
         reader.readAsDataURL(file);
@@ -1653,7 +1689,7 @@
         const delBtn = document.createElement("button");
         delBtn.type = "button";
         delBtn.textContent = "✕";
-        delBtn.style.cssText = "position:absolute; top:2px; right:2px; width:16px; height:16px; border-radius:50%; background:#ef4444; color:#fff; border:none; font-size:9px; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;";
+        delBtn.style.cssText = "position:absolute; top:3px; right:3px; width:18px; height:18px; border-radius:50%; background:#ef4444; color:#fff; border:none; font-size:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; z-index:3;";
         delBtn.onclick = (e) => {
           e.stopPropagation();
           editProductImageFiles.splice(index, 1);
@@ -1661,8 +1697,8 @@
         };
 
         const badge = document.createElement("span");
-        badge.textContent = "New";
-        badge.style.cssText = "position:absolute; bottom:2px; left:2px; font-size:8px; background:#10b981; color:#fff; padding:1px 3px; border-radius:3px; font-weight:600;";
+        badge.textContent = "+New";
+        badge.style.cssText = "position:absolute; bottom:3px; left:3px; font-size:9px; background:#10b981; color:#fff; padding:1px 4px; border-radius:4px; font-weight:700;";
 
         wrap.appendChild(img);
         wrap.appendChild(delBtn);
@@ -1687,8 +1723,8 @@
 
     const formData = new FormData(form);
     const productPayload = {
-      name: formData.get("name").trim(),
-      sku: formData.get("sku").trim().toUpperCase(),
+      name: formData.get("name")?.trim(),
+      sku: formData.get("sku")?.trim().toUpperCase(),
       category: formData.get("category"),
       brand: formData.get("brand")?.trim() || "",
       model: formData.get("model")?.trim() || "",
@@ -1703,6 +1739,19 @@
       images: []
     };
 
+    if (!productPayload.name) {
+      showToast("Product name is required", "error");
+      return;
+    }
+    if (!productPayload.sku) {
+      showToast("SKU is required", "error");
+      return;
+    }
+    if (isNaN(productPayload.sellingPrice)) {
+      showToast("Valid retail price is required", "error");
+      return;
+    }
+
     try {
       btn.disabled = true;
       btn.textContent = "Saving to Catalogue...";
@@ -1710,24 +1759,35 @@
 
       // Check if user selected photos via the multi-file manager or file input
       if (addProductImageFiles.length > 0) {
-        btn.textContent = `Uploading ${addProductImageFiles.length} photo(s) to Cloudinary...`;
+        btn.textContent = `Uploading ${addProductImageFiles.length} photo(s)...`;
         const uploadRes = await zeshAPI.uploadProductImages(addProductImageFiles);
         if (uploadRes && uploadRes.imageUrls && uploadRes.imageUrls.length > 0) {
           productPayload.images = uploadRes.imageUrls;
-          if (!productPayload.imageUrl) {
+          if (!productPayload.imageUrl || productPayload.imageUrl.startsWith("blob:")) {
             productPayload.imageUrl = uploadRes.imageUrls[0];
           }
         }
       } else {
         const fileInput = $("#add-product-file-input");
         if (fileInput && fileInput.files && fileInput.files.length > 0) {
-          btn.textContent = `Uploading ${fileInput.files.length} photo(s) to Cloudinary...`;
+          btn.textContent = `Uploading ${fileInput.files.length} photo(s)...`;
           const uploadRes = await zeshAPI.uploadProductImages(fileInput.files);
-          if (uploadRes && uploadRes.imageUrls) {
+          if (uploadRes && uploadRes.imageUrls && uploadRes.imageUrls.length > 0) {
             productPayload.images = uploadRes.imageUrls;
-            if (!productPayload.imageUrl) productPayload.imageUrl = uploadRes.imageUrls[0];
+            if (!productPayload.imageUrl || productPayload.imageUrl.startsWith("blob:")) {
+              productPayload.imageUrl = uploadRes.imageUrls[0];
+            }
           }
         }
+      }
+
+      // Ensure imageUrl and images array are in sync
+      if (productPayload.imageUrl) {
+        if (!productPayload.images.includes(productPayload.imageUrl)) {
+          productPayload.images.unshift(productPayload.imageUrl);
+        }
+      } else if (productPayload.images.length > 0) {
+        productPayload.imageUrl = productPayload.images[0];
       }
 
       await zeshAPI.addProduct(productPayload);
@@ -1771,10 +1831,12 @@
     $("#edit-prod-image").value = product.imageUrl || "";
     $("#edit-prod-desc").value = product.description || "";
 
-    // Load existing images
-    editProductExistingImages = Array.isArray(product.images) && product.images.length > 0
-      ? [...product.images]
-      : (product.imageUrl ? [product.imageUrl] : []);
+    // Load existing images (include both images array and imageUrl)
+    const combined = [
+      product.imageUrl,
+      ...(Array.isArray(product.images) ? product.images : [])
+    ].filter(Boolean);
+    editProductExistingImages = Array.from(new Set(combined));
     editProductImageFiles = [];
     renderEditProductImagesPreview();
 
@@ -1820,8 +1882,14 @@
         }
       }
 
+      // De-duplicate images
+      updates.images = Array.from(new Set(updates.images.filter(Boolean)));
+
       if (!updates.imageUrl && updates.images.length > 0) {
         updates.imageUrl = updates.images[0];
+      }
+      if (updates.imageUrl && !updates.images.includes(updates.imageUrl)) {
+        updates.images.unshift(updates.imageUrl);
       }
 
       await zeshAPI.updateProduct(id, updates);

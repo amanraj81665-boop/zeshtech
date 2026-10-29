@@ -266,7 +266,13 @@
       const isOut = stock <= 0;
       const isLow = !isOut && stock <= (product.lowStockThreshold || 2);
       const isWish = wishlist.includes(product._id);
-      const img = product.imageUrl || imageFallback;
+      const rawImages = [
+        product.imageUrl,
+        ...(Array.isArray(product.images) ? product.images : [])
+      ].filter(Boolean);
+      const productImages = Array.from(new Set(rawImages));
+      const img = productImages[0] || product.imageUrl || imageFallback;
+      const hasMultiImages = productImages.length > 1;
       const specs = extractProductSpecs(product);
       const { mrp, discountPct } = calculateDiscount(product.sellingPrice);
       const { rating, reviews } = getProductRating(product);
@@ -291,8 +297,22 @@
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
             </button>
 
+            <!-- Multi-Photo Count Pill -->
+            ${hasMultiImages ? `
+              <span class="card-multi-img-badge">📷 ${productImages.length}</span>
+              <div class="card-nav-arrow card-prev-img" data-id="${escapeHTML(product._id)}" title="Previous photo" type="button">‹</div>
+              <div class="card-nav-arrow card-next-img" data-id="${escapeHTML(product._id)}" title="Next photo" type="button">›</div>
+            ` : ""}
+
             <!-- Product Image with contain fit -->
-            <img src="${escapeHTML(img)}" alt="${escapeHTML(product.name)}" loading="lazy" onerror="this.onerror=null;this.src='${imageFallback}';">
+            <img src="${escapeHTML(img)}" id="card-img-${escapeHTML(product._id)}" data-images="${escapeHTML(JSON.stringify(productImages))}" data-current="0" alt="${escapeHTML(product.name)}" loading="lazy" onerror="this.onerror=null;this.src='${imageFallback}';">
+
+            <!-- Card Image Dots for Multi-Photos -->
+            ${hasMultiImages ? `
+              <div class="card-img-dots" data-dots-id="${escapeHTML(product._id)}">
+                ${productImages.map((_, i) => `<span class="card-img-dot ${i === 0 ? 'active' : ''}" data-idx="${i}"></span>`).join("")}
+              </div>
+            ` : ""}
 
             <!-- Bottom Rating Pill Overlay -->
             <div class="product-rating-badge">
@@ -348,6 +368,35 @@
         </article>
       `;
     }).join("");
+  }
+
+  function setCardProductImageIndex(pid, targetIdx) {
+    const imgEl = document.getElementById(`card-img-${pid}`);
+    if (!imgEl) return;
+    try {
+      const images = JSON.parse(imgEl.dataset.images || "[]");
+      if (images.length <= 1) return;
+      const idx = (targetIdx + images.length) % images.length;
+      imgEl.dataset.current = idx;
+      imgEl.style.opacity = "0.35";
+      setTimeout(() => {
+        imgEl.src = images[idx];
+        imgEl.style.opacity = "1";
+      }, 70);
+      const dotsWrap = document.querySelector(`.card-img-dots[data-dots-id="${pid}"]`);
+      if (dotsWrap) {
+        dotsWrap.querySelectorAll(".card-img-dot").forEach((d, i) => {
+          d.classList.toggle("active", i === idx);
+        });
+      }
+    } catch (e) {}
+  }
+
+  function flipCardProductImage(pid, direction) {
+    const imgEl = document.getElementById(`card-img-${pid}`);
+    if (!imgEl) return;
+    const curr = parseInt(imgEl.dataset.current || "0", 10);
+    setCardProductImageIndex(pid, curr + direction);
   }
 
   // Smart Color & Multi-Angle Image Resolver for Smartphones & Tech
@@ -570,7 +619,12 @@
     try {
       const stock = Number(product.stockQuantity) || 0;
       const isOut = stock <= 0;
-      const img = product.imageUrl || imageFallback;
+      const rawAllImages = [
+        product.imageUrl,
+        ...(Array.isArray(product.images) ? product.images : [])
+      ].filter(Boolean);
+      const allProductImages = Array.from(new Set(rawAllImages));
+      const img = allProductImages[0] || product.imageUrl || imageFallback;
       const { mrp, discountPct } = calculateDiscount(product.sellingPrice);
       const ratingInfo = getProductRating(product);
       const { rating, ratingsFormatted, reviewsFormatted } = ratingInfo;
@@ -628,17 +682,25 @@
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
                 </button>
 
-                <!-- Standard Product Image Showcase -->
+                <!-- Standard Product Image Showcase with Touch-Swipe & Counter -->
                 <div class="fk-main-image-wrap" id="fk-main-image-wrap">
+                  ${allProductImages.length > 1 ? `
+                    <div class="fk-gallery-counter-badge" id="fk-gallery-counter-badge">
+                      <span>📸 1 / ${allProductImages.length}</span>
+                    </div>
+                    <button type="button" class="fk-gallery-nav-btn fk-nav-prev" id="fk-gallery-prev" aria-label="Previous Photo">‹</button>
+                    <button type="button" class="fk-gallery-nav-btn fk-nav-next" id="fk-gallery-next" aria-label="Next Photo">›</button>
+                  ` : ""}
                   <img src="${escapeHTML(img)}" alt="${escapeHTML(product.name)}" class="fk-main-img" id="fk-main-img" onerror="this.onerror=null;this.src='${imageFallback}';">
                 </div>
 
-                <!-- Multi-Image Gallery Thumbnails (if multiple photos available) -->
-                ${(Array.isArray(product.images) && product.images.length > 1) ? `
-                  <div class="fk-gallery-thumbs-row" style="display:flex; gap:8px; justify-content:center; margin-top:10px; overflow-x:auto; padding:4px 0;">
-                    ${product.images.map((im, idx) => `
-                      <button type="button" class="fk-gallery-thumb-btn ${idx === 0 ? 'active' : ''}" data-img="${escapeHTML(im)}" style="width:52px; height:52px; border-radius:8px; border:2px solid ${idx === 0 ? '#2563eb' : '#cbd5e1'}; background:#fff; padding:2px; cursor:pointer; flex-shrink:0;">
-                        <img src="${escapeHTML(im)}" style="width:100%; height:100%; object-fit:contain; border-radius:6px;">
+                <!-- Multi-Image Gallery Thumbnails (Always shown when multiple photos available) -->
+                ${allProductImages.length > 1 ? `
+                  <div class="fk-gallery-thumbs-row" id="fk-gallery-thumbs-row">
+                    ${allProductImages.map((im, idx) => `
+                      <button type="button" class="fk-gallery-thumb-btn ${idx === 0 ? 'active' : ''}" data-idx="${idx}" data-img="${escapeHTML(im)}" title="View photo #${idx + 1}">
+                        <img src="${escapeHTML(im)}" alt="Angle #${idx + 1}" onerror="this.src='${imageFallback}'">
+                        <span class="fk-thumb-num">${idx + 1}</span>
                       </button>
                     `).join("")}
                   </div>
@@ -1018,28 +1080,76 @@
         });
       });
 
-      // 1b. Multi-Image Gallery Thumbnails click handler
+      // 1b. Multi-Image Gallery Switcher (Swipe + Next/Prev + Thumbnails)
+      let currentModalImgIdx = 0;
+      function showModalGalleryImage(index) {
+        if (!allProductImages || allProductImages.length === 0) return;
+        currentModalImgIdx = (index + allProductImages.length) % allProductImages.length;
+        const chosenImg = allProductImages[currentModalImgIdx];
+        const mainImg = modalContent.querySelector("#fk-main-img");
+        const counterBadge = modalContent.querySelector("#fk-gallery-counter-badge span");
+
+        if (mainImg && chosenImg) {
+          mainImg.style.opacity = "0.35";
+          mainImg.style.transform = "scale(0.97)";
+          setTimeout(() => {
+            mainImg.src = chosenImg;
+            mainImg.style.opacity = "1";
+            mainImg.style.transform = "scale(1)";
+          }, 90);
+        }
+
+        if (counterBadge) {
+          counterBadge.textContent = `📸 ${currentModalImgIdx + 1} / ${allProductImages.length}`;
+        }
+
+        modalContent.querySelectorAll(".fk-gallery-thumb-btn").forEach((btn, i) => {
+          const isActive = (i === currentModalImgIdx);
+          btn.classList.toggle("active", isActive);
+          btn.style.borderColor = isActive ? "#2563eb" : "#cbd5e1";
+        });
+
+        const v360 = modalContent.querySelector("#fk-360-img");
+        if (v360 && chosenImg) v360.src = chosenImg;
+      }
+
+      modalContent.querySelector("#fk-gallery-prev")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        showModalGalleryImage(currentModalImgIdx - 1);
+      });
+
+      modalContent.querySelector("#fk-gallery-next")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        showModalGalleryImage(currentModalImgIdx + 1);
+      });
+
       modalContent.querySelectorAll(".fk-gallery-thumb-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-          modalContent.querySelectorAll(".fk-gallery-thumb-btn").forEach(b => {
-            b.classList.remove("active");
-            b.style.borderColor = "#cbd5e1";
-          });
-          btn.classList.add("active");
-          btn.style.borderColor = "#2563eb";
-          const chosenImg = btn.dataset.img;
-          const mainImg = modalContent.querySelector("#fk-main-img");
-          if (mainImg && chosenImg) {
-            mainImg.style.opacity = "0.4";
-            setTimeout(() => {
-              mainImg.src = chosenImg;
-              mainImg.style.opacity = "1";
-            }, 100);
-          }
-          const v360 = modalContent.querySelector("#fk-360-img");
-          if (v360 && chosenImg) v360.src = chosenImg;
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const idx = parseInt(btn.dataset.idx, 10);
+          if (!isNaN(idx)) showModalGalleryImage(idx);
         });
       });
+
+      // Mobile Touch-Swipe support on modal main image showcase
+      const mainImageWrap = modalContent.querySelector("#fk-main-image-wrap");
+      if (mainImageWrap && allProductImages.length > 1) {
+        let modalTouchStartX = 0;
+        let modalTouchStartY = 0;
+        mainImageWrap.addEventListener("touchstart", (e) => {
+          modalTouchStartX = e.touches[0].clientX;
+          modalTouchStartY = e.touches[0].clientY;
+        }, { passive: true });
+
+        mainImageWrap.addEventListener("touchend", (e) => {
+          const diffX = e.changedTouches[0].clientX - modalTouchStartX;
+          const diffY = e.changedTouches[0].clientY - modalTouchStartY;
+          if (Math.abs(diffX) > 40 && Math.abs(diffX) > Math.abs(diffY)) {
+            if (diffX < 0) showModalGalleryImage(currentModalImgIdx + 1);
+            else showModalGalleryImage(currentModalImgIdx - 1);
+          }
+        }, { passive: true });
+      }
 
       // 1c. RAM / Storage Variant Box clicks (switch to sibling variant if real product)
       modalContent.querySelectorAll(".fk-variant-box").forEach(box => {
@@ -1055,7 +1165,6 @@
       const toggle360Btn = modalContent.querySelector("#fk-toggle-360-btn");
       const stage = modalContent.querySelector("#fk-360-stage");
       const controlsBar = modalContent.querySelector("#fk-360-controls");
-      const mainImageWrap = modalContent.querySelector("#fk-main-image-wrap");
       const phoneWrapper = modalContent.querySelector("#fk-360-phone");
       const spinBtn = modalContent.querySelector("#fk-auto-spin-btn");
 
@@ -2373,8 +2482,34 @@
       fetchCatalogue();
     });
 
-    // Product Card Clicks: Buy Now, Wishlist, Quick View, and Add to Bag
-    $("#products-container")?.addEventListener("click", (e) => {
+    // Product Card Clicks: Buy Now, Wishlist, Quick View, Multi-photo Flips, and Add to Bag
+    const prodContainer = $("#products-container");
+    prodContainer?.addEventListener("click", (e) => {
+      // 0a. Multi-image arrow flips on card (prev/next)
+      const prevBtn = e.target.closest(".card-prev-img");
+      if (prevBtn) {
+        e.stopPropagation();
+        flipCardProductImage(prevBtn.dataset.id, -1);
+        return;
+      }
+
+      const nextBtn = e.target.closest(".card-next-img");
+      if (nextBtn) {
+        e.stopPropagation();
+        flipCardProductImage(nextBtn.dataset.id, 1);
+        return;
+      }
+
+      // 0b. Card Image Dots direct click
+      const dotBtn = e.target.closest(".card-img-dot");
+      if (dotBtn) {
+        e.stopPropagation();
+        const pid = dotBtn.closest(".card-img-dots")?.dataset.dotsId;
+        const targetIdx = parseInt(dotBtn.dataset.idx, 10);
+        if (pid && !isNaN(targetIdx)) setCardProductImageIndex(pid, targetIdx);
+        return;
+      }
+
       // 1. Direct Buy Now
       const buyNowBtn = e.target.closest(".direct-buy-btn");
       if (buyNowBtn) {
@@ -2428,6 +2563,29 @@
         return;
       }
     });
+
+    // Mobile touch swipe gestures on catalogue product cards
+    let cardTouchStartX = 0;
+    let cardTouchStartY = 0;
+    prodContainer?.addEventListener("touchstart", (e) => {
+      const thumb = e.target.closest(".product-thumbnail-box");
+      if (thumb) {
+        cardTouchStartX = e.touches[0].clientX;
+        cardTouchStartY = e.touches[0].clientY;
+      }
+    }, { passive: true });
+
+    prodContainer?.addEventListener("touchend", (e) => {
+      const thumb = e.target.closest(".product-thumbnail-box");
+      if (!thumb) return;
+      const pid = thumb.dataset.id;
+      const diffX = e.changedTouches[0].clientX - cardTouchStartX;
+      const diffY = e.changedTouches[0].clientY - cardTouchStartY;
+      if (Math.abs(diffX) > 35 && Math.abs(diffX) > Math.abs(diffY)) {
+        if (diffX < 0) flipCardProductImage(pid, 1);
+        else flipCardProductImage(pid, -1);
+      }
+    }, { passive: true });
 
     // Curations Tab Bar (Best Camera, Gaming, UI, Battery, Value)
     $("#curations-tab-bar")?.addEventListener("click", (e) => {

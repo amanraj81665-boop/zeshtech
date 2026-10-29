@@ -1045,31 +1045,126 @@ select {
   border-color: #cbd5e1;
 }
 
-/* Image Cutlet Box */
+/* Image Cutlet Box - Studio Display Canvas */
 .product-thumbnail-box {
   width: 100%;
-  height: 200px;
-  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  height: 215px;
+  background: radial-gradient(circle at 50% 45%, #ffffff 45%, #f1f5f9 100%);
   position: relative;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 14px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid #e2e8f0;
   cursor: pointer;
+  user-select: none;
 }
 
 .product-thumbnail-box img {
-  max-height: 100%;
-  max-width: 100%;
+  max-height: 170px;
+  max-width: 90%;
+  width: auto;
+  height: auto;
   object-fit: contain;
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.06));
+  margin: auto;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+  filter: drop-shadow(0 8px 16px rgba(15, 23, 42, 0.1)) drop-shadow(0 2px 4px rgba(15, 23, 42, 0.05));
 }
 
 .product-card:hover .product-thumbnail-box img {
-  transform: scale(1.06);
+  transform: scale(1.06) translateY(-2px);
+  filter: drop-shadow(0 12px 22px rgba(15, 23, 42, 0.14)) drop-shadow(0 4px 6px rgba(15, 23, 42, 0.08));
+}
+
+/* Multi-photo Pill on Product Card */
+.card-multi-img-badge {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  z-index: 2;
+  background: rgba(15, 23, 42, 0.82);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  pointer-events: none;
+}
+
+/* Card Image Dots Indicator */
+.card-img-dots {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  z-index: 2;
+  pointer-events: auto;
+}
+
+.card-img-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.card-img-dot.active {
+  width: 14px;
+  border-radius: 10px;
+  background: #2563eb;
+}
+
+/* Card Prev/Next Mini Arrow Controls */
+.card-nav-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 800;
+  color: #1e293b;
+  z-index: 3;
+  cursor: pointer;
+  border: 1px solid #e2e8f0;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
+}
+
+.product-card:hover .card-nav-arrow {
+  opacity: 1;
+}
+
+.card-nav-arrow:hover {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
+}
+
+.card-prev-img {
+  left: 6px;
+}
+
+.card-next-img {
+  right: 6px;
 }
 
 /* Floating Badges */
@@ -2390,8 +2485,15 @@ select {
   }
 
   .product-thumbnail-box {
-    height: 155px;
-    padding: 10px 8px 6px;
+    height: 175px;
+    padding: 10px 8px 10px;
+  }
+
+  .card-nav-arrow {
+    opacity: 0.85;
+    width: 24px;
+    height: 24px;
+    font-size: 14px;
   }
 
   .product-content {
@@ -2994,42 +3096,106 @@ select {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
+  position: relative;
+  background: radial-gradient(circle at 50% 50%, #ffffff 50%, #f8fafc 100%);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  user-select: none;
+}
+
+.fk-gallery-counter-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 5;
+  background: rgba(15, 23, 42, 0.82);
+  backdrop-filter: blur(6px);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  pointer-events: none;
+}
+
+.fk-gallery-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: #1e293b;
+  cursor: pointer;
+  z-index: 6;
+  transition: all 0.2s ease;
+}
+
+.fk-gallery-nav-btn:hover {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
+  transform: translateY(-50%) scale(1.08);
+}
+
+.fk-nav-prev {
+  left: 12px;
+}
+
+.fk-nav-next {
+  right: 12px;
 }
 
 .fk-main-img {
-  max-height: 340px;
-  max-width: 100%;
+  max-height: 330px;
+  max-width: 90%;
+  width: auto;
+  height: auto;
   object-fit: contain;
-  transition: transform 0.3s ease;
+  transition: transform 0.3s ease, opacity 0.15s ease;
+  filter: drop-shadow(0 10px 22px rgba(15, 23, 42, 0.12));
 }
 
 .fk-main-img:hover {
-  transform: scale(1.05);
+  transform: scale(1.04);
 }
 
 /* Multi-Image Gallery Thumbnails Row */
 .fk-gallery-thumbs-row {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   justify-content: center;
   align-items: center;
-  margin: 10px 0 14px;
+  margin: 8px 0 16px;
   overflow-x: auto;
-  padding: 4px;
+  padding: 6px 4px;
   width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 .fk-gallery-thumb-btn {
-  width: 52px;
-  height: 52px;
-  border-radius: 8px;
+  position: relative;
+  width: 58px;
+  height: 58px;
+  border-radius: 10px;
   border: 2px solid #cbd5e1;
   background: #ffffff;
-  padding: 2px;
+  padding: 3px;
   cursor: pointer;
   flex-shrink: 0;
   transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
 }
 
 .fk-gallery-thumb-btn:hover {
@@ -3039,7 +3205,8 @@ select {
 
 .fk-gallery-thumb-btn.active {
   border-color: #2563eb;
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.35);
+  transform: scale(1.05);
 }
 
 .fk-gallery-thumb-btn img {
@@ -3047,6 +3214,18 @@ select {
   height: 100%;
   object-fit: contain;
   border-radius: 6px;
+}
+
+.fk-thumb-num {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  font-size: 8px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #ffffff;
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-weight: 700;
 }
 
 /* Specs Poster Overlay (Screenshot 1) */
@@ -3791,21 +3970,40 @@ select {
   }
 
   .fk-main-image-wrap {
-    min-height: 220px !important;
-    max-height: 280px !important;
-    margin-bottom: 12px !important;
+    min-height: 240px !important;
+    max-height: 290px !important;
+    margin-bottom: 10px !important;
     width: 100% !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
+    padding: 12px !important;
   }
 
   .fk-main-img {
-    max-height: 250px !important;
-    max-width: 85% !important;
+    max-height: 240px !important;
+    max-width: 88% !important;
     object-fit: contain !important;
     margin: 0 auto !important;
     display: block !important;
+  }
+
+  .fk-gallery-thumbs-row {
+    margin: 6px 0 12px !important;
+    gap: 8px !important;
+    padding: 4px 2px !important;
+    justify-content: flex-start !important;
+  }
+
+  .fk-gallery-thumb-btn {
+    width: 52px !important;
+    height: 52px !important;
+  }
+
+  .fk-gallery-nav-btn {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 18px !important;
   }
 
   .fk-specs-poster-overlay {

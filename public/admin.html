@@ -808,7 +808,7 @@
         <div class="eyebrow" style="color: #60a5fa;">INVENTORY MANAGEMENT</div>
         <h2 style="font-size: 20px; color: white; margin-bottom: 20px;">Add New Catalogue Product</h2>
 
-        <form id="add-product-form">
+        <form id="add-product-form" novalidate>
           <div class="form-row">
             <div class="field">
               <label style="color: #e2e8f0;">Product Name *</label>
@@ -915,21 +915,29 @@
           </div>
 
           <div class="field">
-            <label style="color: #e2e8f0;">Product Primary Image URL</label>
-            <input type="url" name="imageUrl" id="add-product-img-url" placeholder="https://..." style="background:#090d16; border-color:var(--dark-border); color:white;">
+            <label style="color: #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+              <span>Product Photos &amp; Angles (Select 1 or More Photos)</span>
+              <span id="add-prod-file-count" style="font-size:11px; color:#38bdf8; font-weight:600;">0 selected</span>
+            </label>
+            <div style="background:#090d16; border:1.5px dashed #3b82f6; border-radius:10px; padding:12px; margin-bottom:8px;">
+              <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <label for="add-product-file-input" style="background:#2563eb; color:white; padding:8px 14px; border-radius:6px; cursor:pointer; font-weight:700; font-size:12px; display:inline-flex; align-items:center; gap:6px; margin-bottom:0;">
+                  <span>📷 Choose Photos / Camera</span>
+                </label>
+                <input type="file" id="add-product-file-input" accept="image/*" multiple style="display:none;">
+                <button type="button" id="add-prod-clear-files-btn" class="btn btn-secondary btn-small" style="display:none; white-space:nowrap; padding:6px 10px; font-size:11px;">Clear All</button>
+                <span style="font-size:11px; color:#94a3b8; flex:1;">Tap to select multiple photos (Front, Back, Box, Angles)</span>
+              </div>
+              <div id="add-product-files-preview" style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;"></div>
+            </div>
           </div>
 
           <div class="field">
             <label style="color: #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
-              <span>Product Photos &amp; Angles (Select Multiple Photos)</span>
-              <span id="add-prod-file-count" style="font-size:11px; color:#38bdf8; font-weight:600;">0 selected</span>
+              <span>Or Paste Image Link / URL (Optional)</span>
+              <span style="font-size:10px; color:#94a3b8;">Not required if photos uploaded above</span>
             </label>
-            <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
-              <input type="file" id="add-product-file-input" accept="image/*" multiple style="background:#090d16; border-color:var(--dark-border); color:white; flex:1;">
-              <button type="button" id="add-prod-clear-files-btn" class="btn btn-secondary btn-small" style="display:none; white-space:nowrap;">Clear All</button>
-            </div>
-            <div id="add-product-files-preview" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;"></div>
-            <small style="color:#94a3b8; font-size:11px;">💡 Tip: You can tap <b>Choose Files</b> multiple times to add more photos (Front, Back, Box, Colors). All photos will be uploaded together to Cloudinary.</small>
+            <input type="text" name="imageUrl" id="add-product-img-url" placeholder="https://... or /images/... (Optional)" autocomplete="off" style="background:#090d16; border-color:var(--dark-border); color:white;">
           </div>
 
           <div class="field">
@@ -953,7 +961,7 @@
         <div class="eyebrow" style="color: #60a5fa;">CATALOGUE UPDATE</div>
         <h2 style="font-size: 20px; color: white; margin-bottom: 20px;">Edit Product Details</h2>
 
-        <form id="edit-product-form">
+        <form id="edit-product-form" novalidate>
           <input type="hidden" id="edit-product-id">
 
           <div class="form-row">
@@ -1052,24 +1060,33 @@
           </div>
 
           <div class="field">
-            <label style="color: #e2e8f0;">Image URL</label>
-            <input type="url" id="edit-prod-image" placeholder="https://..." style="background:#090d16; border-color:var(--dark-border); color:white;">
-          </div>
-
-          <div class="field">
             <label style="color: #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
               <span>Product Photos &amp; Angles (Add More or Update)</span>
               <span id="edit-prod-file-count" style="font-size:11px; color:#38bdf8; font-weight:600;">0 new photos</span>
             </label>
-            <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
-              <input type="file" id="edit-product-file-input" accept="image/*" multiple style="background:#090d16; border-color:var(--dark-border); color:white; flex:1;">
-              <button type="button" id="edit-prod-clear-files-btn" class="btn btn-secondary btn-small" style="display:none; white-space:nowrap;">Clear New</button>
+            <div style="background:#090d16; border:1.5px dashed #3b82f6; border-radius:10px; padding:12px; margin-bottom:8px;">
+              <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
+                <label for="edit-product-file-input" style="background:#2563eb; color:white; padding:8px 14px; border-radius:6px; cursor:pointer; font-weight:700; font-size:12px; display:inline-flex; align-items:center; gap:6px; margin-bottom:0;">
+                  <span>📷 Add Photos / Camera</span>
+                </label>
+                <input type="file" id="edit-product-file-input" accept="image/*" multiple style="display:none;">
+                <button type="button" id="edit-prod-clear-files-btn" class="btn btn-secondary btn-small" style="display:none; white-space:nowrap; padding:6px 10px; font-size:11px;">Clear New</button>
+                <span style="font-size:11px; color:#94a3b8; flex:1;">Tap to select photos (Front, Back, Box, Angles)</span>
+              </div>
+              <!-- Existing Images Gallery -->
+              <div style="font-size:11px; font-weight:700; color:#cbd5e1; margin-bottom:6px;">Current Stored Photos:</div>
+              <div id="edit-product-existing-preview" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;"></div>
+              <!-- New Files Preview -->
+              <div id="edit-product-files-preview" style="display:flex; gap:10px; flex-wrap:wrap;"></div>
             </div>
-            <!-- Existing Images Gallery -->
-            <div id="edit-product-existing-preview" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;"></div>
-            <!-- New Files Preview -->
-            <div id="edit-product-files-preview" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
-            <small style="color:#94a3b8; font-size:11px;">💡 Tap <b>Choose Files</b> to upload more photos (Front, Back, Box, Angles). Auto-uploaded to Cloudinary.</small>
+          </div>
+
+          <div class="field">
+            <label style="color: #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+              <span>Primary Image Link / Path (Optional)</span>
+              <span style="font-size:10px; color:#94a3b8;">Can be Cloudinary link or /images/ path</span>
+            </label>
+            <input type="text" id="edit-prod-image" placeholder="https://... or /images/... (Optional)" autocomplete="off" style="background:#090d16; border-color:var(--dark-border); color:white;">
           </div>
 
           <div class="field">
