@@ -659,6 +659,9 @@
         showToast(`Stock limit reached for ${product.name} (Only ${availableStock} available)`, "warning");
         return;
       }
+      existing.price = Number(product.sellingPrice) || 0;
+      existing.name = product.name;
+      existing.stock = availableStock;
       existing.quantity += 1;
     } else {
       posCart.push({
@@ -1897,6 +1900,8 @@
 
       $("#admin-edit-product-modal")?.classList.remove("active");
       loadInventoryView();
+      if (typeof loadPosView === "function") loadPosView();
+      if (typeof loadOverview === "function") loadOverview();
     } catch (err) {
       showToast(err.message || "Failed to update product", "error");
     } finally {

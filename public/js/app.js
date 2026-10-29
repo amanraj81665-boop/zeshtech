@@ -112,6 +112,7 @@
         countBadge.textContent = `${allProducts.length} items available`;
       }
 
+      syncCartWithLiveProducts();
       applyFiltersAndRender();
       initCurationsAndComparison();
     } catch (err) {
@@ -587,12 +588,20 @@
           <div style="font-weight:700; font-size:14px; color:#0f172a;">Loading ZESH TECH Verified Specifications...</div>
         </div>
       `;
-      modalBackdrop.classList.add("active");
+    }
+    modalBackdrop.classList.add("active");
 
-      try {
-        const res = await zeshAPI.getProductById(productId);
+    // Always fetch live product data from database to ensure fresh selling price and real-time stock
+    try {
+      const res = await zeshAPI.getProductById(productId);
+      if (res && res.product) {
         product = res.product;
-      } catch (err) {
+        const idx = allProducts.findIndex(p => String(p._id) === String(productId));
+        if (idx > -1) allProducts[idx] = res.product;
+        else allProducts.push(res.product);
+      }
+    } catch (err) {
+      if (!product) {
         modalContent.innerHTML = `
           <div style="text-align:center; padding: 40px 20px;">
             <div style="font-size:32px; margin-bottom:12px;">⚠️</div>
@@ -602,8 +611,6 @@
         `;
         return;
       }
-    } else {
-      modalBackdrop.classList.add("active");
     }
 
     if (!product) {
@@ -1351,8 +1358,7 @@
       // Buy Now & Add to Bag
       modalContent.querySelector(".fk-btn-buy")?.addEventListener("click", () => {
         modalBackdrop.classList.remove("active");
-        addToCart(product, 1);
-        openCheckoutModal();
+        handleInstantBuy(product);
       });
 
       modalContent.querySelector(".fk-btn-bag")?.addEventListener("click", () => {
@@ -1374,9 +1380,31 @@
      Cart & Slide-Over Bag
      ========================================================================== */
 
+  function syncCartWithLiveProducts() {
+    if (!Array.isArray(cart) || cart.length === 0 || !Array.isArray(allProducts) || allProducts.length === 0) return;
+    let hasChanges = false;
+    cart.forEach(item => {
+      const live = allProducts.find(p => String(p._id) === String(item.id));
+      if (live) {
+        const livePrice = Number(live.sellingPrice !== undefined ? live.sellingPrice : live.price);
+        if (item.price !== livePrice) {
+          item.price = livePrice;
+          hasChanges = true;
+        }
+        item.name = live.name;
+        item.stock = Number(live.stockQuantity) || 0;
+        if (live.imageUrl) item.image = live.imageUrl;
+      }
+    });
+    if (hasChanges) {
+      saveCart();
+    }
+  }
+
   function addToCart(product, quantity = 1) {
-    const existingIndex = cart.findIndex(item => item.id === product._id || item.id === product.id);
+    const existingIndex = cart.findIndex(item => String(item.id) === String(product._id || product.id));
     const availableStock = Number(product.stockQuantity) || 10;
+    const currentPrice = Number(product.sellingPrice !== undefined ? product.sellingPrice : product.price);
 
     if (existingIndex > -1) {
       const currentQty = cart[existingIndex].quantity;
@@ -1385,6 +1413,13 @@
         return;
       }
       cart[existingIndex].quantity += quantity;
+      // CRITICAL: Always update price, name, stock & image to latest live values!
+      cart[existingIndex].price = currentPrice;
+      cart[existingIndex].name = product.name;
+      cart[existingIndex].stock = availableStock;
+      if (product.imageUrl || product.image) {
+        cart[existingIndex].image = product.imageUrl || product.image;
+      }
     } else {
       if (quantity > availableStock) {
         showToast(`Cannot add ${quantity} units. Available stock: ${availableStock}`, "warning");
@@ -1393,7 +1428,7 @@
       cart.push({
         id: String(product._id || product.id),
         name: product.name,
-        price: Number(product.sellingPrice || product.price),
+        price: currentPrice,
         image: product.imageUrl || product.image || imageFallback,
         stock: availableStock,
         category: product.category,
@@ -1404,6 +1439,41 @@
     saveCart();
     showToast(`Added "${product.name}" to your bag`, "success");
     openCartDrawer();
+  }
+
+  function handleInstantBuy(product) {
+    const existingIndex = cart.findIndex(item => String(item.id) === String(product._id || product.id));
+    const availableStock = Number(product.stockQuantity) || 10;
+    const currentPrice = Number(product.sellingPrice !== undefined ? product.sellingPrice : product.price);
+
+    if (availableStock <= 0) {
+      showToast(`"${product.name}" is currently sold out!`, "warning");
+      return;
+    }
+
+    if (existingIndex > -1) {
+      // Ensure current live price is applied and quantity is at least 1
+      cart[existingIndex].price = currentPrice;
+      cart[existingIndex].name = product.name;
+      cart[existingIndex].stock = availableStock;
+      if (product.imageUrl || product.image) {
+        cart[existingIndex].image = product.imageUrl || product.image;
+      }
+      if (cart[existingIndex].quantity < 1) cart[existingIndex].quantity = 1;
+    } else {
+      cart.push({
+        id: String(product._id || product.id),
+        name: product.name,
+        price: currentPrice,
+        image: product.imageUrl || product.image || imageFallback,
+        stock: availableStock,
+        category: product.category,
+        quantity: 1
+      });
+    }
+
+    saveCart();
+    openCheckoutModal();
   }
 
   function updateCartQuantity(productId, delta) {
@@ -1504,6 +1574,7 @@
   }
 
   function openCartDrawer() {
+    syncCartWithLiveProducts();
     $("#cart-drawer")?.classList.add("active");
     $("#cart-drawer-overlay")?.classList.add("active");
   }
@@ -1522,6 +1593,9 @@
       showToast("Your shopping bag is empty", "warning");
       return;
     }
+
+    // Always ensure cart prices are synchronized with latest catalogue before checkout
+    syncCartWithLiveProducts();
 
     closeCartDrawer();
     const modal = $("#checkout-modal-backdrop");
@@ -1599,6 +1673,7 @@
       // If user selected PhonePe / Google Pay / UPI:
       if (selectedMethod.includes("UPI") || selectedMethod.includes("PhonePe")) {
         pendingOrderPayload = orderPayload;
+        syncCartWithLiveProducts();
         const total = cart.reduce((acc, it) => acc + (it.price * it.quantity), 0);
         
         // Populate UPI Modal details
@@ -2515,8 +2590,7 @@
       if (buyNowBtn) {
         const product = allProducts.find(p => p._id === buyNowBtn.dataset.id);
         if (product) {
-          addToCart(product, 1);
-          openCheckoutModal();
+          handleInstantBuy(product);
         }
         return;
       }
@@ -2599,8 +2673,7 @@
       if (buyBtn) {
         const product = allProducts.find(p => p._id === buyBtn.dataset.id);
         if (product) {
-          addToCart(product, 1);
-          openCheckoutModal();
+          handleInstantBuy(product);
         }
         return;
       }
@@ -2642,8 +2715,7 @@
       if (buyBtn) {
         const product = allProducts.find(p => p._id === buyBtn.dataset.id);
         if (product) {
-          addToCart(product, 1);
-          openCheckoutModal();
+          handleInstantBuy(product);
         }
         return;
       }
@@ -2655,8 +2727,7 @@
       if (buyBtn) {
         const product = allProducts.find(p => p._id === buyBtn.dataset.id);
         if (product) {
-          addToCart(product, 1);
-          openCheckoutModal();
+          handleInstantBuy(product);
         }
         return;
       }
