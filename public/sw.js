@@ -1,14 +1,14 @@
 // ZESH-TECH Progressive Web App Service Worker
-const CACHE_NAME = "zeshtech-v3.6";
+const CACHE_NAME = "zeshtech-v3.7";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
   "/admin.html",
-  "/css/style.css?v=3.6",
-  "/js/phoneSpecsData.js?v=3.6",
-  "/js/app.js?v=3.6",
-  "/js/admin.js?v=3.6",
-  "/js/api.js?v=3.6",
+  "/css/style.css?v=3.7",
+  "/js/phoneSpecsData.js?v=3.7",
+  "/js/app.js?v=3.7",
+  "/js/admin.js?v=3.7",
+  "/js/api.js?v=3.7",
   "/images/logo.png",
   "/manifest.json"
 ];

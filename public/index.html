@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..800;1,9..40,400..800&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="/css/style.css?v=3.6">
+  <link rel="stylesheet" href="/css/style.css?v=3.7">
 
   <!-- Official Google Identity Services (GIS) Web SDK -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -495,8 +495,9 @@
               <input type="text" name="customerName" id="checkout-name" required placeholder="e.g. Aman Raj">
             </div>
             <div class="field">
-              <label>Phone Number *</label>
-              <input type="tel" name="customerPhone" id="checkout-phone" required placeholder="10-digit mobile number">
+              <label>Phone Number (10 Digits) *</label>
+              <input type="tel" name="customerPhone" id="checkout-phone" required placeholder="e.g. 9876543210" maxlength="10" inputmode="numeric">
+              <div id="checkout-phone-hint" style="font-size:11px; margin-top:3px; min-height:16px;"></div>
             </div>
           </div>
 
@@ -700,9 +701,10 @@
         <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px;">
           Thank you for choosing ZESH-TECH. Your order has been registered in the database.
         </p>
-        <div style="background: var(--surface-alt); padding: 10px; border-radius: var(--radius-md); font-family: var(--font-mono); font-size: 13px; font-weight: 700; margin-bottom: 16px;">
+        <div style="background: var(--surface-alt); padding: 10px; border-radius: var(--radius-md); font-family: var(--font-mono); font-size: 13px; font-weight: 700; margin-bottom: 12px;">
           Order ID: <span id="confirmed-order-number" style="color: var(--primary);">ZT-XXXXXXXXXX</span>
         </div>
+        <div id="confirmed-order-stepper-box" style="margin-bottom: 14px;"></div>
 
         <!-- WhatsApp Owner Alert CTA -->
         <a href="#" id="confirmed-whatsapp-btn" target="_blank" rel="noopener" class="btn btn-full" style="background: #25D366; color: white; font-weight: 700; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; padding: 12px;">
@@ -1151,9 +1153,9 @@
   </nav>
 
   <!-- Scripts with Cache Busting -->
-  <script src="/js/phoneSpecsData.js?v=3.6"></script>
-  <script src="/js/api.js?v=3.6"></script>
-  <script src="/js/app.js?v=3.6"></script>
+  <script src="/js/phoneSpecsData.js?v=3.7"></script>
+  <script src="/js/api.js?v=3.7"></script>
+  <script src="/js/app.js?v=3.7"></script>
   <script>
     // PWA Service Worker Registration
     if ('serviceWorker' in navigator) {

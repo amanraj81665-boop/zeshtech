@@ -242,4 +242,9 @@ const billSchema = new mongoose.Schema(
   }
 );
 
+// High-performance indexes for POS billing history and customer search
+billSchema.index({ createdAt: -1 });
+billSchema.index({ customerPhone: 1, createdAt: -1 });
+billSchema.index({ status: 1, createdAt: -1 });
+
 module.exports = mongoose.model("Bill", billSchema);

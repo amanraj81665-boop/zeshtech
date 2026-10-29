@@ -80,6 +80,120 @@
     updateCartUI();
   }
 
+  // 10/10 Upgrade: Intelligent Pincode & Express Delivery ETA Evaluator
+  function evaluateDeliveryPincode(pincode) {
+    const pin = String(pincode || "").trim();
+    if (!/^\d{6}$/.test(pin)) {
+      return {
+        isValid: false,
+        html: `<span style="color:#ef4444; font-weight:600;">⚠️ Please enter a valid 6-digit Indian pincode</span>`
+      };
+    }
+
+    // Barh & surrounding sub-district (803213, 803214, etc.)
+    if (pin === "803213" || pin.startsWith("8032")) {
+      return {
+        isValid: true,
+        html: `
+          <div class="fk-eta-fast">
+            <span>⚡ Same-Day Delivery in 2-3 Hours</span>
+            <span class="fk-eta-badge">FREE EXPRESS</span>
+          </div>
+          <div style="font-size:11px; color:#475569; margin-top:2px;">
+            Direct from Zesh Tech Counter, Station Road, Barh. Free 0-minute store pickup also available!
+          </div>
+        `
+      };
+    }
+
+    // Patna District (800001 - 800030)
+    if (pin.startsWith("800")) {
+      return {
+        isValid: true,
+        html: `
+          <div class="fk-eta-fast">
+            <span>📦 Guaranteed Next-Day Delivery to Patna</span>
+            <span class="fk-eta-badge">PATNA EXPRESS</span>
+          </div>
+          <div style="font-size:11px; color:#475569; margin-top:2px;">
+            Express delivery across Patna. Cash on delivery &amp; open-box verification supported.
+          </div>
+        `
+      };
+    }
+
+    // Rest of Bihar (Pincodes starting with 80-85)
+    if (/^8[0-5]\d{4}$/.test(pin)) {
+      return {
+        isValid: true,
+        html: `
+          <div class="fk-eta-standard">
+            <span>🚚 Delivery in 1-2 Business Days</span>
+            <span class="fk-eta-badge" style="background:#dbeafe; color:#1e40af;">BIHAR DISPATCH</span>
+          </div>
+          <div style="font-size:11px; color:#475569; margin-top:2px;">
+            Safe insured transit via courier with live SMS &amp; WhatsApp tracking.
+          </div>
+        `
+      };
+    }
+
+    // Rest of India
+    return {
+      isValid: true,
+      html: `
+        <div class="fk-eta-standard">
+          <span>✈️ Delivery in 3-4 Business Days</span>
+          <span class="fk-eta-badge" style="background:#f1f5f9; color:#334155;">ALL INDIA</span>
+        </div>
+        <div style="font-size:11px; color:#475569; margin-top:2px;">
+          100% brand sealed pack with official manufacturer brand warranty.
+        </div>
+      `
+    };
+  }
+
+  // 10/10 Upgrade: Visual Milestone Stepper for Order Tracking
+  function renderOrderTrackingStepper(status) {
+    if (status === "Cancelled") {
+      return `
+        <div style="background:#fef2f2; border:1px solid #fecaca; color:#dc2626; padding:8px 12px; border-radius:8px; font-size:12px; font-weight:700; display:flex; align-items:center; gap:6px; margin: 10px 0 6px 0;">
+          <span>✕</span> Order Cancelled (Stock restored)
+        </div>
+      `;
+    }
+
+    const steps = [
+      { key: "Placed", label: "Placed" },
+      { key: "Processing", label: "Packed" },
+      { key: "Shipped", label: "Out for Delivery" },
+      { key: "Delivered", label: "Delivered" }
+    ];
+
+    const statusOrder = { "Placed": 1, "Processing": 2, "Shipped": 3, "Delivered": 4 };
+    const currentLevel = statusOrder[status] || 1;
+
+    return `
+      <div class="order-tracking-stepper">
+        ${steps.map((st, i) => {
+          const stepNum = i + 1;
+          const isDone = stepNum < currentLevel || (stepNum === 4 && currentLevel === 4);
+          const isCurrent = stepNum === currentLevel && currentLevel !== 4;
+          const stepClass = isDone ? "done" : isCurrent ? "current" : "";
+          const dotContent = isDone ? "✓" : stepNum;
+
+          return `
+            ${i > 0 ? `<div class="tracking-line ${stepNum <= currentLevel ? 'done' : ''}"></div>` : ''}
+            <div class="tracking-step ${stepClass}">
+              <div class="tracking-dot">${dotContent}</div>
+              <div class="tracking-label">${st.label}</div>
+            </div>
+          `;
+        }).join("")}
+      </div>
+    `;
+  }
+
   /* ==========================================================================
      Catalogue & Products
      ========================================================================== */
@@ -657,6 +771,12 @@
 
       const has360View = product.category === "Mobile" || product.category === "Television";
 
+      let userPincode = "803213";
+      try {
+        userPincode = localStorage.getItem("zesh_delivery_pincode") || "803213";
+      } catch (e) {}
+      const initialEta = evaluateDeliveryPincode(userPincode);
+
       modalContent.innerHTML = `
         <div class="zesh-product-page">
           <!-- Top Breadcrumb Bar -->
@@ -825,6 +945,21 @@
                     ⚖️ Compare in Budget
                   </button>
                 ` : ""}
+              </div>
+
+              <!-- Real-time Delivery & Pincode Checker (Flipkart Pattern) -->
+              <div class="fk-pincode-check-wrap">
+                <div class="fk-pincode-head">
+                  <span class="fk-pincode-icon">📍</span>
+                  <span style="font-weight:700; font-size:12.5px; color:#0f172a;">Delivery &amp; Store Pickup Options</span>
+                </div>
+                <div class="fk-pincode-input-group">
+                  <input type="text" id="fk-pincode-input" maxlength="6" placeholder="Enter 6-digit Pincode" value="${escapeHTML(userPincode)}" inputmode="numeric">
+                  <button type="button" id="fk-pincode-check-btn">Check</button>
+                </div>
+                <div class="fk-pincode-result" id="fk-pincode-result">
+                  ${initialEta.html}
+                </div>
               </div>
 
               <!-- ZESH MEGA SAVINGS Apply Offers Box -->
@@ -1371,6 +1506,28 @@
         handleComparePhone(product._id);
       });
 
+      // Pincode Delivery ETA Check
+      const pinInput = modalContent.querySelector("#fk-pincode-input");
+      const pinBtn = modalContent.querySelector("#fk-pincode-check-btn");
+      const pinResult = modalContent.querySelector("#fk-pincode-result");
+
+      const runPinCheck = () => {
+        const val = (pinInput?.value || "").trim();
+        const res = evaluateDeliveryPincode(val);
+        if (pinResult) pinResult.innerHTML = res.html;
+        if (res.isValid) {
+          try { localStorage.setItem("zesh_delivery_pincode", val); } catch (e) {}
+        }
+      };
+
+      pinBtn?.addEventListener("click", runPinCheck);
+      pinInput?.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          runPinCheck();
+        }
+      });
+
     } catch (err) {
       modalContent.innerHTML = `<div style="text-align:center; padding: 30px; color:var(--danger);">${escapeHTML(err.message || "Failed to render details")}</div>`;
     }
@@ -1615,6 +1772,12 @@
       if (nameInput && !nameInput.value) nameInput.value = customer.name;
     }
 
+    try {
+      const savedPin = localStorage.getItem("zesh_delivery_pincode");
+      const pinInput = $("#checkout-pincode");
+      if (pinInput && savedPin && !pinInput.value) pinInput.value = savedPin;
+    } catch (e) {}
+
     $("#checkout-error-msg")?.classList.add("hidden");
     modal.classList.add("active");
   }
@@ -1639,6 +1802,14 @@
       return;
     }
 
+    // 10/10 Upgrade: Strict 10-digit Indian Mobile Validation
+    const rawPhone = ($("#checkout-phone")?.value || "").trim().replace(/\D/g, "");
+    if (!/^[6-9]\d{9}$/.test(rawPhone)) {
+      showToast("Please enter a valid 10-digit mobile number (e.g. 9876543210)", "warning");
+      $("#checkout-phone")?.focus();
+      return;
+    }
+
     try {
       submitBtn.disabled = true;
       submitBtn.textContent = "Processing...";
@@ -1656,7 +1827,7 @@
         })),
         shippingAddress: {
           fullName: $("#checkout-name")?.value.trim() || "",
-          phone: $("#checkout-phone")?.value.trim() || "",
+          phone: rawPhone,
           addressLine1: $("#checkout-address")?.value.trim() || "",
           city: $("#checkout-city")?.value.trim() || "Barh",
           state: $("#checkout-state")?.value.trim() || "Bihar",
@@ -1790,6 +1961,11 @@
       confirmedNumber.textContent = createdOrder.orderNumber;
     }
 
+    const stepperBox = $("#confirmed-order-stepper-box");
+    if (stepperBox) {
+      stepperBox.innerHTML = renderOrderTrackingStepper("Placed");
+    }
+
     const waBtn = $("#confirmed-whatsapp-btn");
     if (waBtn) {
       if (whatsAppAlertUrl) {
@@ -1900,10 +2076,13 @@
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px;">
               <div>
                 <strong style="font-family: var(--font-mono); font-size: 13px;">${escapeHTML(order.orderNumber)}</strong>
-                <div style="font-size: 11px; color: var(--text-muted);">Placed on ${dateStr} • COD</div>
+                <div style="font-size: 11px; color: var(--text-muted);">Placed on ${dateStr} • ${escapeHTML(order.paymentMethod || 'COD')}</div>
               </div>
               <span class="badge ${statusBadgeClass}">${escapeHTML(order.status)}</span>
             </div>
+
+            <!-- Milestone Tracker Stepper -->
+            ${renderOrderTrackingStepper(order.status)}
 
             <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">
               ${order.items.map(it => `
@@ -2787,6 +2966,21 @@
     });
     $("#checkout-form")?.addEventListener("submit", handleCheckoutSubmit);
 
+    // 10/10 Upgrade: Real-time 10-digit Indian mobile number validation hint
+    $("#checkout-phone")?.addEventListener("input", (e) => {
+      const clean = e.target.value.replace(/\D/g, "").slice(0, 10);
+      e.target.value = clean;
+      const hint = $("#checkout-phone-hint");
+      if (!hint) return;
+      if (clean.length === 10 && /^[6-9]\d{9}$/.test(clean)) {
+        hint.innerHTML = `<span style="color:#16a34a; font-weight:700;">✓ Valid 10-digit mobile number</span>`;
+      } else if (clean.length > 0) {
+        hint.innerHTML = `<span style="color:#ea580c; font-weight:600;">Must be 10 digits starting with 6, 7, 8, or 9</span>`;
+      } else {
+        hint.innerHTML = "";
+      }
+    });
+
     // Payment method finance subbox toggle
     $$('input[name="paymentMethod"]').forEach(radio => {
       radio.addEventListener("change", (e) => {
@@ -3350,4 +3544,29 @@
       }
     }
   }
+
+  // 10/10 Upgrade: Real-Time Network Connection Guard
+  const networkBanner = document.createElement("div");
+  networkBanner.id = "network-status-banner";
+  networkBanner.style.cssText = "position:fixed; top:0; left:0; right:0; z-index:999999; text-align:center; padding:9px 16px; font-size:12.5px; font-weight:700; display:none; transition:all 0.3s ease; box-shadow:0 4px 12px rgba(0,0,0,0.15);";
+  document.body.appendChild(networkBanner);
+
+  window.addEventListener("offline", () => {
+    networkBanner.style.display = "block";
+    networkBanner.style.background = "#ef4444";
+    networkBanner.style.color = "#ffffff";
+    networkBanner.innerHTML = "⚠️ You are offline. Please check your internet connection.";
+  });
+
+  window.addEventListener("online", () => {
+    networkBanner.style.display = "block";
+    networkBanner.style.background = "#10b981";
+    networkBanner.style.color = "#ffffff";
+    networkBanner.innerHTML = "✓ Back online! Synchronizing live store...";
+    fetchCatalogue();
+    syncCartWithLiveProducts();
+    setTimeout(() => {
+      networkBanner.style.display = "none";
+    }, 3000);
+  });
 })();

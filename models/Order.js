@@ -80,5 +80,10 @@ const orderSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// High-speed indexes for customer orders, phone tracking and admin order status
+orderSchema.index({ customer: 1, createdAt: -1 });
+orderSchema.index({ status: 1, createdAt: -1 });
+orderSchema.index({ "shippingAddress.phone": 1 });
+
 module.exports =
   mongoose.models.Order || mongoose.model("Order", orderSchema);

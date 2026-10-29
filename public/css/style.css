@@ -5256,6 +5256,183 @@ select {
   transform: translateY(-1px);
 }
 
+/* ==========================================================================
+   10/10 UPGRADE: REAL-TIME PINCODE DELIVERY ETA & ORDER TRACKING STEPPER
+   ========================================================================== */
+
+/* Pincode & Delivery ETA Widget */
+.fk-pincode-check-wrap {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 14px 0 10px 0;
+}
+
+.fk-pincode-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.fk-pincode-input-group {
+  display: flex;
+  gap: 8px;
+}
+
+.fk-pincode-input-group input {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 13px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  background: white;
+  color: #0f172a;
+  outline: none;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.fk-pincode-input-group input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+}
+
+.fk-pincode-input-group button {
+  padding: 8px 16px;
+  background: #0f172a;
+  color: white;
+  font-weight: 700;
+  font-size: 12.5px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.fk-pincode-input-group button:hover {
+  background: #2563eb;
+}
+
+.fk-pincode-result {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.fk-eta-fast {
+  color: #15803d;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.fk-eta-standard {
+  color: #1e40af;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.fk-eta-badge {
+  display: inline-block;
+  background: #dcfce7;
+  color: #166534;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+/* Order Milestone Tracking Stepper */
+.order-tracking-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 14px 0 10px 0;
+  padding: 12px 8px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.tracking-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1;
+  position: relative;
+}
+
+.tracking-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  margin-bottom: 5px;
+  transition: all 0.2s ease;
+  z-index: 2;
+}
+
+.tracking-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  line-height: 1.2;
+}
+
+.tracking-step.done .tracking-dot {
+  background: #16a34a;
+  color: white;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.2);
+}
+
+.tracking-step.done .tracking-label {
+  color: #15803d;
+}
+
+.tracking-step.current .tracking-dot {
+  background: #2563eb;
+  color: white;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+  animation: pulseTracking 2s infinite;
+}
+
+.tracking-step.current .tracking-label {
+  color: #1d4ed8;
+}
+
+.tracking-line {
+  flex: 1;
+  height: 3px;
+  background: #cbd5e1;
+  margin: 0 -4px 16px;
+  z-index: 1;
+}
+
+.tracking-line.done {
+  background: #16a34a;
+}
+
+@keyframes pulseTracking {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
 #scanner-snap-btn:hover {
   filter: brightness(1.1);
 }

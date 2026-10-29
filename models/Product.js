@@ -171,6 +171,11 @@ productSchema.index(
   }
 );
 
+// High-performance compound & text indexes for 10ms search, category filtering & sorting
+productSchema.index({ isActive: 1, category: 1, sellingPrice: 1 });
+productSchema.index({ isActive: 1, brand: 1 });
+productSchema.index({ name: "text", brand: "text", model: "text", category: "text" });
+
 productSchema.virtual("isLowStock").get(function () {
   return this.stockQuantity <= this.lowStockThreshold;
 });

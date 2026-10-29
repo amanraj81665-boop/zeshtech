@@ -994,6 +994,68 @@
     $("#invoice-print-modal")?.classList.add("active");
   }
 
+  function handleSendWhatsAppInvoice() {
+    if (!activeBillForPrint) {
+      showToast("No active bill selected", "warning");
+      return;
+    }
+
+    const bill = activeBillForPrint;
+    let phone = (bill.customerPhone || "").trim().replace(/\D/g, "");
+
+    if (!phone || phone.length < 10) {
+      const input = prompt("Please enter customer's 10-digit WhatsApp number:", phone || "");
+      if (!input) return;
+      phone = input.trim().replace(/\D/g, "");
+    }
+
+    if (phone.length === 10) {
+      phone = "91" + phone;
+    } else if (phone.length === 12 && phone.startsWith("91")) {
+      // Valid international Indian format
+    } else {
+      showToast("Please enter a valid 10-digit mobile number", "error");
+      return;
+    }
+
+    const dateStr = new Date(bill.createdAt || Date.now()).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric"
+    });
+
+    const itemsText = (bill.items || []).map((it, idx) => {
+      const total = (it.total || it.price * it.quantity || 0).toLocaleString("en-IN");
+      return `  ${idx + 1}. *${it.name}* (x${it.quantity}) — ₹${total}`;
+    }).join("\n");
+
+    const grandTotal = (bill.grandTotal || 0).toLocaleString("en-IN");
+    const mode = bill.paymentMode || "Cash";
+
+    const msg =
+`🧾 *TAX INVOICE — ZESH TECH RETAIL*
+━━━━━━━━━━━━━━━━━━━━
+📄 *Invoice No:* #${bill.invoiceNumber}
+📅 *Date:* ${dateStr}
+👤 *Customer:* ${bill.customerName || "Valued Customer"}
+💳 *Payment Mode:* ${mode}
+━━━━━━━━━━━━━━━━━━━━
+🛍️ *Purchased Items:*
+${itemsText}
+━━━━━━━━━━━━━━━━━━━━
+💰 *Grand Total:* ₹${grandTotal}
+_(Inclusive of GST & Official Brand Pack Sealing)_
+━━━━━━━━━━━━━━━━━━━━
+📍 *Store:* ZESH TECH, Station Road, Barh (Patna), Bihar - 803213
+📞 *Store Support:* +91 7903746116 / 9122846271
+✅ *100% Genuine Sealed Stock & Warranty Support*
+🙏 *Thank you for shopping at Zesh Tech!*`;
+
+    const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, "_blank");
+    showToast(`WhatsApp Invoice opened for ${bill.customerName || "customer"}!`, "success");
+  }
+
   function renderPrintContent() {
     const printArea = $("#invoice-print-area");
     if (!printArea || !activeBillForPrint) return;
@@ -3143,6 +3205,8 @@
     $("#trigger-browser-print-btn")?.addEventListener("click", () => {
       window.print();
     });
+
+    $("#send-whatsapp-invoice-btn")?.addEventListener("click", handleSendWhatsAppInvoice);
 
     $("#close-invoice-modal-btn")?.addEventListener("click", () => {
       $("#invoice-print-modal")?.classList.remove("active");

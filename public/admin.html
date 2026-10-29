@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..800;1,9..40,400..800&family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="/css/style.css?v=3.6">
+  <link rel="stylesheet" href="/css/style.css?v=3.7">
 </head>
 <body class="admin-body">
 
@@ -1144,7 +1144,10 @@
           </div>
         </div>
 
-        <div style="display: flex; gap: 10px;">
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <button class="btn btn-small" id="send-whatsapp-invoice-btn" style="background:#22c55e; color:white; font-weight:700; border:none; display:flex; align-items:center; gap:6px;">
+            <span>📲 Send Bill on WhatsApp</span>
+          </button>
           <button class="btn btn-primary btn-small" id="trigger-browser-print-btn">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
             <span>Print Document</span>
@@ -1286,9 +1289,9 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Scripts -->
-  <script src="/js/quagga.min.js?v=3.6"></script>
-  <script src="/js/html5-qrcode.min.js?v=3.6"></script>
-  <script src="/js/api.js?v=3.6"></script>
-  <script src="/js/admin.js?v=3.6"></script>
+  <script src="/js/quagga.min.js?v=3.7"></script>
+  <script src="/js/html5-qrcode.min.js?v=3.7"></script>
+  <script src="/js/api.js?v=3.7"></script>
+  <script src="/js/admin.js?v=3.7"></script>
 </body>
 </html>
