@@ -675,7 +675,47 @@
       });
     }
 
-    // Auto pre-fill POS Device Details card if available on product
+    // Auto pre-fill POS Device Details card and multi-unit handset selector
+    const handsetWrap = $("#pos-handset-selector-wrap");
+    const handsetSelect = $("#pos-handset-unit-select");
+    const handsetBadge = $("#pos-handset-stock-badge");
+
+    const availableUnits = Array.isArray(product.imeiRecords) && product.imeiRecords.length > 0
+      ? product.imeiRecords.filter(r => r.status === "In Stock")
+      : (product.imei1 ? [{ imei1: product.imei1, imei2: product.imei2, serialNumber: product.serialNumber, status: "In Stock" }] : []);
+
+    if (availableUnits.length > 0 && handsetWrap && handsetSelect) {
+      handsetWrap.style.display = "block";
+      if (handsetBadge) handsetBadge.textContent = `${availableUnits.length} In Stock`;
+      handsetSelect.innerHTML = `
+        <option value="">-- Choose Stock Handset (${availableUnits.length} available) --</option>
+        ${availableUnits.map((u, i) => `
+          <option value="${i}" data-imei1="${escapeHTML(u.imei1 || '')}" data-imei2="${escapeHTML(u.imei2 || '')}" data-sn="${escapeHTML(u.serialNumber || '')}" ${i === 0 ? 'selected' : ''}>
+            Handset #${i + 1} — IMEI: ${escapeHTML(u.imei1 || "N/A")} ${u.serialNumber ? `(S/N: ${escapeHTML(u.serialNumber)})` : ''}
+          </option>
+        `).join("")}
+      `;
+
+      // Set initial unit values
+      const initial = availableUnits[0];
+      if (initial) {
+        if ($("#pos-imei1")) $("#pos-imei1").value = initial.imei1 || "";
+        if ($("#pos-imei2")) $("#pos-imei2").value = initial.imei2 || "";
+        if ($("#pos-serial-no") && initial.serialNumber) $("#pos-serial-no").value = initial.serialNumber;
+      }
+
+      handsetSelect.onchange = () => {
+        const opt = handsetSelect.options[handsetSelect.selectedIndex];
+        if (opt && opt.value !== "") {
+          if ($("#pos-imei1")) $("#pos-imei1").value = opt.getAttribute("data-imei1") || "";
+          if ($("#pos-imei2")) $("#pos-imei2").value = opt.getAttribute("data-imei2") || "";
+          if ($("#pos-serial-no")) $("#pos-serial-no").value = opt.getAttribute("data-sn") || "";
+        }
+      };
+    } else if (handsetWrap) {
+      handsetWrap.style.display = "none";
+    }
+
     const serialField = $("#pos-serial-no");
     if (serialField && product.serialNumber && !serialField.value) {
       serialField.value = product.serialNumber;
@@ -954,6 +994,8 @@
       if ($("#pos-imei2")) $("#pos-imei2").value = "";
       if ($("#pos-model-no")) $("#pos-model-no").value = "";
       if ($("#pos-serial-no")) $("#pos-serial-no").value = "";
+      if ($("#pos-handset-selector-wrap")) $("#pos-handset-selector-wrap").style.display = "none";
+      if ($("#pos-handset-unit-select")) $("#pos-handset-unit-select").innerHTML = "";
       if ($("#pos-financier")) $("#pos-financier").value = "";
       if ($("#pos-loan-ref")) $("#pos-loan-ref").value = "";
       $("#pos-discount").value = "0";
@@ -1498,7 +1540,9 @@ _(Inclusive of GST & Official Brand Pack Sealing)_
                 <span style="font-family: var(--font-mono); font-size: 11px; color: var(--dark-text-muted);">SKU: ${escapeHTML(p.sku)}</span>
                 ${(Array.isArray(p.images) && p.images.length > 1) ? `<span style="font-size: 10px; color: #38bdf8; font-weight: 700; margin-left: 6px;">• 📷 ${p.images.length} Photos</span>` : ""}
                 ${p.serialNumber ? `<span style="font-family: var(--font-mono); font-size: 10px; color: #38bdf8; margin-left: 6px; font-weight: 700;">• S/N: ${escapeHTML(p.serialNumber)}</span>` : ""}
-                ${p.imei1 ? `<span style="font-family: var(--font-mono); font-size: 10px; color: #94a3b8; margin-left: 6px;">• IMEI: ${escapeHTML(p.imei1)}</span>` : ""}
+                ${(Array.isArray(p.imeiRecords) && p.imeiRecords.length > 1)
+                  ? `<span style="font-family: var(--font-mono); font-size: 10px; color: #38bdf8; margin-left: 6px; font-weight: 700;">• 📱 ${p.imeiRecords.filter(r => r.status === 'In Stock').length} of ${p.imeiRecords.length} IMEIs in Stock</span>`
+                  : (p.imei1 ? `<span style="font-family: var(--font-mono); font-size: 10px; color: #94a3b8; margin-left: 6px;">• IMEI: ${escapeHTML(p.imei1)}</span>` : "")}
               </div>
             </div>
           </td>
@@ -1623,6 +1667,153 @@ _(Inclusive of GST & Official Brand Pack Sealing)_
   let addProductImageFiles = [];
   let editProductImageFiles = [];
   let editProductExistingImages = [];
+
+  // Multi-Unit Handset IMEI State for Multi-Stock Inventory
+  let addProdExtraUnits = [];
+  let editProdExtraUnits = [];
+
+  function renderAddProductImeiUnits() {
+    const container = $("#add-prod-extra-units-container");
+    const summary = $("#add-prod-units-summary");
+    if (!container) return;
+
+    if (addProdExtraUnits.length === 0) {
+      container.innerHTML = "";
+      if (summary) summary.textContent = "1 Handset configured (Unit #1)";
+      return;
+    }
+
+    if (summary) {
+      summary.textContent = `${1 + addProdExtraUnits.length} Handsets configured (${1 + addProdExtraUnits.length} Units)`;
+    }
+
+    container.innerHTML = addProdExtraUnits.map((u, idx) => `
+      <div class="extra-unit-card" style="background:#070c18; border:1px solid #1e293b; border-radius:8px; padding:8px 10px; margin-bottom:8px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <div style="font-size:11.5px; font-weight:700; color:#38bdf8; display:flex; align-items:center; gap:6px;">
+            <span>📱 Handset Unit #${idx + 2}</span>
+            <span class="badge badge-success" style="font-size:9px; padding:1px 5px;">In Stock</span>
+          </div>
+          <button type="button" class="btn btn-dark btn-small remove-add-unit-btn" data-id="${u.id}" style="color:#f87171; font-size:11px; padding:2px 6px;">✕ Remove</button>
+        </div>
+        <div class="form-row-3" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
+          <div class="field" style="margin-bottom:0;">
+            <label style="color:#cbd5e1; font-size:10px; display:flex; justify-content:space-between;">
+              <span>Serial (S/N)</span>
+              <span class="btn-scan-field" data-target="add-unit-${u.id}-serial" data-label="Unit #${idx + 2} S/N" style="color:#38bdf8; cursor:pointer; font-size:10px;">📷 Scan</span>
+            </label>
+            <div style="display:flex; gap:4px;">
+              <input type="text" id="add-unit-${u.id}-serial" value="${escapeHTML(u.serialNumber || '')}" placeholder="Unit #${idx + 2} S/N" style="background:#090d16; border-color:var(--dark-border); color:#38bdf8; font-family:var(--font-mono); font-size:11px; flex:1;">
+              <button type="button" class="btn btn-secondary btn-scan-field" data-target="add-unit-${u.id}-serial" data-label="Unit #${idx + 2} S/N" style="padding:0 7px; background:#1e293b; border-color:#38bdf8; color:#38bdf8; font-size:11px;">📷</button>
+            </div>
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label style="color:#cbd5e1; font-size:10px; display:flex; justify-content:space-between;">
+              <span>IMEI 1</span>
+              <span class="btn-scan-field" data-target="add-unit-${u.id}-imei1" data-label="Unit #${idx + 2} IMEI 1" style="color:#60a5fa; cursor:pointer; font-size:10px;">📷 Scan</span>
+            </label>
+            <div style="display:flex; gap:4px;">
+              <input type="text" id="add-unit-${u.id}-imei1" value="${escapeHTML(u.imei1 || '')}" placeholder="Unit #${idx + 2} IMEI 1" style="background:#090d16; border-color:var(--dark-border); color:white; font-family:var(--font-mono); font-size:11px; flex:1;">
+              <button type="button" class="btn btn-secondary btn-scan-field" data-target="add-unit-${u.id}-imei1" data-label="Unit #${idx + 2} IMEI 1" style="padding:0 7px; background:#1e293b; border-color:#3b82f6; color:#60a5fa; font-size:11px;">📷</button>
+            </div>
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label style="color:#cbd5e1; font-size:10px; display:flex; justify-content:space-between;">
+              <span>IMEI 2</span>
+              <span class="btn-scan-field" data-target="add-unit-${u.id}-imei2" data-label="Unit #${idx + 2} IMEI 2" style="color:#60a5fa; cursor:pointer; font-size:10px;">📷 Scan</span>
+            </label>
+            <div style="display:flex; gap:4px;">
+              <input type="text" id="add-unit-${u.id}-imei2" value="${escapeHTML(u.imei2 || '')}" placeholder="Unit #${idx + 2} IMEI 2" style="background:#090d16; border-color:var(--dark-border); color:white; font-family:var(--font-mono); font-size:11px; flex:1;">
+              <button type="button" class="btn btn-secondary btn-scan-field" data-target="add-unit-${u.id}-imei2" data-label="Unit #${idx + 2} IMEI 2" style="padding:0 7px; background:#1e293b; border-color:#3b82f6; color:#60a5fa; font-size:11px;">📷</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `).join("");
+
+    container.querySelectorAll(".remove-add-unit-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const uid = btn.dataset.id;
+        addProdExtraUnits = addProdExtraUnits.filter(u => u.id !== uid);
+        renderAddProductImeiUnits();
+      });
+    });
+  }
+
+  function renderEditProductImeiUnits() {
+    const container = $("#edit-prod-extra-units-container");
+    const summary = $("#edit-prod-units-summary");
+    if (!container) return;
+
+    if (editProdExtraUnits.length === 0) {
+      container.innerHTML = "";
+      if (summary) summary.textContent = "1 Handset configured (Unit #1)";
+      return;
+    }
+
+    if (summary) {
+      summary.textContent = `${1 + editProdExtraUnits.length} Handsets configured (${1 + editProdExtraUnits.length} Units)`;
+    }
+
+    container.innerHTML = editProdExtraUnits.map((u, idx) => {
+      const isSold = u.status === "Sold";
+      return `
+        <div class="extra-unit-card" style="background:#070c18; border:1px solid ${isSold ? 'rgba(239, 68, 68, 0.4)' : '#1e293b'}; border-radius:8px; padding:8px 10px; margin-bottom:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <div style="font-size:11.5px; font-weight:700; color:#38bdf8; display:flex; align-items:center; gap:6px;">
+              <span>📱 Handset Unit #${idx + 2}</span>
+              ${isSold
+                ? `<span class="badge badge-danger" style="font-size:9px; padding:1px 5px; background:#ef4444; color:#fff;">Sold on Bill #${escapeHTML(u.soldBillNumber || 'N/A')}</span>`
+                : `<span class="badge badge-success" style="font-size:9px; padding:1px 5px;">In Stock</span>`}
+            </div>
+            ${!isSold ? `
+              <button type="button" class="btn btn-dark btn-small remove-edit-unit-btn" data-id="${u.id}" style="color:#f87171; font-size:11px; padding:2px 6px;">✕ Remove</button>
+            ` : `<span style="font-size:10px; color:#94a3b8;">Locked (Sold)</span>`}
+          </div>
+          <div class="form-row-3" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
+            <div class="field" style="margin-bottom:0;">
+              <label style="color:#cbd5e1; font-size:10px; display:flex; justify-content:space-between;">
+                <span>Serial (S/N)</span>
+                ${!isSold ? `<span class="btn-scan-field" data-target="edit-unit-${u.id}-serial" data-label="Unit #${idx + 2} S/N" style="color:#38bdf8; cursor:pointer; font-size:10px;">📷 Scan</span>` : ''}
+              </label>
+              <div style="display:flex; gap:4px;">
+                <input type="text" id="edit-unit-${u.id}-serial" value="${escapeHTML(u.serialNumber || '')}" ${isSold ? 'readonly style="background:#111827; opacity:0.7;"' : 'style="background:#090d16;"'} placeholder="Unit #${idx + 2} S/N" style="border-color:var(--dark-border); color:#38bdf8; font-family:var(--font-mono); font-size:11px; flex:1;">
+                ${!isSold ? `<button type="button" class="btn btn-secondary btn-scan-field" data-target="edit-unit-${u.id}-serial" data-label="Unit #${idx + 2} S/N" style="padding:0 7px; background:#1e293b; border-color:#38bdf8; color:#38bdf8; font-size:11px;">📷</button>` : ''}
+              </div>
+            </div>
+            <div class="field" style="margin-bottom:0;">
+              <label style="color:#cbd5e1; font-size:10px; display:flex; justify-content:space-between;">
+                <span>IMEI 1</span>
+                ${!isSold ? `<span class="btn-scan-field" data-target="edit-unit-${u.id}-imei1" data-label="Unit #${idx + 2} IMEI 1" style="color:#60a5fa; cursor:pointer; font-size:10px;">📷 Scan</span>` : ''}
+              </label>
+              <div style="display:flex; gap:4px;">
+                <input type="text" id="edit-unit-${u.id}-imei1" value="${escapeHTML(u.imei1 || '')}" ${isSold ? 'readonly style="background:#111827; opacity:0.7;"' : 'style="background:#090d16;"'} placeholder="Unit #${idx + 2} IMEI 1" style="border-color:var(--dark-border); color:white; font-family:var(--font-mono); font-size:11px; flex:1;">
+                ${!isSold ? `<button type="button" class="btn btn-secondary btn-scan-field" data-target="edit-unit-${u.id}-imei1" data-label="Unit #${idx + 2} IMEI 1" style="padding:0 7px; background:#1e293b; border-color:#3b82f6; color:#60a5fa; font-size:11px;">📷</button>` : ''}
+              </div>
+            </div>
+            <div class="field" style="margin-bottom:0;">
+              <label style="color:#cbd5e1; font-size:10px; display:flex; justify-content:space-between;">
+                <span>IMEI 2</span>
+                ${!isSold ? `<span class="btn-scan-field" data-target="edit-unit-${u.id}-imei2" data-label="Unit #${idx + 2} IMEI 2" style="color:#60a5fa; cursor:pointer; font-size:10px;">📷 Scan</span>` : ''}
+              </label>
+              <div style="display:flex; gap:4px;">
+                <input type="text" id="edit-unit-${u.id}-imei2" value="${escapeHTML(u.imei2 || '')}" ${isSold ? 'readonly style="background:#111827; opacity:0.7;"' : 'style="background:#090d16;"'} placeholder="Unit #${idx + 2} IMEI 2" style="border-color:var(--dark-border); color:white; font-family:var(--font-mono); font-size:11px; flex:1;">
+                ${!isSold ? `<button type="button" class="btn btn-secondary btn-scan-field" data-target="edit-unit-${u.id}-imei2" data-label="Unit #${idx + 2} IMEI 2" style="padding:0 7px; background:#1e293b; border-color:#3b82f6; color:#60a5fa; font-size:11px;">📷</button>` : ''}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    container.querySelectorAll(".remove-edit-unit-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const uid = btn.dataset.id;
+        editProdExtraUnits = editProdExtraUnits.filter(u => u.id !== uid);
+        renderEditProductImeiUnits();
+      });
+    });
+  }
 
   function renderAddProductImagesPreview() {
     const previewBox = $("#add-product-files-preview");
@@ -1804,6 +1995,26 @@ _(Inclusive of GST & Official Brand Pack Sealing)_
       images: []
     };
 
+    // Multi-unit IMEI collection for multi-stock phones
+    const allImeis = [];
+    const u1_imei1 = formData.get("imei1")?.trim() || "";
+    const u1_imei2 = formData.get("imei2")?.trim() || "";
+    const u1_sn = formData.get("serialNumber")?.trim() || "";
+    if (u1_imei1 || u1_imei2 || u1_sn) {
+      allImeis.push({ imei1: u1_imei1, imei2: u1_imei2, serialNumber: u1_sn, status: "In Stock" });
+    }
+    addProdExtraUnits.forEach(u => {
+      const i1 = $(`#add-unit-${u.id}-imei1`)?.value.trim() || "";
+      const i2 = $(`#add-unit-${u.id}-imei2`)?.value.trim() || "";
+      const sn = $(`#add-unit-${u.id}-serial`)?.value.trim() || "";
+      if (i1 || i2 || sn) {
+        allImeis.push({ imei1: i1, imei2: i2, serialNumber: sn, status: "In Stock" });
+      }
+    });
+    if (allImeis.length > 0) {
+      productPayload.imeiRecords = allImeis;
+    }
+
     if (!productPayload.name) {
       showToast("Product name is required", "error");
       return;
@@ -1860,7 +2071,9 @@ _(Inclusive of GST & Official Brand Pack Sealing)_
 
       form.reset();
       addProductImageFiles = [];
+      addProdExtraUnits = [];
       renderAddProductImagesPreview();
+      renderAddProductImeiUnits();
       $("#admin-add-product-modal")?.classList.remove("active");
       loadInventoryView();
       loadOverview();
@@ -1905,6 +2118,29 @@ _(Inclusive of GST & Official Brand Pack Sealing)_
     editProductImageFiles = [];
     renderEditProductImagesPreview();
 
+    // Multi-unit IMEI loading
+    editProdExtraUnits = [];
+    if (Array.isArray(product.imeiRecords) && product.imeiRecords.length > 0) {
+      const first = product.imeiRecords[0];
+      if ($("#edit-prod-imei1")) $("#edit-prod-imei1").value = first.imei1 || "";
+      if ($("#edit-prod-imei2")) $("#edit-prod-imei2").value = first.imei2 || "";
+      if ($("#edit-prod-serial")) $("#edit-prod-serial").value = first.serialNumber || "";
+
+      for (let i = 1; i < product.imeiRecords.length; i++) {
+        const r = product.imeiRecords[i];
+        editProdExtraUnits.push({
+          id: "edit_u_" + Date.now() + "_" + i,
+          imei1: r.imei1 || "",
+          imei2: r.imei2 || "",
+          serialNumber: r.serialNumber || "",
+          status: r.status || "In Stock",
+          soldBillNumber: r.soldBillNumber || null,
+          soldDate: r.soldDate || null
+        });
+      }
+    }
+    renderEditProductImeiUnits();
+
     $("#admin-edit-product-modal")?.classList.add("active");
   }
 
@@ -1933,6 +2169,43 @@ _(Inclusive of GST & Official Brand Pack Sealing)_
       description: $("#edit-prod-desc").value.trim(),
       images: [...editProductExistingImages]
     };
+
+    // Reconstruct full multi-unit imeiRecords array
+    const imeiRecords = [];
+    const u1_imei1 = $("#edit-prod-imei1")?.value.trim() || "";
+    const u1_imei2 = $("#edit-prod-imei2")?.value.trim() || "";
+    const u1_sn = $("#edit-prod-serial")?.value.trim() || "";
+    const targetProd = inventoryList.find(p => p._id === id);
+    const firstRec = (targetProd && targetProd.imeiRecords && targetProd.imeiRecords[0]) ? targetProd.imeiRecords[0] : null;
+
+    if (u1_imei1 || u1_imei2 || u1_sn || firstRec) {
+      imeiRecords.push({
+        imei1: u1_imei1,
+        imei2: u1_imei2,
+        serialNumber: u1_sn,
+        status: firstRec?.status || "In Stock",
+        soldBillNumber: firstRec?.soldBillNumber || null,
+        soldDate: firstRec?.soldDate || null
+      });
+    }
+
+    editProdExtraUnits.forEach(u => {
+      const i1 = $(`#edit-unit-${u.id}-imei1`)?.value.trim() || u.imei1 || "";
+      const i2 = $(`#edit-unit-${u.id}-imei2`)?.value.trim() || u.imei2 || "";
+      const sn = $(`#edit-unit-${u.id}-serial`)?.value.trim() || u.serialNumber || "";
+      if (i1 || i2 || sn || u.status === "Sold") {
+        imeiRecords.push({
+          imei1: i1,
+          imei2: i2,
+          serialNumber: sn,
+          status: u.status || "In Stock",
+          soldBillNumber: u.soldBillNumber || null,
+          soldDate: u.soldDate || null
+        });
+      }
+    });
+
+    updates.imeiRecords = imeiRecords;
 
     try {
       btn.disabled = true;
@@ -2512,15 +2785,39 @@ _(Inclusive of GST & Official Brand Pack Sealing)_
   function handlePosBarcodeScanned(code) {
     if (!code) return;
     const clean = code.trim().toUpperCase();
+    const rawClean = code.trim();
     const match = posProducts.find(p =>
       (p.sku && p.sku.toUpperCase() === clean) ||
       (p.barcode && p.barcode.toUpperCase() === clean) ||
-      (p.imei1 && p.imei1 === clean) ||
-      (p.serialNumber && p.serialNumber.toUpperCase() === clean)
+      (p.imei1 && p.imei1 === rawClean) ||
+      (p.imei2 && p.imei2 === rawClean) ||
+      (p.serialNumber && p.serialNumber.toUpperCase() === clean) ||
+      (Array.isArray(p.imeiRecords) && p.imeiRecords.some(r => r.imei1 === rawClean || r.imei2 === rawClean || (r.serialNumber && r.serialNumber.toUpperCase() === clean)))
     );
 
     if (match) {
       addProductToPosBill(match._id);
+
+      // If a specific IMEI unit was matched, auto-select it in POS handset selector
+      if (Array.isArray(match.imeiRecords)) {
+        const foundIdx = match.imeiRecords.findIndex(r => r.imei1 === rawClean || r.imei2 === rawClean || (r.serialNumber && r.serialNumber.toUpperCase() === clean));
+        if (foundIdx > -1) {
+          const unit = match.imeiRecords[foundIdx];
+          if ($("#pos-imei1")) $("#pos-imei1").value = unit.imei1 || "";
+          if ($("#pos-imei2")) $("#pos-imei2").value = unit.imei2 || "";
+          if ($("#pos-serial-no") && unit.serialNumber) $("#pos-serial-no").value = unit.serialNumber;
+          const select = $("#pos-handset-unit-select");
+          if (select) {
+            for (let i = 0; i < select.options.length; i++) {
+              if (select.options[i].getAttribute("data-imei1") === unit.imei1) {
+                select.selectedIndex = i;
+                break;
+              }
+            }
+          }
+        }
+      }
+
       showToast(`Scanned & Added: ${match.name}`, "success");
       const input = $("#pos-search-input");
       if (input) input.value = "";
@@ -3246,11 +3543,69 @@ _(Inclusive of GST & Official Brand Pack Sealing)_
       }
     });
 
-    // Barcode & IMEI Camera Scanner Triggers
-    $$(".btn-scan-field").forEach(btn => {
-      btn.addEventListener("click", () => {
-        openBarcodeScanner({ targetFieldId: btn.dataset.target, label: btn.dataset.label, mode: "field" });
+    // Multi-Unit Handset IMEI Management Triggers
+    $("#btn-add-unit-imei")?.addEventListener("click", () => {
+      addProdExtraUnits.push({
+        id: "add_u_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+        imei1: "",
+        imei2: "",
+        serialNumber: "",
+        status: "In Stock"
       });
+      renderAddProductImeiUnits();
+    });
+
+    $("#btn-match-add-stock-units")?.addEventListener("click", () => {
+      const stock = parseInt($("#add-product-stock")?.value, 10) || 1;
+      const targetExtra = Math.max(0, stock - 1);
+      while (addProdExtraUnits.length < targetExtra) {
+        addProdExtraUnits.push({
+          id: "add_u_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+          imei1: "",
+          imei2: "",
+          serialNumber: "",
+          status: "In Stock"
+        });
+      }
+      renderAddProductImeiUnits();
+      showToast(`Configured IMEI slots for ${stock} handset unit(s)`, "info");
+    });
+
+    $("#btn-edit-add-unit-imei")?.addEventListener("click", () => {
+      editProdExtraUnits.push({
+        id: "edit_u_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+        imei1: "",
+        imei2: "",
+        serialNumber: "",
+        status: "In Stock"
+      });
+      renderEditProductImeiUnits();
+    });
+
+    $("#btn-match-edit-stock-units")?.addEventListener("click", () => {
+      const id = $("#edit-product-id")?.value;
+      const prod = inventoryList.find(p => p._id === id);
+      const stock = prod ? (Number(prod.stockQuantity) || 1) : 1;
+      const targetExtra = Math.max(0, stock - 1);
+      while (editProdExtraUnits.length < targetExtra) {
+        editProdExtraUnits.push({
+          id: "edit_u_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+          imei1: "",
+          imei2: "",
+          serialNumber: "",
+          status: "In Stock"
+        });
+      }
+      renderEditProductImeiUnits();
+      showToast(`Configured IMEI slots for ${stock} handset unit(s)`, "info");
+    });
+
+    // Barcode & IMEI Camera Scanner Triggers (Delegated so all dynamic unit rows work)
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest(".btn-scan-field");
+      if (btn && btn.dataset.target) {
+        openBarcodeScanner({ targetFieldId: btn.dataset.target, label: btn.dataset.label || "IMEI / Barcode", mode: "field" });
+      }
     });
 
     $$(".btn-smart-box-scan").forEach(btn => {

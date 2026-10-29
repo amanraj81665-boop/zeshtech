@@ -193,6 +193,44 @@ async function createBill(req, res) {
       createdBy: req.user?.userId || null
     });
 
+    // Automatically mark the billed handset IMEI as "Sold" in product imeiRecords
+    const cleanImei1 = (imei1 || "").trim();
+    const cleanImei2 = (imei2 || "").trim();
+    if (bill && (cleanImei1 || cleanImei2)) {
+      for (const it of processedItems) {
+        if (it.productId) {
+          try {
+            const pDoc = await Product.findById(it.productId);
+            if (pDoc && Array.isArray(pDoc.imeiRecords) && pDoc.imeiRecords.length > 0) {
+              const record = pDoc.imeiRecords.find(r => 
+                (cleanImei1 && r.imei1 === cleanImei1) || 
+                (cleanImei2 && r.imei2 === cleanImei2) ||
+                (r.status === "In Stock")
+              );
+              if (record) {
+                record.status = "Sold";
+                record.soldBillNumber = bill.invoiceNumber;
+                record.soldDate = new Date();
+                
+                const nextAvail = pDoc.imeiRecords.find(r => r.status === "In Stock");
+                if (nextAvail) {
+                  pDoc.imei1 = nextAvail.imei1 || "";
+                  pDoc.imei2 = nextAvail.imei2 || "";
+                  pDoc.serialNumber = nextAvail.serialNumber || "";
+                } else {
+                  pDoc.imei1 = "";
+                  pDoc.imei2 = "";
+                }
+                await pDoc.save();
+              }
+            }
+          } catch (imeiErr) {
+            console.warn("IMEI status update warning:", imeiErr);
+          }
+        }
+      }
+    }
+
     return res.status(201).json({
       success: true,
       message: "Bill created successfully",
@@ -519,12 +557,34 @@ async function cancelBill(req, res) {
       });
     }
 
-    // Restore stock
+    // Restore stock and IMEI status
     for (const it of bill.items) {
       if (it.productId) {
         await Product.findByIdAndUpdate(it.productId, {
           $inc: { stockQuantity: it.quantity }
         }).catch(err => console.error("Error restoring stock on bill cancel:", err.message));
+
+        try {
+          const pDoc = await Product.findById(it.productId);
+          if (pDoc && Array.isArray(pDoc.imeiRecords) && pDoc.imeiRecords.length > 0) {
+            const soldRec = pDoc.imeiRecords.find(r => 
+              r.soldBillNumber === bill.invoiceNumber ||
+              (bill.imei1 && r.imei1 === bill.imei1)
+            );
+            if (soldRec) {
+              soldRec.status = "In Stock";
+              soldRec.soldBillNumber = null;
+              soldRec.soldDate = null;
+              if (!pDoc.imei1) {
+                pDoc.imei1 = soldRec.imei1 || "";
+                pDoc.imei2 = soldRec.imei2 || "";
+              }
+              await pDoc.save();
+            }
+          }
+        } catch (restErr) {
+          console.warn("Error restoring IMEI status on bill cancel:", restErr.message);
+        }
       }
     }
 

@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..800;1,9..40,400..800&family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="/css/style.css?v=3.7">
+  <link rel="stylesheet" href="/css/style.css?v=3.9">
 </head>
 <body class="admin-body">
 
@@ -521,6 +521,17 @@
                   <span class="badge badge-info" style="font-size: 9px; padding: 1px 6px;">BILL PRINT</span>
                 </div>
                 <div class="pos-device-grid">
+                  <div id="pos-handset-selector-wrap" style="display:none; grid-column: 1 / -1; margin-bottom: 6px; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.35); border-radius: 8px; padding: 7px 10px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                      <label class="field-label" style="font-size: 10.5px; color: #38bdf8; font-weight: 700; margin:0;">
+                        📱 Select Stock Handset Unit to Bill
+                      </label>
+                      <span id="pos-handset-stock-badge" style="font-size: 10px; color: #4ade80; font-weight:700;"></span>
+                    </div>
+                    <select id="pos-handset-unit-select" style="background:#090d16; border:1px solid #3b82f6; color:#e2e8f0; font-size:11.5px; padding:5px 8px; border-radius:5px; width:100%;">
+                      <option value="">-- Choose Stock Handset --</option>
+                    </select>
+                  </div>
                   <div>
                     <label class="field-label" style="font-size: 10px; color: #cbd5e1; font-weight: 700;">Serial No. (S/N)</label>
                     <input type="text" id="pos-serial-no" placeholder="e.g. JXFL7HR2C1" style="background:#070b14; border-color:rgba(59,130,246,0.3); padding:5px 8px; font-size:11.5px; color:#38bdf8; font-weight:700; font-family:var(--font-mono);">
@@ -912,6 +923,20 @@
                 </div>
               </div>
             </div>
+
+            <!-- Dynamic Multi-Handset IMEI Units (for Stock > 1) -->
+            <div id="add-prod-extra-units-wrap" style="margin-top: 10px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 8px;">
+              <div id="add-prod-extra-units-container"></div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; flex-wrap:wrap; gap:8px;">
+                <button type="button" id="btn-add-unit-imei" class="btn btn-secondary btn-small" style="background:#1e293b; border-color:#3b82f6; color:#60a5fa; font-size:11px; padding:4px 10px;">
+                  ➕ Add IMEI for Another Handset (Unit)
+                </button>
+                <button type="button" id="btn-match-add-stock-units" class="btn btn-secondary btn-small" style="background:rgba(56,189,248,0.1); border-color:#38bdf8; color:#38bdf8; font-size:11px; padding:4px 10px;">
+                  ⚡ Auto-Match Stock Count
+                </button>
+                <span id="add-prod-units-summary" style="font-size:11px; color:#94a3b8; font-weight:600;">1 Handset configured</span>
+              </div>
+            </div>
           </div>
 
           <div class="field">
@@ -1055,6 +1080,20 @@
                   <input type="text" id="edit-prod-imei2" placeholder="e.g. 35701791193301" style="background:#090d16; border-color:var(--dark-border); color:white; font-family:var(--font-mono); font-size:12px; flex:1;">
                   <button type="button" class="btn btn-secondary btn-scan-field" data-target="edit-prod-imei2" data-label="IMEI 2" title="Scan IMEI 2 Barcode" style="padding:0 9px; background:#1e293b; border-color:#3b82f6; color:#60a5fa; font-size:13px;">📷</button>
                 </div>
+              </div>
+            </div>
+
+            <!-- Dynamic Multi-Handset IMEI Units (for Stock > 1) in Edit Modal -->
+            <div id="edit-prod-extra-units-wrap" style="margin-top: 10px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 8px;">
+              <div id="edit-prod-extra-units-container"></div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; flex-wrap:wrap; gap:8px;">
+                <button type="button" id="btn-edit-add-unit-imei" class="btn btn-secondary btn-small" style="background:#1e293b; border-color:#3b82f6; color:#60a5fa; font-size:11px; padding:4px 10px;">
+                  ➕ Add IMEI for Another Handset (Unit)
+                </button>
+                <button type="button" id="btn-match-edit-stock-units" class="btn btn-secondary btn-small" style="background:rgba(56,189,248,0.1); border-color:#38bdf8; color:#38bdf8; font-size:11px; padding:4px 10px;">
+                  ⚡ Auto-Match Stock Count
+                </button>
+                <span id="edit-prod-units-summary" style="font-size:11px; color:#94a3b8; font-weight:600;">1 Handset configured</span>
               </div>
             </div>
           </div>
@@ -1289,9 +1328,9 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Scripts -->
-  <script src="/js/quagga.min.js?v=3.7"></script>
-  <script src="/js/html5-qrcode.min.js?v=3.7"></script>
-  <script src="/js/api.js?v=3.7"></script>
-  <script src="/js/admin.js?v=3.7"></script>
+  <script src="/js/quagga.min.js?v=3.9"></script>
+  <script src="/js/html5-qrcode.min.js?v=3.9"></script>
+  <script src="/js/api.js?v=3.9"></script>
+  <script src="/js/admin.js?v=3.9"></script>
 </body>
 </html>

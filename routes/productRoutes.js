@@ -83,6 +83,7 @@ const editableFields = [
   "serialNumber",
   "imei1",
   "imei2",
+  "imeiRecords",
   "category",
   "brand",
   "model",
@@ -310,7 +311,11 @@ router.get("/lookup/:code", authMiddleware, requireAdmin, async (req, res) => {
         { sku: code.toUpperCase() },
         { barcode: code },
         { serialNumber: code },
-        { imei1: code }
+        { imei1: code },
+        { imei2: code },
+        { "imeiRecords.imei1": code },
+        { "imeiRecords.imei2": code },
+        { "imeiRecords.serialNumber": code }
       ]
     });
 
@@ -403,6 +408,15 @@ router.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
 
     // Stock changes must use the dedicated stock endpoint.
     delete updates.stockQuantity;
+
+    if (Array.isArray(updates.imeiRecords) && updates.imeiRecords.length > 0) {
+      const avail = updates.imeiRecords.find(r => r.status === "In Stock");
+      if (avail) {
+        updates.imei1 = avail.imei1 || "";
+        updates.imei2 = avail.imei2 || "";
+        if (avail.serialNumber) updates.serialNumber = avail.serialNumber;
+      }
+    }
 
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({

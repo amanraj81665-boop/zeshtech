@@ -514,13 +514,26 @@
     setCardProductImageIndex(pid, curr + direction);
   }
 
-  // Smart Color & Multi-Angle Image Resolver for Smartphones & Tech
+  // Canonical Model Key Extractor: Identifies exact smartphone model without being misled by color or storage
+  function getCanonicalModelKey(p) {
+    if (!p) return "";
+    const raw = `${p.brand || ""} ${p.model || ""} ${p.name || ""}`.toLowerCase();
+    return raw
+      .replace(/\((?:[^)]*?(?:ram|rom|storage|gb|tb|5g|4g|nvme)[^)]*?)\)/gi, "")
+      .replace(/\b\d+\s*(?:gb|tb)\b/gi, "")
+      .replace(/\b\d+\s*gb\s*ram\b/gi, "")
+      .replace(/-\s*(?:black|white|blue|gold|silver|purple|lavender|green|violet|titanium|grey|gray|red|yellow|orange|pink|brown|twilight|mocha|emerald|ocean|lake|carbon|glacier|charcoal|starlight|midnight|aqua)[^-(]*$/i, "")
+      .replace(/[^a-z0-9]/g, "")
+      .trim();
+  }
+
+  // Smart Color & Sibling Image Resolver for Smartphones & Retail
   function getProductColorVariants(product, allProds = [], specs = null) {
     const brand = (product.brand || "").toLowerCase();
-    const name = (product.name || "").toLowerCase();
     const baseImg = product.imageUrl || imageFallback;
     const variants = [];
     const seenColors = new Set();
+    const productKey = getCanonicalModelKey(product);
 
     // 1. Current color from specs, description or title
     let currentColorName = specs?.color || "";
@@ -532,90 +545,54 @@
       const currentColorMatch = product.name.match(/-\s*([A-Za-z\s]+?)(?:\(|$)/i);
       currentColorName = currentColorMatch ? currentColorMatch[1].trim() : (product.brand ? `${product.brand} Signature` : "Standard Finish");
     }
-    variants.push({ color: currentColorName, image: baseImg });
+    variants.push({
+      color: currentColorName,
+      image: baseImg,
+      productId: product._id,
+      isCurrent: true,
+      price: product.sellingPrice,
+      stock: product.stockQuantity
+    });
     seenColors.add(currentColorName.toLowerCase());
 
-    // 2. If product has multi-images uploaded by admin, add them as angle/variant photos
-    if (Array.isArray(product.images) && product.images.length > 1) {
-      product.images.forEach((imgUrl, i) => {
-        if (i === 0) return;
-        const angleLabel = i === 1 ? "Back View" : i === 2 ? "Side View" : `Angle #${i + 1}`;
-        if (!seenColors.has(angleLabel.toLowerCase())) {
-          seenColors.add(angleLabel.toLowerCase());
-          variants.push({ color: angleLabel, image: imgUrl });
-        }
-      });
-    }
-
-    // 3. Look for sibling color variants in the catalog
-    const baseNameTokens = name.replace(/-\s*([A-Za-z\s]+?)(?:\(|$)/i, "").trim().split(" ").filter(w => w.length > 2);
+    // 2. Look ONLY for genuine sibling color variants in the catalog (SAME phone model, SAME category, SAME brand)
     const siblings = allProds.filter(p => {
-      if (p._id === product._id) return false;
+      if (String(p._id) === String(product._id)) return false;
+      if (p.category !== product.category) return false;
       const pBrand = (p.brand || "").toLowerCase();
-      const pName = (p.name || "").toLowerCase();
       if (pBrand !== brand) return false;
-      const matches = baseNameTokens.filter(t => pName.includes(t));
-      return matches.length >= Math.min(2, baseNameTokens.length);
+      return getCanonicalModelKey(p) === productKey;
     });
 
     siblings.forEach(p => {
       const cMatch = p.name.match(/-\s*([A-Za-z\s]+?)(?:\(|$)/i);
-      const cName = cMatch ? cMatch[1].trim() : "";
+      let cName = cMatch ? cMatch[1].trim() : "";
+      if (!cName && p.description) {
+        const dMatch = p.description.match(/(?:Colour|Color)\s*[:\t\-]?\s*([^\n\r,]+)/i);
+        if (dMatch && dMatch[1]) cName = dMatch[1].trim();
+      }
       if (cName && !seenColors.has(cName.toLowerCase())) {
         seenColors.add(cName.toLowerCase());
-        variants.push({ color: cName, image: p.imageUrl || baseImg });
+        variants.push({
+          color: cName,
+          image: p.imageUrl || baseImg,
+          productId: p._id,
+          isCurrent: false,
+          price: p.sellingPrice,
+          stock: p.stockQuantity
+        });
       }
     });
 
-    // 3. Fallback color palette matching exact inventory stock photos
-    if (variants.length < 3 && product.category === "Mobile") {
-      if (brand.includes("apple") || name.includes("iphone")) {
-        if (!seenColors.has("lavender")) variants.push({ color: "Lavender", image: "/images/products/iphone-17-lavender.jpg" });
-        if (!seenColors.has("starlight white") && !seenColors.has("white")) variants.push({ color: "Starlight White", image: "/images/products/iphone-17-white.jpg" });
-        if (!seenColors.has("space black") && !seenColors.has("black")) variants.push({ color: "Space Black", image: "/images/products/iphone-18pro-black.jpg" });
-      } else if (brand.includes("samsung")) {
-        if (!seenColors.has("ice blue")) variants.push({ color: "Ice Blue", image: "/images/products/samsung-s25-iceblue.jpg" });
-        if (!seenColors.has("silver shadow") && !seenColors.has("silver")) variants.push({ color: "Silver Shadow", image: "/images/products/samsung-s25-silver.jpg" });
-        if (!seenColors.has("jet black") && !seenColors.has("black")) variants.push({ color: "Jet Black", image: "/images/products/samsung-s25fe-black.jpg" });
-      } else if (brand.includes("vivo")) {
-        if (!seenColors.has("wave blue")) variants.push({ color: "Wave Blue", image: "/images/products/vivo-t5lite-blue.jpg" });
-        if (!seenColors.has("twilight shadow") && !seenColors.has("twilight")) variants.push({ color: "Twilight Shadow", image: "/images/products/vivo-t5lite-twilight.jpg" });
-        if (!seenColors.has("glacier silver") && !seenColors.has("silver")) variants.push({ color: "Glacier Silver", image: "/images/products/vivo-t5x-silver.jpg" });
-      } else if (brand.includes("redmi") || brand.includes("xiaomi")) {
-        if (!seenColors.has("lake blue") && !seenColors.has("blue")) variants.push({ color: "Lake Blue", image: "/images/products/redmi-blue.jpg" });
-        if (!seenColors.has("carbon black") && !seenColors.has("black")) variants.push({ color: "Carbon Black", image: "/images/products/redmi-black.jpg" });
-        if (!seenColors.has("pastel purple") && !seenColors.has("purple")) variants.push({ color: "Pastel Purple", image: "/images/products/redmi-purple.jpg" });
-      } else if (brand.includes("oppo")) {
-        if (!seenColors.has("royal gold") && !seenColors.has("gold")) variants.push({ color: "Royal Gold", image: "/images/products/oppo-a6-pro-gold.jpg" });
-        if (!seenColors.has("mocha brown") && !seenColors.has("brown")) variants.push({ color: "Mocha Brown", image: "/images/products/oppo-f35-pro-brown.jpg" });
-        if (!seenColors.has("ocean blue") && !seenColors.has("blue")) variants.push({ color: "Ocean Blue", image: "/images/products/oppo-f35-blue.jpg" });
-      } else if (brand.includes("poco")) {
-        if (!seenColors.has("aqua blue") && !seenColors.has("blue")) variants.push({ color: "Aqua Blue", image: "/images/products/poco-m8x-blue.jpg" });
-        if (!seenColors.has("power black") && !seenColors.has("black")) variants.push({ color: "Power Black", image: "/images/products/poco-m8x-black.jpg" });
-        if (!seenColors.has("emerald green") && !seenColors.has("green")) variants.push({ color: "Emerald Green", image: "/images/products/poco-c85x-green.jpg" });
-      } else if (brand.includes("moto")) {
-        if (!seenColors.has("navy blue") && !seenColors.has("blue")) variants.push({ color: "Navy Blue", image: "/images/products/moto-blue.jpg" });
-        if (!seenColors.has("capri blue") && !seenColors.has("capri")) variants.push({ color: "Capri Blue", image: "/images/products/moto-capri.jpg" });
-        if (!seenColors.has("charcoal black") && !seenColors.has("black")) variants.push({ color: "Charcoal Black", image: "/images/products/moto-black.jpg" });
-      } else {
-        if (!seenColors.has("sapphire blue")) variants.push({ color: "Sapphire Blue", image: "/images/products/vivo-t5lite-blue.jpg" });
-        if (!seenColors.has("midnight black")) variants.push({ color: "Midnight Black", image: "/images/products/moto-black.jpg" });
-      }
-    }
-
-    return variants.slice(0, 4);
+    return variants;
   }
 
   // Resolve Real & Dynamic Storage/RAM Variants
   function getProductVariants(product, allProds = [], specs = null) {
     const currentRamRom = specs?.ramRom || "Standard Variant";
     const { mrp, discountPct } = calculateDiscount(product.sellingPrice);
-
-    // Search allProds for variants of the same phone family
     const brand = (product.brand || "").toLowerCase();
-    const rawName = (product.name || "").toLowerCase();
-    // Strip ram/rom/color in parentheses or after dash
-    const baseName = rawName.replace(/\(.*?\)/g, "").replace(/-\s*.*$/, "").trim();
+    const productKey = getCanonicalModelKey(product);
 
     const variantsList = [
       {
@@ -631,10 +608,10 @@
 
     const siblings = allProds.filter(p => {
       if (String(p._id) === String(product._id)) return false;
+      if (p.category !== product.category) return false;
       const pBrand = (p.brand || "").toLowerCase();
-      const pRaw = (p.name || "").toLowerCase();
-      const pBase = pRaw.replace(/\(.*?\)/g, "").replace(/-\s*.*$/, "").trim();
-      return pBrand === brand && (pBase === baseName || (baseName.length > 3 && pBase.includes(baseName)));
+      if (pBrand !== brand) return false;
+      return getCanonicalModelKey(p) === productKey;
     });
 
     siblings.forEach(sib => {
@@ -886,7 +863,7 @@
                 <div class="fk-section-subhead">Color: <b id="fk-selected-color-label">${escapeHTML(selectedColor)}</b></div>
                 <div class="fk-color-swatches-row">
                   ${colorVariants.map((c, i) => `
-                    <div class="fk-swatch-card ${i === 0 ? 'active' : ''}" data-color="${escapeHTML(c.color)}" data-image="${escapeHTML(c.image)}">
+                    <div class="fk-swatch-card ${c.isCurrent ? 'active' : ''}" data-product-id="${c.productId || ''}" data-color="${escapeHTML(c.color)}" data-image="${escapeHTML(c.image)}" style="${c.productId && String(c.productId) !== String(product._id) ? 'cursor:pointer;' : ''}">
                       <img src="${escapeHTML(c.image)}" alt="${escapeHTML(c.color)}" onerror="this.src='${imageFallback}';">
                       <span>${escapeHTML(c.color)}</span>
                     </div>
@@ -1198,9 +1175,14 @@
 
       // Wire up clicks inside modal
 
-      // 1. Color Swatches with Instant Real Photo Switching!
+      // 1. Color Swatches: Switch to sibling product if real product, or update color label
       modalContent.querySelectorAll(".fk-swatch-card").forEach(swatch => {
         swatch.addEventListener("click", () => {
+          const siblingPid = swatch.dataset.productId;
+          if (siblingPid && String(siblingPid) !== String(product._id)) {
+            openQuickView(siblingPid);
+            return;
+          }
           modalContent.querySelectorAll(".fk-swatch-card").forEach(s => s.classList.remove("active"));
           swatch.classList.add("active");
           const chosenColor = swatch.dataset.color || "";

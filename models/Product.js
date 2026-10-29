@@ -48,6 +48,21 @@ const productSchema = new mongoose.Schema(
       maxlength: [30, "IMEI 2 cannot exceed 30 characters"]
     },
 
+    imeiRecords: [
+      {
+        imei1: { type: String, trim: true, default: "", maxlength: 30 },
+        imei2: { type: String, trim: true, default: "", maxlength: 30 },
+        serialNumber: { type: String, trim: true, default: "", maxlength: 100 },
+        status: {
+          type: String,
+          enum: ["In Stock", "Sold", "Reserved"],
+          default: "In Stock"
+        },
+        soldBillNumber: { type: String, default: null },
+        soldDate: { type: Date, default: null }
+      }
+    ],
+
     category: {
       type: String,
       required: [true, "Product category is required"],
@@ -175,6 +190,28 @@ productSchema.index(
 productSchema.index({ isActive: 1, category: 1, sellingPrice: 1 });
 productSchema.index({ isActive: 1, brand: 1 });
 productSchema.index({ name: "text", brand: "text", model: "text", category: "text" });
+productSchema.index({ "imeiRecords.imei1": 1 });
+productSchema.index({ "imeiRecords.imei2": 1 });
+
+productSchema.pre("save", function () {
+  if (Array.isArray(this.imeiRecords) && this.imeiRecords.length > 0) {
+    const available = this.imeiRecords.find(r => r.status === "In Stock");
+    if (available) {
+      if (available.imei1) this.imei1 = available.imei1;
+      if (available.imei2) this.imei2 = available.imei2;
+      if (available.serialNumber) this.serialNumber = available.serialNumber;
+    }
+  } else if (this.imei1 || this.imei2) {
+    this.imeiRecords = [
+      {
+        imei1: this.imei1 || "",
+        imei2: this.imei2 || "",
+        serialNumber: this.serialNumber || "",
+        status: "In Stock"
+      }
+    ];
+  }
+});
 
 productSchema.virtual("isLowStock").get(function () {
   return this.stockQuantity <= this.lowStockThreshold;
