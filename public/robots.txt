@@ -1,0 +1,7 @@
+# Robots.txt for ZESH-TECH
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /api/admin/
+
+Sitemap: https://zeshtech.onrender.com/sitemap.xml
