@@ -4186,6 +4186,7 @@ Please confirm if I can bring my old phone to your Barh store for quick diagnost
           <div>
             <div>Official 1-Year Brand Warranty Handset</div>
             <div>Thank You! Visit Again • ZeshTech Barh</div>
+            <div style="font-size: 8px; color: #64748b; margin-top: 2px;">Engineered by Aman Raj • ZeshTech v4.4</div>
           </div>
           <div style="text-align: right;">
             <div>Authorised Signatory</div>

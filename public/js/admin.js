@@ -1456,6 +1456,7 @@ _(Inclusive of GST & Official Brand Pack Sealing)_
             <div style="text-align: center; font-size: 9.5px; color: #222; line-height: 1.4;">
               <div>This is computer generated invoice does not require signature.</div>
               <div style="font-weight: 800; margin-top: 2px;">Thank You! Visit Again !!</div>
+              <div style="font-size: 8px; color: #64748b; margin-top: 3px;">Engineered by Aman Raj • ZeshTech v4.4</div>
             </div>
 
             <!-- Authorized Signatory -->
