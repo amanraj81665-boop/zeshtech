@@ -757,7 +757,7 @@
       modalContent.innerHTML = `
         <div class="zesh-product-page">
           <!-- Top Breadcrumb Bar -->
-          <div class="fk-breadcrumb-bar">
+          <div class="fk-breadcrumb-bar" style="display: flex; justify-content: space-between; align-items: center;">
             <div class="fk-breadcrumbs">
               <a href="/">Home</a> <span>/</span>
               <a href="#catalogue-section">Mobiles &amp; Electronics</a> <span>/</span>
@@ -765,6 +765,7 @@
               <span>${escapeHTML(product.brand || "Zesh")}</span> <span>/</span>
               <span class="fk-current-crumb">${escapeHTML(product.name)}</span>
             </div>
+            <button type="button" class="fk-quick-close-btn" id="fk-quick-close-btn" title="Close Details (Esc)" style="background: rgba(15,23,42,0.08); border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: #334155; transition: all 0.2s ease; margin-left: 10px; flex-shrink: 0;">✕</button>
           </div>
 
           <div class="fk-main-grid">
@@ -1215,6 +1216,11 @@
       `;
 
       // Wire up clicks inside modal
+
+      // Quick Close Button inside Breadcrumb Bar
+      modalContent.querySelector("#fk-quick-close-btn")?.addEventListener("click", () => {
+        $("#product-modal-backdrop")?.classList.remove("active");
+      });
 
       // 0% Easy EMI Trigger
       modalContent.querySelector("#fk-trigger-emi-calc")?.addEventListener("click", () => {
@@ -3007,9 +3013,9 @@
       }
     });
     $("#emi-downpayment-slider")?.addEventListener("input", renderEmiCalculations);
-    $(".emi-dp-preset").forEach(btn => {
+    $$(".emi-dp-preset").forEach(btn => {
       btn.addEventListener("click", () => {
-        $(".emi-dp-preset").forEach(b => b.classList.remove("active"));
+        $$(".emi-dp-preset").forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
         const slider = $("#emi-downpayment-slider");
         if (slider) slider.value = btn.dataset.pct;
@@ -3029,7 +3035,7 @@
     });
     $("#exch-brand-select")?.addEventListener("change", renderExchangeValuation);
     $("#exch-age-select")?.addEventListener("change", renderExchangeValuation);
-    $('input[name="exch-condition"]').forEach(radio => {
+    $$('input[name="exch-condition"]').forEach(radio => {
       radio.addEventListener("change", renderExchangeValuation);
     });
     $("#exch-reserve-whatsapp-btn")?.addEventListener("click", handleExchangeReserveWhatsApp);
@@ -3047,7 +3053,16 @@
       window.print();
     });
 
-    $("#close-product-modal-btn")?.addEventListener("click", () => {
+    // Global Escape Key to close any active modal
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        $$(".modal-backdrop.active").forEach(m => m.classList.remove("active"));
+      }
+    });
+
+    $("#close-product-modal-btn")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       $("#product-modal-backdrop")?.classList.remove("active");
     });
     $("#product-modal-backdrop")?.addEventListener("click", (e) => {
@@ -3668,7 +3683,7 @@
     const slider = $("#emi-downpayment-slider");
     if (slider) slider.value = 0;
 
-    $(".emi-dp-preset").forEach(btn => {
+    $$(".emi-dp-preset").forEach(btn => {
       btn.classList.toggle("active", btn.dataset.pct === "0");
     });
 

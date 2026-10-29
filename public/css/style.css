@@ -1677,6 +1677,33 @@ select {
   color: var(--text-main);
 }
 
+#close-product-modal-btn {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-full);
+  background: #0f172a;
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  z-index: 99999;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1;
+  transition: all 0.2s ease;
+}
+
+#close-product-modal-btn:hover {
+  background: #ef4444;
+  color: #ffffff;
+  transform: scale(1.1);
+}
+
 .modal-body {
   padding: 28px;
 }
