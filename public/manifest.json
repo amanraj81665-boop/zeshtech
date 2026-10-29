@@ -1,24 +1,109 @@
 {
+  "id": "/?source=pwa",
   "name": "ZESH-TECH | Premium Retail & Electronics",
   "short_name": "ZESH-TECH",
-  "description": "Premium Retail Electronics, Smart Devices & Point of Sale",
-  "start_url": "/",
+  "description": "Official ZESH-TECH Store: Premium Electronics, Smart Devices, Accessories, EMI Offers & Instant Digital Billing.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "lang": "en-IN",
+  "dir": "ltr",
   "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
   "background_color": "#06090e",
   "theme_color": "#0066ff",
   "orientation": "portrait-primary",
+  "prefer_related_applications": false,
+  "categories": [
+    "shopping",
+    "business",
+    "productivity",
+    "lifestyle"
+  ],
   "icons": [
     {
       "src": "/images/logo.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/images/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/images/logo.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/images/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/images/screenshots/desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "ZESH-TECH Desktop Storefront & Catalogue"
+    },
+    {
+      "src": "/images/screenshots/mobile.png",
+      "sizes": "720x1280",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "ZESH-TECH Mobile Storefront & Instant Checkout"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Store Catalogue",
+      "short_name": "Store",
+      "description": "Browse smartphones, smart TVs and accessories",
+      "url": "/#catalogue",
+      "icons": [
+        {
+          "src": "/images/logo.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Live Order Tracking",
+      "short_name": "Orders",
+      "description": "Track delivery status in real-time",
+      "url": "/#orderTrackerModal",
+      "icons": [
+        {
+          "src": "/images/logo.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "POS Billing Portal",
+      "short_name": "POS",
+      "description": "Store Point of Sale and billing terminal",
+      "url": "/admin.html",
+      "icons": [
+        {
+          "src": "/images/logo.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }
