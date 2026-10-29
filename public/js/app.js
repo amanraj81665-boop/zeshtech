@@ -3053,6 +3053,18 @@
       window.print();
     });
 
+    // Universal Modal Close Delegator (Guarantees close works on any device)
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest("#close-product-modal-btn") || e.target.closest("#fk-quick-close-btn") || e.target.closest(".modal-close-btn");
+      if (btn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const activeModal = btn.closest(".modal-backdrop") || document.getElementById("product-modal-backdrop");
+        if (activeModal) activeModal.classList.remove("active");
+        $(".modal-backdrop.active").forEach(m => m.classList.remove("active"));
+      }
+    });
+
     // Global Escape Key to close any active modal
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
