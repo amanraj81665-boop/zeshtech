@@ -104,6 +104,37 @@ const productSchema = new mongoose.Schema(
       maxlength: [100, "Model cannot exceed 100 characters"]
     },
 
+    ram: {
+      type: String,
+      trim: true,
+      default: "",
+      maxlength: [40, "RAM specification cannot exceed 40 characters"]
+    },
+
+    storage: {
+      type: String,
+      trim: true,
+      default: "",
+      maxlength: [40, "Storage specification cannot exceed 40 characters"]
+    },
+
+    color: {
+      type: String,
+      trim: true,
+      default: "",
+      maxlength: [50, "Color cannot exceed 50 characters"]
+    },
+
+    variants: [
+      {
+        ram: { type: String, trim: true, default: "" },
+        storage: { type: String, trim: true, default: "" },
+        color: { type: String, trim: true, default: "" },
+        price: { type: Number, default: 0 },
+        sku: { type: String, trim: true, default: "" }
+      }
+    ],
+
     purchasePrice: {
       type: Number,
       required: [true, "Purchase price is required"],

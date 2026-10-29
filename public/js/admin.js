@@ -574,7 +574,10 @@
       filtered = filtered.filter(p =>
         (p.name && p.name.toLowerCase().includes(searchVal)) ||
         (p.sku && p.sku.toLowerCase().includes(searchVal)) ||
-        (p.barcode && p.barcode.toLowerCase().includes(searchVal))
+        (p.barcode && p.barcode.toLowerCase().includes(searchVal)) ||
+        (p.ram && p.ram.toLowerCase().includes(searchVal)) ||
+        (p.storage && p.storage.toLowerCase().includes(searchVal)) ||
+        (p.color && p.color.toLowerCase().includes(searchVal))
       );
     }
 
@@ -592,7 +595,10 @@
           <div style="display: flex; gap: 8px; margin-bottom: 6px;">
             <img src="${p.imageUrl || '/images/logo.png'}" alt="" style="width: 38px; height: 38px; object-fit: cover; border-radius: 4px; background: #090d16; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.06);" onerror="this.src='/images/logo.png'">
             <div style="overflow: hidden;">
-              <div style="font-size: 10px; color: #60a5fa; font-weight: 700; margin-bottom: 2px;">${escapeHTML(p.category)}</div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 2px;">
+                <span style="font-size: 10px; color: #60a5fa; font-weight: 700;">${escapeHTML(p.category)}</span>
+                ${(p.ram || p.storage) ? `<span style="font-size:9px; background:rgba(56,189,248,0.18); color:#38bdf8; padding:1px 4px; border-radius:3px; font-weight:700;">${escapeHTML([p.ram, p.storage].filter(Boolean).join("/"))}</span>` : ""}
+              </div>
               <strong style="color: white; font-size: 12px; line-height: 1.25; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${escapeHTML(p.name)}</strong>
             </div>
           </div>
@@ -1630,7 +1636,9 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
       filtered = filtered.filter(p =>
         (p.name && p.name.toLowerCase().includes(searchVal)) ||
         (p.sku && p.sku.toLowerCase().includes(searchVal)) ||
-        (p.barcode && p.barcode.toLowerCase().includes(searchVal))
+        (p.barcode && p.barcode.toLowerCase().includes(searchVal)) ||
+        (p.ram && p.ram.toLowerCase().includes(searchVal)) ||
+        (p.storage && p.storage.toLowerCase().includes(searchVal))
       );
     }
 
@@ -1662,7 +1670,15 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
               </div>
               <div>
                 <strong style="color: white; font-size: 13px; display:block;">${escapeHTML(p.name)}</strong>
-                <span style="font-family: var(--font-mono); font-size: 11px; color: var(--dark-text-muted);">SKU: ${escapeHTML(p.sku)}</span>
+                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:2px;">
+                  <span style="font-family: var(--font-mono); font-size: 11px; color: var(--dark-text-muted);">SKU: ${escapeHTML(p.sku)}</span>
+                  ${(p.ram || p.storage) ? `
+                    <span class="admin-variant-pill" style="background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.3); font-size:10px; font-weight:700; padding:1px 6px; border-radius:4px;">
+                      ⚡ ${escapeHTML([p.ram, p.storage].filter(Boolean).join(" / "))}
+                    </span>
+                  ` : ''}
+                  ${p.color ? `<span class="admin-variant-pill" style="background:rgba(255,255,255,0.08); color:#cbd5e1; font-size:10px; padding:1px 6px; border-radius:4px;">🎨 ${escapeHTML(p.color)}</span>` : ''}
+                </div>
                 ${(Array.isArray(p.images) && p.images.length > 1) ? `<span style="font-size: 10px; color: #38bdf8; font-weight: 700; margin-left: 6px;">• 📷 ${p.images.length} Photos</span>` : ""}
                 ${p.serialNumber ? `<span style="font-family: var(--font-mono); font-size: 10px; color: #38bdf8; margin-left: 6px; font-weight: 700;">• S/N: ${escapeHTML(p.serialNumber)}</span>` : ""}
                 ${(Array.isArray(p.imeiRecords) && p.imeiRecords.length > 1)
@@ -1677,7 +1693,14 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
           <td style="padding: 12px 10px; color: ${margin >= 0 ? '#10b981' : '#f87171'}; font-weight:600;">
             ${money(margin)} (${marginPercent}%)
           </td>
-          <td style="padding: 12px 10px;">${stockBadge}</td>
+          <td style="padding: 12px 10px;">
+            <div>${stockBadge}</div>
+            <div style="display:flex; align-items:center; gap:4px; margin-top:5px;">
+              <button type="button" class="btn-quick-stock" data-id="${p._id}" data-change="-1" title="Subtract 1 stock" style="background:#1e293b; border:1px solid #334155; color:#94a3b8; width:22px; height:22px; border-radius:4px; font-size:11px; cursor:pointer; display:grid; place-items:center;">-</button>
+              <button type="button" class="btn-quick-stock" data-id="${p._id}" data-change="1" title="Add 1 stock" style="background:#1e293b; border:1px solid #10b981; color:#34d399; width:22px; height:22px; border-radius:4px; font-size:11px; cursor:pointer; display:grid; place-items:center;">+</button>
+              <button type="button" class="btn-quick-stock" data-id="${p._id}" data-change="5" title="Add 5 stock" style="background:rgba(59,130,246,0.15); border:1px solid #3b82f6; color:#60a5fa; padding:0 6px; height:22px; border-radius:4px; font-size:10px; font-weight:700; cursor:pointer;">+5</button>
+            </div>
+          </td>
           <td style="padding: 12px 10px; text-align: right;">
             <div style="display:flex; justify-content:flex-end; gap:6px;">
               <button class="btn btn-dark btn-small stock-adjust-trigger" data-id="${p._id}" data-name="${escapeHTML(p.name)}" data-stock="${stock}" title="Adjust Stock">
@@ -2089,6 +2112,192 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
     }
   }
 
+
+  /* ==========================================================================
+     Smart RAM, Storage (ROM) & Variant Builder System
+     ========================================================================== */
+
+  function setupVariantBuilder() {
+    ['add', 'edit'].forEach(prefix => {
+      // Chip click handlers
+      const box = prefix === 'add' ? $('#add-product-form .admin-variant-box') : $('#edit-product-form .admin-variant-box');
+      if (!box) return;
+
+      box.addEventListener('click', (e) => {
+        const chip = e.target.closest('.admin-chip-btn');
+        if (!chip) return;
+        e.preventDefault();
+
+        const val = chip.dataset.val;
+        let targetInputId = '';
+        if (chip.classList.contains('ram-chip')) targetInputId = prefix === 'add' ? 'add-prod-ram' : 'edit-prod-ram';
+        if (chip.classList.contains('storage-chip')) targetInputId = prefix === 'add' ? 'add-prod-storage' : 'edit-prod-storage';
+        if (chip.classList.contains('color-chip')) targetInputId = prefix === 'add' ? 'add-prod-color' : 'edit-prod-color';
+
+        const input = document.getElementById(targetInputId);
+        if (!input) return;
+
+        if (chip.classList.contains('active')) {
+          // Deselect
+          chip.classList.remove('active');
+          input.value = '';
+        } else {
+          // Select this chip
+          const siblingChips = box.querySelectorAll(`.${chip.classList.contains('ram-chip') ? 'ram-chip' : chip.classList.contains('storage-chip') ? 'storage-chip' : 'color-chip'}`);
+          siblingChips.forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+          input.value = val;
+        }
+
+        syncVariantChips(prefix);
+      });
+
+      // Custom input typing handlers
+      const ramInput = document.getElementById(prefix === 'add' ? 'add-prod-ram' : 'edit-prod-ram');
+      const storageInput = document.getElementById(prefix === 'add' ? 'add-prod-storage' : 'edit-prod-storage');
+      const colorInput = document.getElementById(prefix === 'add' ? 'add-prod-color' : 'edit-prod-color');
+
+      [ramInput, storageInput, colorInput].forEach(inp => {
+        inp?.addEventListener('input', () => syncVariantChips(prefix));
+      });
+
+      // Auto-Append Variant to Product Name
+      const autoFormatBtn = document.getElementById(`${prefix}-auto-format-name-btn`);
+      autoFormatBtn?.addEventListener('click', () => {
+        const nameInput = prefix === 'add' ? $('#add-product-form [name="name"]') : $('#edit-prod-name');
+        if (!nameInput) return;
+
+        const ram = (ramInput?.value || '').trim();
+        const storage = (storageInput?.value || '').trim();
+        const color = (colorInput?.value || '').trim();
+
+        if (!ram && !storage && !color) {
+          showToast('Please select RAM or ROM/Storage first', 'warning');
+          return;
+        }
+
+        // Clean out any existing (8GB, 256GB...) suffix
+        let baseName = nameInput.value.replace(/\s*\([^)]*\)\s*$/, '').trim();
+        if (!baseName) baseName = 'New Smartphone';
+
+        const specs = [ram ? `${ram} RAM` : '', storage ? `${storage} Storage` : '', color].filter(Boolean).join(', ');
+        nameInput.value = `${baseName} (${specs})`;
+        showToast('Product name formatted with variant specs!', 'success');
+      });
+
+      // Auto-Gen Smart SKU
+      const autoSkuBtn = document.getElementById(`${prefix}-auto-gen-sku-btn`);
+      autoSkuBtn?.addEventListener('click', () => {
+        const skuInput = document.getElementById(prefix === 'add' ? 'add-prod-sku' : 'edit-prod-sku');
+        if (!skuInput) return;
+
+        const brand = (prefix === 'add' ? $('#add-product-form [name="brand"]')?.value : $('#edit-prod-brand')?.value) || '';
+        const name = (prefix === 'add' ? $('#add-product-form [name="name"]')?.value : $('#edit-prod-name')?.value) || '';
+        const ram = (ramInput?.value || '').replace(/\D/g, '');
+        const storage = (storageInput?.value || '').replace(/[^0-9A-Z]/gi, '');
+        const color = (colorInput?.value || '').slice(0, 3).toUpperCase();
+
+        const brandCode = (brand.trim().slice(0, 3) || 'ZT').toUpperCase();
+        const nameCode = name.replace(/[^a-zA-Z0-9]/g, '').slice(0, 5).toUpperCase() || 'PROD';
+        const ramCode = ram ? `${ram}G` : '';
+        const romCode = storage || '';
+        const colorCode = color || '';
+
+        const parts = [brandCode, nameCode, ramCode, romCode, colorCode].filter(Boolean);
+        skuInput.value = parts.join('-');
+        showToast('Smart SKU generated!', 'success');
+      });
+
+      // Profit Margin Calculator listeners
+      if (prefix === 'add') {
+        const costInp = $('#add-product-form [name="purchasePrice"]');
+        const priceInp = $('#add-product-form [name="sellingPrice"]');
+        costInp?.addEventListener('input', () => updateProfitMarginCalc('add'));
+        priceInp?.addEventListener('input', () => updateProfitMarginCalc('add'));
+      } else {
+        const costInp = $('#edit-prod-cost');
+        const priceInp = $('#edit-prod-price');
+        costInp?.addEventListener('input', () => updateProfitMarginCalc('edit'));
+        priceInp?.addEventListener('input', () => updateProfitMarginCalc('edit'));
+      }
+    });
+  }
+
+  function syncVariantChips(prefix) {
+    const box = prefix === 'add' ? $('#add-product-form .admin-variant-box') : $('#edit-product-form .admin-variant-box');
+    if (!box) return;
+
+    const ramVal = (document.getElementById(prefix === 'add' ? 'add-prod-ram' : 'edit-prod-ram')?.value || '').trim();
+    const storageVal = (document.getElementById(prefix === 'add' ? 'add-prod-storage' : 'edit-prod-storage')?.value || '').trim();
+    const colorVal = (document.getElementById(prefix === 'add' ? 'add-prod-color' : 'edit-prod-color')?.value || '').trim();
+
+    // Sync active classes on chips
+    box.querySelectorAll('.ram-chip').forEach(c => {
+      c.classList.toggle('active', c.dataset.val.toLowerCase() === ramVal.toLowerCase());
+    });
+    box.querySelectorAll('.storage-chip').forEach(c => {
+      c.classList.toggle('active', c.dataset.val.toLowerCase() === storageVal.toLowerCase());
+    });
+    box.querySelectorAll('.color-chip').forEach(c => {
+      c.classList.toggle('active', c.dataset.val.toLowerCase() === colorVal.toLowerCase());
+    });
+
+    // Update badges
+    const ramBadge = document.getElementById(`${prefix}-ram-selected-badge`);
+    if (ramBadge) ramBadge.textContent = ramVal ? `✓ ${ramVal}` : '';
+
+    const storageBadge = document.getElementById(`${prefix}-storage-selected-badge`);
+    if (storageBadge) storageBadge.textContent = storageVal ? `✓ ${storageVal}` : '';
+
+    const colorBadge = document.getElementById(`${prefix}-color-selected-badge`);
+    if (colorBadge) colorBadge.textContent = colorVal ? `✓ ${colorVal}` : '';
+
+    // Update Summary Bar
+    const summaryText = document.getElementById(`${prefix}-variant-summary-text`);
+    if (summaryText) {
+      const parts = [
+        ramVal ? `⚡ ${ramVal} RAM` : '',
+        storageVal ? `💾 ${storageVal} ROM` : '',
+        colorVal ? `🎨 ${colorVal}` : ''
+      ].filter(Boolean);
+
+      summaryText.textContent = parts.length > 0 ? parts.join(' • ') : 'Standard (No variant specified)';
+    }
+  }
+
+  function updateProfitMarginCalc(prefix) {
+    let cost = 0;
+    let price = 0;
+
+    if (prefix === 'add') {
+      cost = parseFloat($('#add-product-form [name="purchasePrice"]')?.value) || 0;
+      price = parseFloat($('#add-product-form [name="sellingPrice"]')?.value) || 0;
+    } else {
+      cost = parseFloat($('#edit-prod-cost')?.value) || 0;
+      price = parseFloat($('#edit-prod-price')?.value) || 0;
+    }
+
+    const valEl = document.getElementById(`${prefix}-profit-val`);
+    if (!valEl) return;
+
+    if (price <= 0 && cost <= 0) {
+      valEl.textContent = '₹0 (0.0% Margin)';
+      valEl.style.color = '#10b981';
+      return;
+    }
+
+    const profit = price - cost;
+    const margin = price > 0 ? ((profit / price) * 100).toFixed(1) : '0.0';
+
+    if (profit >= 0) {
+      valEl.textContent = `+₹${profit.toLocaleString('en-IN')} (+${margin}% Margin)`;
+      valEl.style.color = '#10b981';
+    } else {
+      valEl.textContent = `⚠️ Loss: -₹${Math.abs(profit).toLocaleString('en-IN')} (${margin}%)`;
+      valEl.style.color = '#f87171';
+    }
+  }
+
   // Add Product Form
   async function handleAddProductSubmit(e) {
     e.preventDefault();
@@ -2115,6 +2324,9 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
       purchasePrice: parseFloat(formData.get("purchasePrice")),
       sellingPrice: parseFloat(formData.get("sellingPrice")),
       stockQuantity: parseInt(formData.get("stockQuantity"), 10),
+      ram: formData.get("ram")?.trim() || "",
+      storage: formData.get("storage")?.trim() || "",
+      color: formData.get("color")?.trim() || "",
       description: formData.get("description")?.trim() || "",
       imageUrl: formData.get("imageUrl")?.trim() || "",
       images: []
@@ -2198,6 +2410,8 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
       addProductImageFiles = [];
       addProdExtraUnits = [];
       renderAddProductImagesPreview();
+      syncVariantChips("add");
+      updateProfitMarginCalc("add");
       renderAddProductImeiUnits();
       $("#admin-add-product-modal")?.classList.remove("active");
       loadInventoryView();
@@ -2233,6 +2447,11 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
     $("#edit-prod-price").value = product.sellingPrice || 0;
     $("#edit-prod-image").value = product.imageUrl || "";
     $("#edit-prod-desc").value = product.description || "";
+    if ($("#edit-prod-ram")) $("#edit-prod-ram").value = product.ram || "";
+    if ($("#edit-prod-storage")) $("#edit-prod-storage").value = product.storage || "";
+    if ($("#edit-prod-color")) $("#edit-prod-color").value = product.color || "";
+    syncVariantChips("edit");
+    updateProfitMarginCalc("edit");
 
     // Load existing images (include both images array and imageUrl)
     const combined = [
@@ -2290,6 +2509,9 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
       imei2: $("#edit-prod-imei2")?.value.trim() || "",
       purchasePrice: parseFloat($("#edit-prod-cost").value) || 0,
       sellingPrice: parseFloat($("#edit-prod-price").value) || 0,
+      ram: $("#edit-prod-ram")?.value.trim() || "",
+      storage: $("#edit-prod-storage")?.value.trim() || "",
+      color: $("#edit-prod-color")?.value.trim() || "",
       imageUrl: $("#edit-prod-image").value.trim(),
       description: $("#edit-prod-desc").value.trim(),
       images: [...editProductExistingImages]
@@ -3501,14 +3723,37 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
       showLoginScreen();
     });
 
+    // Initialize Smart Variant Builder & Margin Calculator
+    setupVariantBuilder();
+
     // Edit Product Modal
     $("#close-edit-product-modal")?.addEventListener("click", () => {
       $("#admin-edit-product-modal")?.classList.remove("active");
     });
     $("#edit-product-form")?.addEventListener("submit", handleEditProductSubmit);
 
-    // Inventory Table actions: Stock Adjust, Edit, Deactivate
+    // Inventory Table actions: Stock Adjust, Quick Stock, Edit, Deactivate
     $("#inventory-tbody")?.addEventListener("click", async (e) => {
+      const quickStockBtn = e.target.closest(".btn-quick-stock");
+      if (quickStockBtn) {
+        const id = quickStockBtn.dataset.id;
+        const change = parseInt(quickStockBtn.dataset.change, 10);
+        if (!id || isNaN(change)) return;
+        quickStockBtn.disabled = true;
+        try {
+          const res = await zeshAPI.updateStock(id, change);
+          showToast(`Stock updated (${change > 0 ? '+' + change : change})`, "success");
+          const prod = inventoryList.find(p => p._id === id);
+          if (prod) prod.stockQuantity = res.product?.stockQuantity ?? (prod.stockQuantity + change);
+          renderInventoryTable();
+        } catch (err) {
+          showToast(err.message || "Failed to update stock", "error");
+        } finally {
+          quickStockBtn.disabled = false;
+        }
+        return;
+      }
+
       const stockBtn = e.target.closest(".stock-adjust-trigger");
       if (stockBtn) {
         openStockModal(stockBtn.dataset.id, stockBtn.dataset.name, stockBtn.dataset.stock);

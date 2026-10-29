@@ -6121,3 +6121,61 @@ body.modal-open .floating-whatsapp-btn {
     font-size: 16px;
   }
 }
+
+/* ==========================================================================
+   ADMIN ADVANCED VARIANT BUILDER & CHIP SELECTORS
+   ========================================================================== */
+.admin-variant-box {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.admin-chip-btn {
+  background: #090d16;
+  border: 1px solid #334155;
+  color: #94a3b8;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.admin-chip-btn:hover {
+  border-color: #38bdf8;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.08);
+}
+
+.admin-chip-btn.active {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 10px rgba(37, 99, 235, 0.5);
+}
+
+.admin-variant-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  letter-spacing: 0.3px;
+}
+
+.btn-quick-stock {
+  transition: transform 0.12s ease, filter 0.12s ease;
+  user-select: none;
+}
+
+.btn-quick-stock:hover {
+  transform: scale(1.12);
+  filter: brightness(1.25);
+}
+
+.btn-quick-stock:active {
+  transform: scale(0.92);
+}

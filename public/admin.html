@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..800;1,9..40,400..800&family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="/css/style.css?v=4.7">
+  <link rel="stylesheet" href="/css/style.css?v=4.8">
 </head>
 <body class="admin-body">
 
@@ -896,6 +896,83 @@
               <input type="text" name="model" placeholder="e.g. SM-S928B" style="background:#090d16; border-color:var(--dark-border); color:white;">
             </div>
           </div>
+          <!-- Smart RAM & Storage / ROM Variant Section -->
+          <div class="admin-variant-box" style="background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(59, 130, 246, 0.35); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; flex-wrap:wrap; gap:8px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:18px;">⚡</span>
+                <div>
+                  <strong style="color: #60a5fa; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">RAM &amp; Storage (ROM) Variant Selector</strong>
+                  <div style="font-size:11px; color:#94a3b8;">1-click preset chips or custom variant configuration</div>
+                </div>
+              </div>
+              <div style="display:flex; gap:6px;">
+                <button type="button" class="btn btn-small" id="add-auto-format-name-btn" style="background:#1e293b; border:1px solid #3b82f6; color:#60a5fa; font-size:11px; padding:4px 9px; border-radius:6px; cursor:pointer;" title="Adds RAM & Storage to Product Name">
+                  ✨ Auto-Append to Name
+                </button>
+                <button type="button" class="btn btn-small" id="add-auto-gen-sku-btn" style="background:#1e293b; border:1px solid #10b981; color:#34d399; font-size:11px; padding:4px 9px; border-radius:6px; cursor:pointer;" title="Generate SKU from Brand, Model & Specs">
+                  ⚡ Auto-Gen SKU
+                </button>
+              </div>
+            </div>
+
+            <!-- RAM Chips Row -->
+            <div style="margin-bottom: 12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+                <label style="color:#cbd5e1; font-size:11px; font-weight:700; margin:0;">RAM CAPACITY:</label>
+                <span id="add-ram-selected-badge" style="font-size:11px; color:#38bdf8; font-weight:700;"></span>
+              </div>
+              <div class="variant-chips-grid" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                <button type="button" class="admin-chip-btn ram-chip" data-prefix="add" data-val="4GB">4 GB</button>
+                <button type="button" class="admin-chip-btn ram-chip" data-prefix="add" data-val="6GB">6 GB</button>
+                <button type="button" class="admin-chip-btn ram-chip" data-prefix="add" data-val="8GB">8 GB</button>
+                <button type="button" class="admin-chip-btn ram-chip" data-prefix="add" data-val="12GB">12 GB</button>
+                <button type="button" class="admin-chip-btn ram-chip" data-prefix="add" data-val="16GB">16 GB</button>
+                <button type="button" class="admin-chip-btn ram-chip" data-prefix="add" data-val="24GB">24 GB</button>
+                <input type="text" name="ram" id="add-prod-ram" placeholder="Custom RAM (e.g. 8GB)" style="width:130px; height:32px; padding:4px 8px; font-size:11px; background:#090d16; border:1px solid var(--dark-border); color:white; border-radius:6px;">
+              </div>
+            </div>
+
+            <!-- ROM / Storage Chips Row -->
+            <div style="margin-bottom: 12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+                <label style="color:#cbd5e1; font-size:11px; font-weight:700; margin:0;">ROM / STORAGE (INTERNAL):</label>
+                <span id="add-storage-selected-badge" style="font-size:11px; color:#38bdf8; font-weight:700;"></span>
+              </div>
+              <div class="variant-chips-grid" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                <button type="button" class="admin-chip-btn storage-chip" data-prefix="add" data-val="64GB">64 GB</button>
+                <button type="button" class="admin-chip-btn storage-chip" data-prefix="add" data-val="128GB">128 GB</button>
+                <button type="button" class="admin-chip-btn storage-chip" data-prefix="add" data-val="256GB">256 GB</button>
+                <button type="button" class="admin-chip-btn storage-chip" data-prefix="add" data-val="512GB">512 GB</button>
+                <button type="button" class="admin-chip-btn storage-chip" data-prefix="add" data-val="1TB">1 TB</button>
+                <input type="text" name="storage" id="add-prod-storage" placeholder="Custom ROM (e.g. 256GB)" style="width:140px; height:32px; padding:4px 8px; font-size:11px; background:#090d16; border:1px solid var(--dark-border); color:white; border-radius:6px;">
+              </div>
+            </div>
+
+            <!-- Color Variant Row -->
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+                <label style="color:#cbd5e1; font-size:11px; font-weight:700; margin:0;">COLOR / FINISH:</label>
+                <span id="add-color-selected-badge" style="font-size:11px; color:#38bdf8; font-weight:700;"></span>
+              </div>
+              <div class="variant-chips-grid" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                <button type="button" class="admin-chip-btn color-chip" data-prefix="add" data-val="Black">Black</button>
+                <button type="button" class="admin-chip-btn color-chip" data-prefix="add" data-val="Blue">Blue</button>
+                <button type="button" class="admin-chip-btn color-chip" data-prefix="add" data-val="Green">Green</button>
+                <button type="button" class="admin-chip-btn color-chip" data-prefix="add" data-val="Silver">Silver</button>
+                <button type="button" class="admin-chip-btn color-chip" data-prefix="add" data-val="Gold">Gold</button>
+                <button type="button" class="admin-chip-btn color-chip" data-prefix="add" data-val="Titanium">Titanium</button>
+                <input type="text" name="color" id="add-prod-color" placeholder="Custom Color (e.g. Starlight)" style="width:160px; height:32px; padding:4px 8px; font-size:11px; background:#090d16; border:1px solid var(--dark-border); color:white; border-radius:6px;">
+              </div>
+            </div>
+
+            <!-- Live Variant Tag Preview -->
+            <div id="add-variant-summary-bar" style="margin-top:10px; padding:8px 12px; background:#090d16; border-radius:6px; border:1px dashed rgba(59,130,246,0.3); display:flex; justify-content:space-between; align-items:center; font-size:11px;">
+              <span style="color:#94a3b8;">Active Variant:</span>
+              <strong id="add-variant-summary-text" style="color:#38bdf8; font-family:var(--font-mono);">Standard (No variant specified)</strong>
+            </div>
+          </div>
+
 
           <div class="form-row-3">
             <div class="field">
@@ -911,6 +988,12 @@
               <input type="number" name="stockQuantity" required min="0" step="1" value="10" style="background:#090d16; border-color:var(--dark-border); color:white;">
             </div>
           </div>
+          <!-- Live Profit & Margin Indicator -->
+          <div id="add-profit-calc-bar" style="background:#090d16; border:1px solid #1e293b; border-radius:8px; padding:8px 12px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; font-size:12px;">
+            <span style="color:#94a3b8;">💰 Est. Profit Per Unit:</span>
+            <strong id="add-profit-val" style="color:#10b981;">₹0 (0.0% Margin)</strong>
+          </div>
+
 
           <!-- Device Serial & IMEI Tracking -->
           <div style="background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.2); border-radius: 8px; padding: 12px; margin-bottom: 14px;">
@@ -1059,6 +1142,83 @@
               <input type="text" id="edit-prod-model" style="background:#090d16; border-color:var(--dark-border); color:white;">
             </div>
           </div>
+          <!-- Smart RAM & Storage / ROM Variant Section -->
+          <div class="admin-variant-box" style="background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(59, 130, 246, 0.35); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; flex-wrap:wrap; gap:8px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:18px;">⚡</span>
+                <div>
+                  <strong style="color: #60a5fa; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">RAM &amp; Storage (ROM) Variant Selector</strong>
+                  <div style="font-size:11px; color:#94a3b8;">1-click preset chips or custom variant configuration</div>
+                </div>
+              </div>
+              <div style="display:flex; gap:6px;">
+                <button type="button" class="btn btn-small" id="edit-auto-format-name-btn" style="background:#1e293b; border:1px solid #3b82f6; color:#60a5fa; font-size:11px; padding:4px 9px; border-radius:6px; cursor:pointer;" title="Adds RAM & Storage to Product Name">
+                  ✨ Auto-Append to Name
+                </button>
+                <button type="button" class="btn btn-small" id="edit-auto-gen-sku-btn" style="background:#1e293b; border:1px solid #10b981; color:#34d399; font-size:11px; padding:4px 9px; border-radius:6px; cursor:pointer;" title="Generate SKU from Brand, Model & Specs">
+                  ⚡ Auto-Gen SKU
+                </button>
+              </div>
+            </div>
+
+            <!-- RAM Chips Row -->
+            <div style="margin-bottom: 12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+                <label style="color:#cbd5e1; font-size:11px; font-weight:700; margin:0;">RAM CAPACITY:</label>
+                <span id="edit-ram-selected-badge" style="font-size:11px; color:#38bdf8; font-weight:700;"></span>
+              </div>
+              <div class="variant-chips-grid" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                <button type="button" class="admin-chip-btn ram-chip" data-prefix="edit" data-val="4GB">4 GB</button>
+                <button type="button" class="admin-chip-btn ram-chip" data-prefix="edit" data-val="6GB">6 GB</button>
+                <button type="button" class="admin-chip-btn ram-chip" data-prefix="edit" data-val="8GB">8 GB</button>
+                <button type="button" class="admin-chip-btn ram-chip" data-prefix="edit" data-val="12GB">12 GB</button>
+                <button type="button" class="admin-chip-btn ram-chip" data-prefix="edit" data-val="16GB">16 GB</button>
+                <button type="button" class="admin-chip-btn ram-chip" data-prefix="edit" data-val="24GB">24 GB</button>
+                <input type="text" id="edit-prod-ram" placeholder="Custom RAM (e.g. 8GB)" style="width:130px; height:32px; padding:4px 8px; font-size:11px; background:#090d16; border:1px solid var(--dark-border); color:white; border-radius:6px;">
+              </div>
+            </div>
+
+            <!-- ROM / Storage Chips Row -->
+            <div style="margin-bottom: 12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+                <label style="color:#cbd5e1; font-size:11px; font-weight:700; margin:0;">ROM / STORAGE (INTERNAL):</label>
+                <span id="edit-storage-selected-badge" style="font-size:11px; color:#38bdf8; font-weight:700;"></span>
+              </div>
+              <div class="variant-chips-grid" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                <button type="button" class="admin-chip-btn storage-chip" data-prefix="edit" data-val="64GB">64 GB</button>
+                <button type="button" class="admin-chip-btn storage-chip" data-prefix="edit" data-val="128GB">128 GB</button>
+                <button type="button" class="admin-chip-btn storage-chip" data-prefix="edit" data-val="256GB">256 GB</button>
+                <button type="button" class="admin-chip-btn storage-chip" data-prefix="edit" data-val="512GB">512 GB</button>
+                <button type="button" class="admin-chip-btn storage-chip" data-prefix="edit" data-val="1TB">1 TB</button>
+                <input type="text" id="edit-prod-storage" placeholder="Custom ROM (e.g. 256GB)" style="width:140px; height:32px; padding:4px 8px; font-size:11px; background:#090d16; border:1px solid var(--dark-border); color:white; border-radius:6px;">
+              </div>
+            </div>
+
+            <!-- Color Variant Row -->
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+                <label style="color:#cbd5e1; font-size:11px; font-weight:700; margin:0;">COLOR / FINISH:</label>
+                <span id="edit-color-selected-badge" style="font-size:11px; color:#38bdf8; font-weight:700;"></span>
+              </div>
+              <div class="variant-chips-grid" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                <button type="button" class="admin-chip-btn color-chip" data-prefix="edit" data-val="Black">Black</button>
+                <button type="button" class="admin-chip-btn color-chip" data-prefix="edit" data-val="Blue">Blue</button>
+                <button type="button" class="admin-chip-btn color-chip" data-prefix="edit" data-val="Green">Green</button>
+                <button type="button" class="admin-chip-btn color-chip" data-prefix="edit" data-val="Silver">Silver</button>
+                <button type="button" class="admin-chip-btn color-chip" data-prefix="edit" data-val="Gold">Gold</button>
+                <button type="button" class="admin-chip-btn color-chip" data-prefix="edit" data-val="Titanium">Titanium</button>
+                <input type="text" id="edit-prod-color" placeholder="Custom Color (e.g. Starlight)" style="width:160px; height:32px; padding:4px 8px; font-size:11px; background:#090d16; border:1px solid var(--dark-border); color:white; border-radius:6px;">
+              </div>
+            </div>
+
+            <!-- Live Variant Tag Preview -->
+            <div id="edit-variant-summary-bar" style="margin-top:10px; padding:8px 12px; background:#090d16; border-radius:6px; border:1px dashed rgba(59,130,246,0.3); display:flex; justify-content:space-between; align-items:center; font-size:11px;">
+              <span style="color:#94a3b8;">Active Variant:</span>
+              <strong id="edit-variant-summary-text" style="color:#38bdf8; font-family:var(--font-mono);">Standard (No variant specified)</strong>
+            </div>
+          </div>
+
 
           <div class="form-row">
             <div class="field">
@@ -1070,6 +1230,12 @@
               <input type="number" id="edit-prod-price" required step="0.01" style="background:#090d16; border-color:var(--dark-border); color:white;">
             </div>
           </div>
+          <!-- Live Profit & Margin Indicator -->
+          <div id="edit-profit-calc-bar" style="background:#090d16; border:1px solid #1e293b; border-radius:8px; padding:8px 12px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; font-size:12px;">
+            <span style="color:#94a3b8;">💰 Est. Profit Per Unit:</span>
+            <strong id="edit-profit-val" style="color:#10b981;">₹0 (0.0% Margin)</strong>
+          </div>
+
 
           <!-- Device Serial & IMEI Tracking -->
           <div style="background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.2); border-radius: 8px; padding: 12px; margin-bottom: 14px;">
@@ -1445,9 +1611,9 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Scripts -->
-  <script src="/js/quagga.min.js?v=4.7"></script>
-  <script src="/js/html5-qrcode.min.js?v=4.7"></script>
-  <script src="/js/api.js?v=4.7"></script>
-  <script src="/js/admin.js?v=4.7"></script>
+  <script src="/js/quagga.min.js?v=4.8"></script>
+  <script src="/js/html5-qrcode.min.js?v=4.8"></script>
+  <script src="/js/api.js?v=4.8"></script>
+  <script src="/js/admin.js?v=4.8"></script>
 </body>
 </html>

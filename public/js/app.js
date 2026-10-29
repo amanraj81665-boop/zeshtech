@@ -297,20 +297,33 @@
     const specs = [];
     const name = product.name || "";
 
-    // 1. Storage / RAM
-    const ramRomMatch = name.match(/(\d+\s*GB\s*\/\s*\d+\s*GB|\d+\/\d+|\d+\s*GB)/i);
-    if (ramRomMatch) specs.push(ramRomMatch[0].trim());
+    // 0. Explicit RAM & Storage properties from admin variant selector
+    if (product.ram && product.storage) {
+      specs.push(`${product.ram} / ${product.storage}`);
+    } else if (product.ram) {
+      specs.push(`${product.ram} RAM`);
+    } else if (product.storage) {
+      specs.push(`${product.storage}`);
+    } else {
+      // 1. Storage / RAM regex fallback
+      const ramRomMatch = name.match(/(\d+\s*GB\s*\/\s*\d+\s*GB|\d+\/\d+|\d+\s*GB)/i);
+      if (ramRomMatch) specs.push(ramRomMatch[0].trim());
+    }
 
-    // 2. Color / Finish
-    const colors = [
-      "Ice Blue", "Iceblue", "Lavender", "Silver Shadow", "Twilight Shadow",
-      "Wave Blue", "Jet Black", "White Silver", "Gold", "Violet",
-      "Green", "Blue", "Black", "Capri", "White", "Brown", "Purple"
-    ];
-    for (const c of colors) {
-      if (name.toLowerCase().includes(c.toLowerCase()) && !specs.includes(c)) {
-        specs.push(c);
-        break;
+    if (product.color && !specs.includes(product.color)) {
+      specs.push(product.color);
+    } else {
+      // 2. Color / Finish fallback
+      const colors = [
+        "Ice Blue", "Iceblue", "Lavender", "Silver Shadow", "Twilight Shadow",
+        "Wave Blue", "Jet Black", "White Silver", "Gold", "Violet",
+        "Green", "Blue", "Black", "Capri", "White", "Brown", "Purple"
+      ];
+      for (const c of colors) {
+        if (name.toLowerCase().includes(c.toLowerCase()) && !specs.includes(c)) {
+          specs.push(c);
+          break;
+        }
       }
     }
 
@@ -405,7 +418,10 @@
         (p.brand && p.brand.toLowerCase().includes(q)) ||
         (p.model && p.model.toLowerCase().includes(q)) ||
         (p.category && p.category.toLowerCase().includes(q)) ||
-        (p.sku && p.sku.toLowerCase().includes(q))
+        (p.sku && p.sku.toLowerCase().includes(q)) ||
+        (p.ram && p.ram.toLowerCase().includes(q)) ||
+        (p.storage && p.storage.toLowerCase().includes(q)) ||
+        (p.color && p.color.toLowerCase().includes(q))
       );
     }
 
@@ -639,7 +655,14 @@
 
   // Resolve Real & Dynamic Storage/RAM Variants
   function getProductVariants(product, allProds = [], specs = null) {
-    const currentRamRom = specs?.ramRom || "Standard Variant";
+    let currentRamRom = specs?.ramRom || "Standard Variant";
+    if (product.ram && product.storage) {
+      currentRamRom = `${product.ram} / ${product.storage}`;
+    } else if (product.ram) {
+      currentRamRom = `${product.ram} RAM`;
+    } else if (product.storage) {
+      currentRamRom = `${product.storage} ROM`;
+    }
     const { mrp, discountPct } = calculateDiscount(product.sellingPrice);
     const brand = (product.brand || "").toLowerCase();
     const productKey = getCanonicalModelKey(product);
@@ -666,7 +689,9 @@
 
     siblings.forEach(sib => {
       const sibSpecs = window.ZeshSpecs ? window.ZeshSpecs.getPhoneSpecs(sib) : null;
-      const sibTitle = sibSpecs?.ramRom || sib.name.match(/\d+GB\/\d+GB/i)?.[0] || sib.name;
+      const sibTitle = (sib.ram && sib.storage)
+        ? `${sib.ram} / ${sib.storage}`
+        : (sibSpecs?.ramRom || sib.name.match(/\d+GB\/\d+GB/i)?.[0] || sib.name);
       const sibDisc = calculateDiscount(sib.sellingPrice);
       if (!variantsList.some(v => v.title.toLowerCase() === sibTitle.toLowerCase())) {
         variantsList.push({
@@ -785,7 +810,9 @@
       const selectedColor = colorVariants[0]?.color || "Standard Finish";
 
       // Variant extraction
-      const ramRomText = specs?.ramRom || "8 GB RAM | 128 GB ROM";
+      const ramRomText = (product.ram && product.storage)
+        ? `${product.ram} RAM | ${product.storage} ROM`
+        : (product.ram ? `${product.ram} RAM` : (product.storage ? `${product.storage} ROM` : (specs?.ramRom || "8 GB RAM | 128 GB ROM")));
       const variantsList = getProductVariants(product, allProducts, specs);
 
       // Category Badges (accurate for phones, TVs, washing machines, audio)
