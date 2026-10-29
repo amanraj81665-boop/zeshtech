@@ -119,6 +119,7 @@ const billSchema = new mongoose.Schema(
       enum: [
         "Cash",
         "UPI",
+        "PhonePe / UPI",
         "Card",
         "Bajaj Finance",
         "TVS Credit",

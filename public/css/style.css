@@ -1685,36 +1685,33 @@ select {
   transform: scale(1.08);
 }
 
-.modal-close-btn:hover {
-  background: var(--border);
-  color: var(--text-main);
-}
-
 #close-product-modal-btn {
   position: absolute;
-  top: 14px;
-  right: 16px;
-  width: 38px;
-  height: 38px;
+  top: 10px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
   border-radius: var(--radius-full);
-  background: #0f172a;
+  background: rgba(15, 23, 42, 0.85);
   color: #ffffff;
-  display: grid;
-  place-items: center;
-  z-index: 99999;
-  cursor: pointer;
-  border: 2px solid #ffffff;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
-  font-size: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999 !important;
+  cursor: pointer !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+  font-size: 15px;
   font-weight: 800;
   line-height: 1;
   transition: all 0.2s ease;
 }
 
 #close-product-modal-btn:hover {
-  background: #ef4444;
-  color: #ffffff;
-  transform: scale(1.1);
+  background: #ef4444 !important;
+  color: #ffffff !important;
+  border-color: #ef4444 !important;
+  transform: scale(1.08);
 }
 
 .modal-body {
@@ -3047,11 +3044,14 @@ select {
 }
 
 .fk-breadcrumb-bar {
-  padding: 12px 24px;
+  padding: 12px 60px 12px 20px;
   background: #f8fafc;
   border-bottom: 1px solid #e2e8f0;
   font-size: 11.5px;
   color: #64748b;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
 }
 
 .fk-breadcrumbs {

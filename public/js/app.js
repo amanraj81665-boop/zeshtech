@@ -757,7 +757,7 @@
       modalContent.innerHTML = `
         <div class="zesh-product-page">
           <!-- Top Breadcrumb Bar -->
-          <div class="fk-breadcrumb-bar" style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="fk-breadcrumb-bar">
             <div class="fk-breadcrumbs">
               <a href="/">Home</a> <span>/</span>
               <a href="#catalogue-section">Mobiles &amp; Electronics</a> <span>/</span>
@@ -765,7 +765,6 @@
               <span>${escapeHTML(product.brand || "Zesh")}</span> <span>/</span>
               <span class="fk-current-crumb">${escapeHTML(product.name)}</span>
             </div>
-            <button type="button" class="fk-quick-close-btn" id="fk-quick-close-btn" title="Close Details (Esc)" style="background: rgba(15,23,42,0.08); border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: #334155; transition: all 0.2s ease; margin-left: 10px; flex-shrink: 0;">✕</button>
           </div>
 
           <div class="fk-main-grid">
@@ -1216,11 +1215,6 @@
       `;
 
       // Wire up clicks inside modal
-
-      // Quick Close Button inside Breadcrumb Bar
-      modalContent.querySelector("#fk-quick-close-btn")?.addEventListener("click", () => {
-        $("#product-modal-backdrop")?.classList.remove("active");
-      });
 
       // 0% Easy EMI Trigger
       modalContent.querySelector("#fk-trigger-emi-calc")?.addEventListener("click", () => {

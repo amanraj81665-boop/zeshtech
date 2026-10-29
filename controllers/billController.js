@@ -48,7 +48,7 @@ async function createBill(req, res) {
     const cleanPhone = (customerPhone || "").trim();
     const cleanAddress = (customerAddress || "").trim();
     const validModes = [
-      "Cash", "UPI", "Card", "Bajaj Finance", "TVS Credit",
+      "Cash", "UPI", "PhonePe / UPI", "Card", "Bajaj Finance", "TVS Credit",
       "DMI Finance", "HDB Financial", "IDFC FIRST Bank", "Other Finance"
     ];
     const cleanMode = validModes.includes(paymentMode) ? paymentMode : "Cash";
