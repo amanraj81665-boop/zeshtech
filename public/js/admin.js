@@ -810,7 +810,13 @@
 
     const calculatedTax = taxRate > 0 ? Math.round(subtotal * (taxRate / 100) * 100) / 100 : 0;
     const finalDiscount = Math.max(0, Math.min(discount, subtotal));
-    const grandTotal = Math.max(0, Math.round((subtotal + calculatedTax - finalDiscount) * 100) / 100);
+    const isExchangeOn = $("#pos-exchange-toggle")?.checked || false;
+    const exchangeVal = isExchangeOn ? Math.max(0, parseFloat($("#pos-exchange-value")?.value) || 0) : 0;
+    const valDisplay = $("#pos-exchange-val-display");
+    if (valDisplay) {
+      valDisplay.textContent = exchangeVal > 0 ? `-${money(exchangeVal)} Off` : "";
+    }
+    const grandTotal = Math.max(0, Math.round((subtotal + calculatedTax - finalDiscount - exchangeVal) * 100) / 100);
 
     if (subtotalEl) subtotalEl.textContent = money(subtotal);
     if (taxEl) taxEl.textContent = money(calculatedTax);
@@ -970,6 +976,11 @@
         serialNumber: $("#pos-serial-no")?.value.trim() || "",
         taxRate,
         discount,
+        exchangePhone: ($("#pos-exchange-toggle")?.checked) ? {
+          model: $("#pos-exchange-model")?.value.trim() || "",
+          imei: $("#pos-exchange-imei")?.value.trim() || "",
+          valuation: Math.max(0, parseFloat($("#pos-exchange-value")?.value) || 0)
+        } : null,
         items: posCart.map(it => ({
           productId: it.productId,
           name: it.name,
@@ -996,6 +1007,12 @@
       if ($("#pos-serial-no")) $("#pos-serial-no").value = "";
       if ($("#pos-handset-selector-wrap")) $("#pos-handset-selector-wrap").style.display = "none";
       if ($("#pos-handset-unit-select")) $("#pos-handset-unit-select").innerHTML = "";
+      if ($("#pos-exchange-toggle")) $("#pos-exchange-toggle").checked = false;
+      if ($("#pos-exchange-fields")) $("#pos-exchange-fields").style.display = "none";
+      if ($("#pos-exchange-model")) $("#pos-exchange-model").value = "";
+      if ($("#pos-exchange-imei")) $("#pos-exchange-imei").value = "";
+      if ($("#pos-exchange-value")) $("#pos-exchange-value").value = "";
+      if ($("#pos-exchange-val-display")) $("#pos-exchange-val-display").textContent = "";
       if ($("#pos-financier")) $("#pos-financier").value = "";
       if ($("#pos-loan-ref")) $("#pos-loan-ref").value = "";
       $("#pos-discount").value = "0";
@@ -1405,6 +1422,12 @@ _(Inclusive of GST & Official Brand Pack Sealing)_
                   <td style="border: none; border-bottom: 1px solid #ddd; padding: 3px 8px;">IGST @ 0%</td>
                   <td style="border: none; border-bottom: 1px solid #ddd; padding: 3px 8px; text-align: right;">₹ 0.00</td>
                 </tr>
+                ${bill.exchangePhone && bill.exchangePhone.valuation > 0 ? `
+                  <tr>
+                    <td style="border: none; border-bottom: 1px solid #ddd; padding: 3px 8px; color: #059669; font-weight: 700;">Less: Old Phone Trade-In (${escapeHTML(bill.exchangePhone.model || 'Device')})</td>
+                    <td style="border: none; border-bottom: 1px solid #ddd; padding: 3px 8px; text-align: right; color: #059669; font-weight: 700;">- ₹ ${Number(bill.exchangePhone.valuation).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                  </tr>
+                ` : ""}
                 <tr>
                   <td style="border: none; border-bottom: 1.5px solid #000; padding: 3px 8px;">Round Off</td>
                   <td style="border: none; border-bottom: 1.5px solid #000; padding: 3px 8px; text-align: right;">₹ 0.00</td>
@@ -1445,6 +1468,103 @@ _(Inclusive of GST & Official Brand Pack Sealing)_
         </div>
       `;
     }
+  }
+
+  /* ==========================================================================
+     Daily Cash Register & Galla Closing Summary Engine
+     ========================================================================== */
+
+  let currentDailyRegisterData = null;
+
+  async function openDailyRegisterModal() {
+    const modal = $("#modal-daily-register");
+    if (!modal) return;
+    modal.classList.add("active");
+
+    const tbody = $("#galla-bills-tbody");
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 12px; color: #94a3b8;">Loading today's cash & sales register...</td></tr>`;
+    }
+
+    try {
+      const res = await zeshAPI.getDailyRegister();
+      if (!res.success) {
+        throw new Error(res.message || "Failed to load register");
+      }
+      currentDailyRegisterData = res;
+      const s = res.summary || {};
+
+      if ($("#galla-report-date-label")) {
+        const todayStr = new Date().toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+        $("#galla-report-date-label").textContent = `Date: ${todayStr}`;
+      }
+
+      if ($("#galla-cash-total")) $("#galla-cash-total").textContent = money(s.cashTotal || 0);
+      if ($("#galla-upi-total")) $("#galla-upi-total").textContent = money(s.upiTotal || 0);
+      if ($("#galla-card-total")) $("#galla-card-total").textContent = money(s.cardTotal || 0);
+      if ($("#galla-finance-total")) $("#galla-finance-total").textContent = money(s.financeTotal || 0);
+
+      if ($("#galla-units-total")) $("#galla-units-total").textContent = `${s.totalHandsetsSold || 0} Units`;
+      if ($("#galla-bills-count")) $("#galla-bills-count").textContent = `${s.totalBills || 0} Invoices`;
+      if ($("#galla-exchange-total")) $("#galla-exchange-total").textContent = `₹${(s.totalExchangeVal || 0).toLocaleString("en-IN")} Deducted`;
+      if ($("#galla-gross-revenue")) $("#galla-gross-revenue").textContent = money(s.grossRevenue || 0);
+
+      if (tbody) {
+        if (!res.bills || res.bills.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 16px; color: #64748b;">No bills generated today yet.</td></tr>`;
+        } else {
+          tbody.innerHTML = res.bills.map(b => {
+            const timeStr = new Date(b.time).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+            return `
+              <tr style="border-bottom: 1px solid #1e293b;">
+                <td style="padding: 6px 10px; color: #38bdf8; font-weight: 700;">${escapeHTML(b.invoiceNumber)}</td>
+                <td style="padding: 6px 10px; color: #e2e8f0;">${escapeHTML(b.customerName || 'Walk-in')} <span style="color:#64748b; font-size:10px;">(${timeStr})</span></td>
+                <td style="padding: 6px 10px; color: #94a3b8;"><span style="background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; font-size: 10px;">${escapeHTML(b.paymentMode || 'Cash')}</span></td>
+                <td style="padding: 6px 10px; text-align: right; color: #4ade80; font-weight: 700;">₹${Number(b.grandTotal || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              </tr>
+            `;
+          }).join("");
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load daily register:", err);
+      showToast(err.message || "Failed to load register", "error");
+      if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 12px; color: #ef4444;">Error loading report: ${escapeHTML(err.message)}</td></tr>`;
+      }
+    }
+  }
+
+  function handleSendGallaWhatsApp() {
+    if (!currentDailyRegisterData || !currentDailyRegisterData.summary) {
+      showToast("No register summary available to send", "warning");
+      return;
+    }
+
+    const s = currentDailyRegisterData.summary;
+    const todayStr = new Date().toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+    const ownerPhone = "917903746116"; // Zeeshan Telecom Owner WhatsApp
+
+    const msg = 
+`📊 *ZEESHAN TELECOM - DAILY GALLA CLOSING REPORT*
+📅 *Date:* ${todayStr}
+
+💵 *Cash in Galla:* ₹${Number(s.cashTotal || 0).toLocaleString("en-IN")}
+📱 *UPI / PhonePe:* ₹${Number(s.upiTotal || 0).toLocaleString("en-IN")}
+💳 *Card Swipes:* ₹${Number(s.cardTotal || 0).toLocaleString("en-IN")}
+🏦 *Finance / Bajaj / TVS:* ₹${Number(s.financeTotal || 0).toLocaleString("en-IN")}
+------------------------------
+🏷️ *Total Sales Revenue:* ₹${Number(s.grossRevenue || 0).toLocaleString("en-IN")}
+📦 *Total Handsets/Items Sold:* ${s.totalHandsetsSold || 0} Units
+🧾 *Total Invoices Generated:* ${s.totalBills || 0}
+🔄 *Old Phone Exchanges:* ₹${Number(s.totalExchangeVal || 0).toLocaleString("en-IN")}
+------------------------------
+_Automated Galla Report from ZeshTech Retail POS Engine_`;
+
+    const encoded = encodeURIComponent(msg);
+    const waUrl = `https://api.whatsapp.com/send?phone=${ownerPhone}&text=${encoded}`;
+    window.open(waUrl, "_blank");
+    showToast("Opening WhatsApp with Daily Galla summary...", "success");
   }
 
   /* ==========================================================================
@@ -3268,6 +3388,27 @@ _(Inclusive of GST & Official Brand Pack Sealing)_
 
     // POS Complete Bill button
     $("#pos-complete-bill-btn")?.addEventListener("click", handleCompletePosBill);
+
+    // POS Day-Closing Register & Galla Summary
+    $("#pos-open-day-register-btn")?.addEventListener("click", openDailyRegisterModal);
+    $("#close-daily-register-modal")?.addEventListener("click", () => {
+      $("#modal-daily-register")?.classList.remove("active");
+    });
+    $("#modal-daily-register")?.addEventListener("click", (e) => {
+      if (e.target.id === "modal-daily-register") {
+        $("#modal-daily-register").classList.remove("active");
+      }
+    });
+    $("#galla-refresh-btn")?.addEventListener("click", openDailyRegisterModal);
+    $("#galla-whatsapp-send-btn")?.addEventListener("click", handleSendGallaWhatsApp);
+
+    // POS Old Phone Exchange Toggle & Input
+    $("#pos-exchange-toggle")?.addEventListener("change", (e) => {
+      const box = $("#pos-exchange-fields");
+      if (box) box.style.display = e.target.checked ? "grid" : "none";
+      renderPosBill();
+    });
+    $("#pos-exchange-value")?.addEventListener("input", renderPosBill);
 
     // POS Counter PhonePe QR Modal
     $("#pos-show-phonepe-qr-btn")?.addEventListener("click", () => {

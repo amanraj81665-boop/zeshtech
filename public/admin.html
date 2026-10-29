@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..800;1,9..40,400..800&family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="/css/style.css?v=3.9">
+  <link rel="stylesheet" href="/css/style.css?v=4.0">
 </head>
 <body class="admin-body">
 
@@ -420,8 +420,9 @@
                   <h3 style="font-size: 16px; color: white;">Active Bill</h3>
                   <span class="badge badge-info" id="pos-active-ticket-badge">Ticket #1</span>
                 </div>
-                <div style="display: flex; gap: 6px;">
-                  <button class="btn btn-dark btn-small" id="pos-hold-bill-btn" title="Hold this bill and start another ticket">Hold Bill</button>
+                <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                  <button type="button" class="btn btn-secondary btn-small" id="pos-open-day-register-btn" style="background:#1e293b; border-color:#38bdf8; color:#38bdf8; font-weight:700; font-size:11px; padding:4px 9px;">📊 Galla Closing</button>
+                  <button class="btn btn-dark btn-small" id="pos-hold-bill-btn" title="Hold this bill and start another ticket">Hold</button>
                   <button class="btn btn-dark btn-small" id="pos-resume-bill-btn" style="display:none; color:#10b981;">Resume Held</button>
                   <button class="btn btn-dark btn-small" id="pos-clear-bill-btn" style="color: #f87171;">Clear</button>
                 </div>
@@ -555,6 +556,31 @@
                   <div>
                     <label class="field-label" style="font-size: 10px; color: var(--dark-text-muted);">Loan Ref / DO No.</label>
                     <input type="text" id="pos-loan-ref" placeholder="Application / DO No." style="background:#070b14; border-color:var(--dark-border); padding:5px 8px; font-size:11px; color:white;">
+                  </div>
+                </div>
+
+                <!-- Old Phone Exchange (Trade-In) Block -->
+                <div class="pos-exchange-box" style="margin-top: 8px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 7px 10px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <label style="font-size: 11px; font-weight: 700; color: #34d399; margin: 0; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                      <input type="checkbox" id="pos-exchange-toggle" style="width: auto; margin: 0;">
+                      <span>🔄 Customer Trading In Old Phone (Exchange)</span>
+                    </label>
+                    <span id="pos-exchange-val-display" style="font-size: 11px; font-weight: 700; color: #34d399;"></span>
+                  </div>
+                  <div id="pos-exchange-fields" style="display: none; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 8px;">
+                    <div>
+                      <label class="field-label" style="font-size: 10px; color: #cbd5e1;">Old Phone Model</label>
+                      <input type="text" id="pos-exchange-model" placeholder="e.g. Vivo Y20 / Redmi 9" style="background: #070b14; border-color: var(--dark-border); padding: 5px 8px; font-size: 11px; color: white;">
+                    </div>
+                    <div>
+                      <label class="field-label" style="font-size: 10px; color: #cbd5e1;">Old Phone IMEI</label>
+                      <input type="text" id="pos-exchange-imei" placeholder="15-digit IMEI" style="background: #070b14; border-color: var(--dark-border); padding: 5px 8px; font-size: 11px; color: white; font-family: var(--font-mono);">
+                    </div>
+                    <div>
+                      <label class="field-label" style="font-size: 10px; color: #34d399; font-weight: 700;">Exchange Deduction (₹)</label>
+                      <input type="number" id="pos-exchange-value" placeholder="e.g. 3500" min="0" style="background: #070b14; border-color: #10b981; padding: 5px 8px; font-size: 11px; color: #34d399; font-weight: 700;">
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1324,13 +1350,99 @@
     </div>
   </div>
 
+  <!-- Modal: Daily Register & Galla Closing Summary -->
+  <div class="modal-backdrop" id="modal-daily-register">
+    <div class="modal-dialog" style="max-width: 650px; background: #0c1222; border: 1px solid #1e293b; border-radius: 14px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); overflow: hidden;">
+      <div style="background: linear-gradient(135deg, #1e293b, #0f172a); padding: 16px 20px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 22px;">📊</span>
+          <div>
+            <h3 style="color: white; font-size: 16px; margin: 0; font-weight: 800;">Daily Store Register &amp; Galla Summary</h3>
+            <span id="galla-report-date-label" style="font-size: 11.5px; color: #38bdf8; font-weight: 600;">Date: Today</span>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" id="close-daily-register-modal" style="color: #94a3b8; font-size: 18px; cursor: pointer; background: transparent; border: none;">✕</button>
+      </div>
+
+      <div class="modal-body" style="padding: 20px; max-height: 75vh; overflow-y: auto;">
+        <!-- KPI Cards Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 16px;">
+          <div style="background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 10px; padding: 12px; text-align: center;">
+            <div style="font-size: 11px; color: #86efac; font-weight: 700; text-transform: uppercase;">💵 Cash in Galla</div>
+            <div id="galla-cash-total" style="font-size: 18px; font-weight: 900; color: #4ade80; margin-top: 4px;">₹0</div>
+          </div>
+          <div style="background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 10px; padding: 12px; text-align: center;">
+            <div style="font-size: 11px; color: #d8b4fe; font-weight: 700; text-transform: uppercase;">📱 UPI / PhonePe</div>
+            <div id="galla-upi-total" style="font-size: 18px; font-weight: 900; color: #c084fc; margin-top: 4px;">₹0</div>
+          </div>
+          <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 10px; padding: 12px; text-align: center;">
+            <div style="font-size: 11px; color: #93c5fd; font-weight: 700; text-transform: uppercase;">💳 Card Swipe</div>
+            <div id="galla-card-total" style="font-size: 18px; font-weight: 900; color: #60a5fa; margin-top: 4px;">₹0</div>
+          </div>
+          <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; padding: 12px; text-align: center;">
+            <div style="font-size: 11px; color: #fde68a; font-weight: 700; text-transform: uppercase;">🏦 Bajaj / TVS EMI</div>
+            <div id="galla-finance-total" style="font-size: 18px; font-weight: 900; color: #fbbf24; margin-top: 4px;">₹0</div>
+          </div>
+        </div>
+
+        <!-- Summary Totals Strip -->
+        <div style="background: #060a14; border: 1px solid #1e293b; border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <div style="font-size: 11px; color: #94a3b8;">Total Phones &amp; Items Sold</div>
+            <div id="galla-units-total" style="font-size: 15px; font-weight: 800; color: white;">0 Units</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; color: #94a3b8;">Total Bills Generated</div>
+            <div id="galla-bills-count" style="font-size: 15px; font-weight: 800; color: white;">0 Invoices</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; color: #94a3b8;">Old Phone Trade-Ins</div>
+            <div id="galla-exchange-total" style="font-size: 15px; font-weight: 800; color: #34d399;">₹0 Deducted</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; color: #94a3b8;">Total Day Revenue</div>
+            <div id="galla-gross-revenue" style="font-size: 18px; font-weight: 900; color: #38bdf8;">₹0</div>
+          </div>
+        </div>
+
+        <!-- Today's Transaction Log Table -->
+        <div style="margin-bottom: 16px;">
+          <h4 style="font-size: 12px; color: #cbd5e1; text-transform: uppercase; margin-bottom: 8px;">Today's Billed Tickets</h4>
+          <div style="max-height: 180px; overflow-y: auto; border: 1px solid #1e293b; border-radius: 8px;">
+            <table class="table" style="font-size: 11.5px; width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="background: #080d1a; color: #94a3b8; text-align: left;">
+                  <th style="padding: 6px 10px;">Invoice #</th>
+                  <th style="padding: 6px 10px;">Customer</th>
+                  <th style="padding: 6px 10px;">Mode</th>
+                  <th style="padding: 6px 10px; text-align: right;">Amount</th>
+                </tr>
+              </thead>
+              <tbody id="galla-bills-tbody">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- WhatsApp Dispatch Action -->
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+          <button type="button" class="btn btn-secondary" id="galla-refresh-btn" style="padding: 8px 14px; font-size: 12px;">🔄 Refresh</button>
+          <button type="button" class="btn btn-primary" id="galla-whatsapp-send-btn" style="background: #22c55e; border-color: #22c55e; color: white; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; font-size: 12px;">
+            <span>📲 Send Galla Closing to Owner on WhatsApp</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Scripts -->
-  <script src="/js/quagga.min.js?v=3.9"></script>
-  <script src="/js/html5-qrcode.min.js?v=3.9"></script>
-  <script src="/js/api.js?v=3.9"></script>
-  <script src="/js/admin.js?v=3.9"></script>
+  <script src="/js/quagga.min.js?v=4.0"></script>
+  <script src="/js/html5-qrcode.min.js?v=4.0"></script>
+  <script src="/js/api.js?v=4.0"></script>
+  <script src="/js/admin.js?v=4.0"></script>
 </body>
 </html>

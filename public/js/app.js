@@ -909,6 +909,47 @@
                 <div class="fk-protect-promise">✓ 100% Genuine Brand Product • Free Store Pickup • Express Delivery (Barh &amp; Patna)</div>
               </div>
 
+              <!-- 0% Easy EMI & Old Phone Exchange Interactive Deals Strip -->
+              <div class="fk-retail-power-strip" style="display: grid; gap: 8px; margin: 12px 0;">
+                <!-- 0% Easy EMI Strip -->
+                <div class="fk-power-card fk-emi-power-card" id="fk-trigger-emi-calc" role="button" tabindex="0" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(245, 158, 11, 0.02)); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: transform 0.15s ease, border-color 0.15s ease;">
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="font-size: 22px;">🏦</div>
+                    <div>
+                      <div style="font-size: 12.5px; font-weight: 800; color: #d97706;">
+                        0% Easy EMI from ${money(Math.round(product.sellingPrice / 6))}/month
+                      </div>
+                      <div style="font-size: 11px; color: var(--text-muted);">
+                        Bajaj Finserv • TVS Credit • DMI Finance (₹0 Down Available)
+                      </div>
+                    </div>
+                  </div>
+                  <div style="font-size: 12px; font-weight: 800; color: #f59e0b; display: flex; align-items: center; gap: 4px;">
+                    <span>Plans</span> <span>➔</span>
+                  </div>
+                </div>
+
+                <!-- Old Phone Exchange Strip (Mobiles) -->
+                ${product.category === "Mobile" ? `
+                  <div class="fk-power-card fk-exchange-power-card" id="fk-trigger-exchange-calc" role="button" tabindex="0" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(16, 185, 129, 0.02)); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: transform 0.15s ease, border-color 0.15s ease;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                      <div style="font-size: 22px;">🔄</div>
+                      <div>
+                        <div style="font-size: 12.5px; font-weight: 800; color: #059669;">
+                          Exchange Old Phone &amp; Save up to ₹18,000 Off
+                        </div>
+                        <div style="font-size: 11px; color: var(--text-muted);">
+                          Instant Trade-In Valuation for Vivo, Samsung, iPhone &amp; more
+                        </div>
+                      </div>
+                    </div>
+                    <div style="font-size: 12px; font-weight: 800; color: #10b981; display: flex; align-items: center; gap: 4px;">
+                      <span>Check Value</span> <span>➔</span>
+                    </div>
+                  </div>
+                ` : ""}
+              </div>
+
               <!-- Action Buttons Row (Buy Now, Add to Bag, Compare) - Right below price -->
               <div class="fk-actions-bottom-row">
                 <button class="btn btn-primary fk-btn-buy direct-buy-btn" data-id="${escapeHTML(product._id)}" ${isOut ? "disabled" : ""}>
@@ -1174,6 +1215,16 @@
       `;
 
       // Wire up clicks inside modal
+
+      // 0% Easy EMI Trigger
+      modalContent.querySelector("#fk-trigger-emi-calc")?.addEventListener("click", () => {
+        openEmiPlansModal(product);
+      });
+
+      // Old Phone Exchange Valuation Trigger
+      modalContent.querySelector("#fk-trigger-exchange-calc")?.addEventListener("click", () => {
+        openExchangeCalcModal(product);
+      });
 
       // 1. Color Swatches: Switch to sibling product if real product, or update color label
       modalContent.querySelectorAll(".fk-swatch-card").forEach(swatch => {
@@ -2927,6 +2978,75 @@
     });
 
     // Modal Close Buttons
+    // Digital Warranty Locker triggers
+    $("#open-warranty-locker-btn")?.addEventListener("click", openWarrantyLockerModal);
+    $("#open-warranty-locker-top-btn")?.addEventListener("click", openWarrantyLockerModal);
+    $("#close-warranty-locker-btn")?.addEventListener("click", () => {
+      $("#warranty-locker-modal")?.classList.remove("active");
+    });
+    $("#warranty-locker-modal")?.addEventListener("click", (e) => {
+      if (e.target.id === "warranty-locker-modal") {
+        $("#warranty-locker-modal").classList.remove("active");
+      }
+    });
+    $("#locker-search-btn")?.addEventListener("click", handleLookupWarrantyLocker);
+    $("#locker-phone-input")?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleLookupWarrantyLocker();
+      }
+    });
+
+    // Smart 0% Easy EMI Modal Listeners
+    $("#close-emi-calc-btn")?.addEventListener("click", () => {
+      $("#emi-calculator-modal")?.classList.remove("active");
+    });
+    $("#emi-calculator-modal")?.addEventListener("click", (e) => {
+      if (e.target.id === "emi-calculator-modal") {
+        $("#emi-calculator-modal").classList.remove("active");
+      }
+    });
+    $("#emi-downpayment-slider")?.addEventListener("input", renderEmiCalculations);
+    $(".emi-dp-preset").forEach(btn => {
+      btn.addEventListener("click", () => {
+        $(".emi-dp-preset").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        const slider = $("#emi-downpayment-slider");
+        if (slider) slider.value = btn.dataset.pct;
+        renderEmiCalculations();
+      });
+    });
+    $("#emi-reserve-whatsapp-btn")?.addEventListener("click", handleEmiReserveWhatsApp);
+
+    // Old Phone Exchange Valuation Modal Listeners
+    $("#close-exchange-calc-btn")?.addEventListener("click", () => {
+      $("#exchange-calculator-modal")?.classList.remove("active");
+    });
+    $("#exchange-calculator-modal")?.addEventListener("click", (e) => {
+      if (e.target.id === "exchange-calculator-modal") {
+        $("#exchange-calculator-modal").classList.remove("active");
+      }
+    });
+    $("#exch-brand-select")?.addEventListener("change", renderExchangeValuation);
+    $("#exch-age-select")?.addEventListener("change", renderExchangeValuation);
+    $('input[name="exch-condition"]').forEach(radio => {
+      radio.addEventListener("change", renderExchangeValuation);
+    });
+    $("#exch-reserve-whatsapp-btn")?.addEventListener("click", handleExchangeReserveWhatsApp);
+
+    // Storefront Tax Invoice Modal Listeners
+    $("#close-storefront-invoice-btn")?.addEventListener("click", () => {
+      $("#storefront-invoice-modal")?.classList.remove("active");
+    });
+    $("#storefront-invoice-modal")?.addEventListener("click", (e) => {
+      if (e.target.id === "storefront-invoice-modal") {
+        $("#storefront-invoice-modal").classList.remove("active");
+      }
+    });
+    $("#storefront-print-invoice-btn")?.addEventListener("click", () => {
+      window.print();
+    });
+
     $("#close-product-modal-btn")?.addEventListener("click", () => {
       $("#product-modal-backdrop")?.classList.remove("active");
     });
@@ -3525,6 +3645,536 @@
         alertMsg.classList.remove("hidden");
       }
     }
+  }
+
+  
+  /* ==========================================================================
+     POWERHOUSE 1: Smart 0% Easy EMI & Down-Payment Calculator
+     ========================================================================== */
+  let activeEmiProduct = null;
+  let activeEmiTenure = 6;
+
+  function openEmiPlansModal(product) {
+    if (!product) return;
+    activeEmiProduct = product;
+    activeEmiTenure = 6;
+
+    const modal = $("#emi-calculator-modal");
+    if (!modal) return;
+
+    if ($("#emi-product-name")) $("#emi-product-name").textContent = product.name || "Selected Smartphone";
+    if ($("#emi-product-price")) $("#emi-product-price").textContent = money(product.sellingPrice || 0);
+
+    const slider = $("#emi-downpayment-slider");
+    if (slider) slider.value = 0;
+
+    $(".emi-dp-preset").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.pct === "0");
+    });
+
+    renderEmiCalculations();
+    modal.classList.add("active");
+  }
+
+  function renderEmiCalculations() {
+    if (!activeEmiProduct) return;
+    const price = activeEmiProduct.sellingPrice || 0;
+    const slider = $("#emi-downpayment-slider");
+    const dpPct = slider ? parseInt(slider.value) || 0 : 0;
+    const downPaymentAmt = Math.round(price * (dpPct / 100));
+    const loanAmt = Math.max(0, price - downPaymentAmt);
+
+    if ($("#emi-downpayment-val")) {
+      $("#emi-downpayment-val").textContent = `${money(downPaymentAmt)} (${dpPct}%)`;
+    }
+    if ($("#emi-loan-val")) {
+      $("#emi-loan-val").textContent = money(loanAmt);
+    }
+
+    const tenureGrid = $("#emi-tenure-grid");
+    if (!tenureGrid) return;
+
+    const plans = [
+      { months: 3, interest: 0, tag: "0% No-Cost EMI", popular: false },
+      { months: 6, interest: 0, tag: "0% No-Cost (Popular)", popular: true },
+      { months: 9, interest: 0, tag: "0% No-Cost EMI", popular: false },
+      { months: 12, interest: 0.05, tag: "Low Interest", popular: false },
+      { months: 18, interest: 0.08, tag: "Easy Budget", popular: false },
+      { months: 24, interest: 0.12, tag: "Lowest EMI", popular: false }
+    ];
+
+    tenureGrid.innerHTML = plans.map(p => {
+      const totalFinanced = Math.round(loanAmt * (1 + p.interest));
+      const monthlyEmi = Math.round(totalFinanced / p.months);
+      const isSelected = p.months === activeEmiTenure;
+
+      return `
+        <div class="emi-tenure-card ${isSelected ? 'active' : ''}" data-months="${p.months}" data-emi="${monthlyEmi}" style="border: 1.5px solid ${isSelected ? '#2563eb' : 'var(--border)'}; background: ${isSelected ? 'rgba(37,99,235,0.08)' : 'var(--surface)'}; border-radius: 8px; padding: 10px; cursor: pointer; text-align: center; transition: all 0.2s ease;">
+          <div style="font-size: 11px; font-weight: 700; color: ${isSelected ? '#2563eb' : 'var(--text-muted)'}; margin-bottom: 2px;">${p.months} Months</div>
+          <div style="font-size: 15px; font-weight: 900; color: var(--text);">${money(monthlyEmi)}<small style="font-size: 10px; font-weight: 600; color: var(--text-muted);">/mo</small></div>
+          <div style="font-size: 9.5px; font-weight: 700; color: ${p.interest === 0 ? '#10b981' : '#f59e0b'}; margin-top: 4px;">${escapeHTML(p.tag)}</div>
+        </div>
+      `;
+    }).join("");
+
+    tenureGrid.querySelectorAll(".emi-tenure-card").forEach(card => {
+      card.addEventListener("click", () => {
+        activeEmiTenure = parseInt(card.dataset.months) || 6;
+        renderEmiCalculations();
+      });
+    });
+  }
+
+  function handleEmiReserveWhatsApp() {
+    if (!activeEmiProduct) return;
+    const price = activeEmiProduct.sellingPrice || 0;
+    const slider = $("#emi-downpayment-slider");
+    const dpPct = slider ? parseInt(slider.value) || 0 : 0;
+    const downPaymentAmt = Math.round(price * (dpPct / 100));
+    const loanAmt = Math.max(0, price - downPaymentAmt);
+    const monthlyEmi = Math.round(loanAmt / activeEmiTenure);
+
+    const msg = 
+`🏦 *0% EASY EMI INQUIRY - ZEESHAN TELECOM*
+Hello ZeshTech, I want to book this smartphone on Easy EMI:
+
+📱 *Handset:* ${activeEmiProduct.name}
+💰 *Store Price:* ${money(price)}
+💵 *Planned Down-Payment:* ${money(downPaymentAmt)} (${dpPct}%)
+🏦 *Financed Loan Amount:* ${money(loanAmt)}
+📅 *Preferred Tenure:* ${activeEmiTenure} Months @ ${money(monthlyEmi)}/month
+🏢 *Preferred Financier:* Bajaj Finserv / TVS Credit
+
+Please confirm stock availability so I can visit the store with my KYC documents.`;
+
+    const encoded = encodeURIComponent(msg);
+    window.open(`https://api.whatsapp.com/send?phone=917903746116&text=${encoded}`, "_blank");
+    showToast("Opening WhatsApp to book your 0% EMI with store owner!", "success");
+  }
+
+  /* ==========================================================================
+     POWERHOUSE 2: Old Phone Exchange Valuation Calculator
+     ========================================================================== */
+  let activeExchangeProduct = null;
+
+  function openExchangeCalcModal(product) {
+    if (!product) return;
+    activeExchangeProduct = product;
+
+    const modal = $("#exchange-calculator-modal");
+    if (!modal) return;
+
+    if ($("#exch-target-product-name")) $("#exch-target-product-name").textContent = product.name || "Target Smartphone";
+    if ($("#exch-target-product-price")) $("#exch-target-product-price").textContent = money(product.sellingPrice || 0);
+
+    renderExchangeValuation();
+    modal.classList.add("active");
+  }
+
+  function renderExchangeValuation() {
+    if (!activeExchangeProduct) return;
+    const targetPrice = activeExchangeProduct.sellingPrice || 0;
+
+    const brand = $("#exch-brand-select")?.value || "Vivo";
+    const age = $("#exch-age-select")?.value || "1to2";
+    const condition = $('input[name="exch-condition"]:checked')?.value || "flawless";
+
+    // Brand base valuation
+    const brandBase = {
+      Apple: 15000,
+      OnePlus: 9500,
+      Samsung: 8500,
+      Vivo: 7500,
+      Oppo: 7000,
+      Realme: 5500,
+      Xiaomi: 5200,
+      Motorola: 4800,
+      Other: 3800
+    }[brand] || 4000;
+
+    // Age multiplier
+    const ageMulti = {
+      under1: 1.0,
+      "1to2": 0.72,
+      "2to3": 0.48,
+      above3: 0.32
+    }[age] || 0.6;
+
+    // Condition multiplier
+    const condMulti = {
+      flawless: 1.0,
+      good: 0.78,
+      cracked: 0.42
+    }[condition] || 0.8;
+
+    let tradeInVal = Math.round(brandBase * ageMulti * condMulti);
+    // Cap valuation at 60% of new product price, minimum ₹600
+    tradeInVal = Math.max(600, Math.min(tradeInVal, Math.round(targetPrice * 0.60)));
+    const finalPrice = Math.max(0, targetPrice - tradeInVal);
+
+    if ($("#exch-estimated-val")) {
+      $("#exch-estimated-val").textContent = `-${money(tradeInVal)} Off`;
+    }
+    if ($("#exch-final-effective-price")) {
+      $("#exch-final-effective-price").textContent = money(finalPrice);
+    }
+  }
+
+  function handleExchangeReserveWhatsApp() {
+    if (!activeExchangeProduct) return;
+    const targetPrice = activeExchangeProduct.sellingPrice || 0;
+    const brand = $("#exch-brand-select")?.value || "Vivo";
+    const ageText = $("#exch-age-select")?.selectedOptions[0]?.text || "1-2 Years";
+    const condition = $('input[name="exch-condition"]:checked')?.value || "flawless";
+    const tradeInText = $("#exch-estimated-val")?.textContent || "0";
+    const finalPriceText = $("#exch-final-effective-price")?.textContent || money(targetPrice);
+
+    const msg = 
+`🔄 *OLD PHONE EXCHANGE INQUIRY - ZEESHAN TELECOM*
+Hello ZeshTech, I want to trade in my old phone for a new one:
+
+📱 *Target New Phone:* ${activeExchangeProduct.name} (${money(targetPrice)})
+🔄 *My Old Device:* ${brand} (${ageText}, Condition: ${condition.toUpperCase()})
+🏷️ *Estimated Trade-In Value:* ${tradeInText}
+💵 *Effective Price to Pay:* ${finalPriceText}
+
+Please confirm if I can bring my old phone to your Barh store for quick diagnostic check and exchange!`;
+
+    const encoded = encodeURIComponent(msg);
+    window.open(`https://api.whatsapp.com/send?phone=917903746116&text=${encoded}`, "_blank");
+    showToast("Opening WhatsApp to lock your Trade-In deal with store owner!", "success");
+  }
+
+  /* ==========================================================================
+     POWERHOUSE 3: Customer Digital Warranty & Bills Locker
+     ========================================================================== */
+  function openWarrantyLockerModal() {
+    const modal = $("#warranty-locker-modal");
+    if (!modal) return;
+    modal.classList.add("active");
+    const input = $("#locker-phone-input");
+    if (input) {
+      setTimeout(() => input.focus(), 150);
+    }
+  }
+
+  async function handleLookupWarrantyLocker() {
+    const input = $("#locker-phone-input");
+    const alertBox = $("#locker-error-alert");
+    const container = $("#locker-results-container");
+    const btn = $("#locker-search-btn");
+
+    if (!input || !container) return;
+    const phone = input.value.trim().replace(/\D/g, "");
+
+    if (alertBox) alertBox.classList.add("hidden");
+
+    if (phone.length < 10) {
+      if (alertBox) {
+        alertBox.textContent = "Please enter a valid 10-digit mobile number.";
+        alertBox.classList.remove("hidden");
+      }
+      return;
+    }
+
+    try {
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span>Searching...</span>`;
+      }
+      container.innerHTML = `
+        <div style="text-align: center; padding: 30px; color: var(--text-muted);">
+          <div class="live-dot pulse-dot" style="margin: 0 auto 10px; width: 10px; height: 10px;"></div>
+          <div>Searching verified brand warranty records...</div>
+        </div>
+      `;
+
+      const res = await zeshCustomerAPI.getWarrantyLocker(phone);
+      if (!res.success) {
+        throw new Error(res.message || "Failed to look up devices");
+      }
+
+      if (!res.devices || res.devices.length === 0) {
+        container.innerHTML = `
+          <div style="background: var(--surface-alt); border: 1px dashed var(--border); border-radius: 12px; padding: 24px 16px; text-align: center; margin-top: 10px;">
+            <div style="font-size: 30px; margin-bottom: 6px;">🔍</div>
+            <div style="font-weight: 800; font-size: 14px; margin-bottom: 4px;">No Registered Devices Found</div>
+            <p style="font-size: 12px; color: var(--text-muted); max-width: 400px; margin: 0 auto 12px; line-height: 1.5;">
+              We couldn't find any completed purchases registered under <b>+91 ${phone}</b>. If you recently purchased at Zesh-Tech, please check the mobile number provided at the counter or contact us.
+            </p>
+            <a href="https://wa.me/917903746116?text=${encodeURIComponent(`Hello ZeshTech, I want to verify my purchase bill for phone number: ${phone}`)}" target="_blank" rel="noopener" class="btn btn-secondary btn-small" style="color: #22c55e; border-color: #22c55e;">
+              💬 WhatsApp Store Helpdesk
+            </a>
+          </div>
+        `;
+        return;
+      }
+
+      // Render Devices & Warranty Countdown Cards
+      container.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border);">
+          <div>
+            <div style="font-size: 14px; font-weight: 800; color: var(--text);">Welcome, ${escapeHTML(res.customerName || 'Valued Customer')}</div>
+            <div style="font-size: 11px; color: var(--text-muted);">${res.devices.length} verified handset(s) linked to +91 ${res.phone}</div>
+          </div>
+          <span class="badge" style="background: rgba(34, 197, 94, 0.15); color: #16a34a; font-weight: 800; font-size: 11px; padding: 4px 8px; border-radius: 6px;">✓ Verified Customer</span>
+        </div>
+
+        <div style="display: grid; gap: 12px;">
+          ${res.devices.map((d, idx) => {
+            const purchaseDateFormatted = new Date(d.purchaseDate).toLocaleDateString("en-IN", {
+              day: "numeric",
+              month: "short",
+              year: "numeric"
+            });
+            const warrantyEndFormatted = new Date(d.warrantyEndDate).toLocaleDateString("en-IN", {
+              day: "numeric",
+              month: "short",
+              year: "numeric"
+            });
+            const pctRemaining = Math.max(0, Math.min(100, Math.round((d.daysLeft / 365) * 100)));
+
+            return `
+              <div class="warranty-card" style="background: var(--surface); border: 1.5px solid ${d.isUnderWarranty ? 'rgba(34, 197, 94, 0.35)' : 'var(--border)'}; border-radius: 12px; padding: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                <!-- Top Row: Product Name & Status Badge -->
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 8px;">
+                  <div>
+                    <h3 style="font-size: 14.5px; font-weight: 800; color: var(--text); margin: 0;">${escapeHTML(d.productName)}</h3>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Invoice #${escapeHTML(d.invoiceNumber)} • Purchased on ${purchaseDateFormatted}</div>
+                  </div>
+                  <span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 6px; font-size: 10.5px; font-weight: 800; ${d.isUnderWarranty ? 'background: #dcfce7; color: #15803d;' : 'background: #f1f5f9; color: #64748b;'}">
+                    <span>${d.isUnderWarranty ? '🟢 Active' : '⚪ Expired'}</span>
+                  </span>
+                </div>
+
+                <!-- Warranty Progress Bar -->
+                <div style="background: var(--surface-alt); border-radius: 8px; padding: 10px; margin-bottom: 10px;">
+                  <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; margin-bottom: 4px;">
+                    <span style="color: ${d.isUnderWarranty ? '#16a34a' : '#64748b'};">${d.isUnderWarranty ? `Brand Warranty: ${d.daysLeft} Days Remaining` : 'Official 1-Year Brand Warranty Expired'}</span>
+                    <span style="color: var(--text-muted);">Valid Till: ${warrantyEndFormatted}</span>
+                  </div>
+                  <div style="height: 6px; background: rgba(0,0,0,0.08); border-radius: 10px; overflow: hidden;">
+                    <div style="width: ${pctRemaining}%; height: 100%; background: ${d.isUnderWarranty ? '#22c55e' : '#94a3b8'}; transition: width 0.5s ease;"></div>
+                  </div>
+                </div>
+
+                <!-- Device Identifiers (IMEI 1, IMEI 2, Serial) -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; font-size: 11px; background: var(--surface-alt); padding: 8px 10px; border-radius: 8px; margin-bottom: 10px;">
+                  <div>
+                    <span style="color: var(--text-muted); display: block;">Primary IMEI 1:</span>
+                    <strong style="font-family: var(--font-mono); font-size: 11.5px; color: var(--text);">${escapeHTML(d.imei1 || 'Registered on Box')}</strong>
+                  </div>
+                  ${d.imei2 ? `
+                    <div>
+                      <span style="color: var(--text-muted); display: block;">Secondary IMEI 2:</span>
+                      <strong style="font-family: var(--font-mono); font-size: 11.5px; color: var(--text);">${escapeHTML(d.imei2)}</strong>
+                    </div>
+                  ` : ''}
+                  ${d.serialNumber ? `
+                    <div>
+                      <span style="color: var(--text-muted); display: block;">Serial Number:</span>
+                      <strong style="font-family: var(--font-mono); font-size: 11.5px; color: var(--text);">${escapeHTML(d.serialNumber)}</strong>
+                    </div>
+                  ` : ''}
+                </div>
+
+                <!-- Footer Actions: View Tax Invoice Button & Copy IMEI -->
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+                  <button type="button" class="btn btn-secondary btn-small copy-imei-btn" data-imei="${escapeHTML(d.imei1 || '')}" style="font-size: 11px; padding: 5px 10px;">
+                    📋 Copy IMEI
+                  </button>
+                  <button type="button" class="btn btn-primary btn-small view-locker-bill-btn" data-device-idx="${idx}" style="font-size: 11px; padding: 5px 12px; font-weight: 700;">
+                    📄 View &amp; Print Tax Invoice
+                  </button>
+                </div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      `;
+
+      // Attach copy IMEI listeners
+      container.querySelectorAll(".copy-imei-btn").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const imei = btn.dataset.imei;
+          if (!imei) {
+            showToast("No IMEI number found", "info");
+            return;
+          }
+          try {
+            await navigator.clipboard.writeText(imei);
+            showToast(`IMEI copied: ${imei}`, "success");
+          } catch (e) {
+            showToast(`IMEI: ${imei}`, "info");
+          }
+        });
+      });
+
+      // Attach View Invoice listeners
+      container.querySelectorAll(".view-locker-bill-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const idx = parseInt(btn.dataset.deviceIdx) || 0;
+          const targetDevice = res.devices[idx];
+          if (targetDevice && targetDevice.billDetails) {
+            openStorefrontInvoiceModal(targetDevice.billDetails);
+          } else {
+            showToast("Invoice details not available", "warning");
+          }
+        });
+      });
+
+    } catch (err) {
+      console.error("Locker lookup failed:", err);
+      if (alertBox) {
+        alertBox.textContent = err.message || "Could not retrieve records";
+        alertBox.classList.remove("hidden");
+      }
+      container.innerHTML = `
+        <div style="text-align: center; padding: 24px; color: var(--danger);">
+          Failed to fetch records: ${escapeHTML(err.message)}
+        </div>
+      `;
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<span>Search Handsets</span>`;
+      }
+    }
+  }
+
+  /* ==========================================================================
+     POWERHOUSE 4: Storefront Customer Tax Invoice Viewer
+     ========================================================================== */
+  function openStorefrontInvoiceModal(bill) {
+    if (!bill) return;
+    const modal = $("#storefront-invoice-modal");
+    const renderArea = $("#storefront-invoice-render-area");
+    if (!modal || !renderArea) return;
+
+    const dateStr = new Date(bill.date || Date.now()).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric"
+    });
+
+    const items = bill.items || [];
+    const subtotal = bill.subtotal || 0;
+    const totalTax = (bill.cgst || 0) + (bill.sgst || 0);
+    const discount = bill.discount || 0;
+    const grandTotal = bill.grandTotal || 0;
+    const exchangePhone = bill.exchangePhone;
+
+    renderArea.innerHTML = `
+      <div style="max-width: 750px; margin: 0 auto; border: 1.5px solid #000; padding: 16px; background: white; color: #111; font-size: 12px; line-height: 1.4;">
+        <!-- Header -->
+        <div style="display: grid; grid-template-columns: 80px 1fr 140px; border-bottom: 1.5px solid #000; padding-bottom: 10px; align-items: center; gap: 12px;">
+          <img src="/images/logo.png" alt="Logo" style="width: 70px; height: auto;">
+          <div style="text-align: center;">
+            <div style="font-size: 20px; font-weight: 900; color: #a11414;">ZEESHAN TELECOM</div>
+            <div style="font-size: 11px; font-weight: 700;">PROPRIETOR: MD SHAHID AFRIDI</div>
+            <div style="font-size: 10.5px;">STATION ROAD, BAZIDPUR, BARH, PATNA - 803213</div>
+            <div style="font-size: 10.5px; font-weight: 700;">GSTIN: 10GURPS1052R1ZZ</div>
+          </div>
+          <div style="text-align: right; font-size: 11px;">
+            <div style="font-weight: 800; color: #2563eb;">TAX INVOICE</div>
+            <div>ORIGINAL RECIPIENT</div>
+          </div>
+        </div>
+
+        <!-- Bill & Customer Info -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1.5px solid #000; padding: 8px 0; gap: 12px; font-size: 11.5px;">
+          <div>
+            <div><strong>Invoice No:</strong> ${escapeHTML(bill.invoiceNumber)}</div>
+            <div><strong>Date:</strong> ${dateStr}</div>
+            <div><strong>Payment Mode:</strong> ${escapeHTML(bill.paymentMode || 'Cash')}</div>
+          </div>
+          <div style="text-align: right;">
+            <div><strong>Billed To:</strong> ${escapeHTML(bill.customerName || 'Walk-in Customer')}</div>
+            <div><strong>Mobile:</strong> ${escapeHTML(bill.customerPhone || 'N/A')}</div>
+            ${bill.customerAddress ? `<div><strong>Address:</strong> ${escapeHTML(bill.customerAddress)}</div>` : ''}
+          </div>
+        </div>
+
+        <!-- Handset Identifier Strip -->
+        ${(bill.imei1 || bill.serialNumber) ? `
+          <div style="border-bottom: 1px solid #ddd; padding: 6px 0; font-size: 11px; background: #f8fafc; margin: 4px 0;">
+            ${bill.imei1 ? `<span><strong>IMEI 1:</strong> ${escapeHTML(bill.imei1)} &nbsp;|&nbsp; </span>` : ''}
+            ${bill.imei2 ? `<span><strong>IMEI 2:</strong> ${escapeHTML(bill.imei2)} &nbsp;|&nbsp; </span>` : ''}
+            ${bill.serialNumber ? `<span><strong>Serial No:</strong> ${escapeHTML(bill.serialNumber)}</span>` : ''}
+          </div>
+        ` : ''}
+
+        <!-- Items Table -->
+        <table style="width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 11px;">
+          <thead>
+            <tr style="border-bottom: 1.5px solid #000; border-top: 1px solid #000; background: #f1f5f9;">
+              <th style="padding: 6px; text-align: left;">Sl</th>
+              <th style="padding: 6px; text-align: left;">Item Description</th>
+              <th style="padding: 6px; text-align: center;">Qty</th>
+              <th style="padding: 6px; text-align: right;">Rate</th>
+              <th style="padding: 6px; text-align: right;">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map((it, i) => `
+              <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 6px;">${i + 1}</td>
+                <td style="padding: 6px;"><strong>${escapeHTML(it.name)}</strong> ${it.sku ? `<small>(${escapeHTML(it.sku)})</small>` : ''}</td>
+                <td style="padding: 6px; text-align: center;">${it.quantity}</td>
+                <td style="padding: 6px; text-align: right;">₹${Number(it.price || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+                <td style="padding: 6px; text-align: right;">₹${Number(it.total || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+
+        <!-- Totals & Exchange Deduction -->
+        <div style="display: flex; justify-content: flex-end; margin-top: 6px;">
+          <table style="width: 280px; font-size: 11px; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 3px 6px;">Subtotal:</td>
+              <td style="padding: 3px 6px; text-align: right;">₹${Number(subtotal).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+            </tr>
+            ${totalTax > 0 ? `
+              <tr>
+                <td style="padding: 3px 6px;">GST (CGST + SGST):</td>
+                <td style="padding: 3px 6px; text-align: right;">₹${Number(totalTax).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+              </tr>
+            ` : ''}
+            ${discount > 0 ? `
+              <tr>
+                <td style="padding: 3px 6px; color: #dc2626;">Discount:</td>
+                <td style="padding: 3px 6px; text-align: right; color: #dc2626;">- ₹${Number(discount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+              </tr>
+            ` : ''}
+            ${exchangePhone && exchangePhone.valuation > 0 ? `
+              <tr>
+                <td style="padding: 3px 6px; color: #059669; font-weight: 700;">Trade-In (${escapeHTML(exchangePhone.model || 'Device')}):</td>
+                <td style="padding: 3px 6px; text-align: right; color: #059669; font-weight: 700;">- ₹${Number(exchangePhone.valuation).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+              </tr>
+            ` : ''}
+            <tr style="border-top: 1.5px solid #000; font-size: 13px; font-weight: 900; background: #fafafa;">
+              <td style="padding: 6px;">GRAND TOTAL:</td>
+              <td style="padding: 6px; text-align: right;">₹${Number(grandTotal).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- Footer -->
+        <div style="border-top: 1px solid #ddd; margin-top: 16px; padding-top: 8px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 10px;">
+          <div>
+            <div>Official 1-Year Brand Warranty Handset</div>
+            <div>Thank You! Visit Again • ZeshTech Barh</div>
+          </div>
+          <div style="text-align: right;">
+            <div>Authorised Signatory</div>
+            <div style="font-weight: 900; color: #a11414; font-size: 13px;">ZEESHAN TELECOM</div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    modal.classList.add("active");
   }
 
   // 10/10 Upgrade: Real-Time Network Connection Guard

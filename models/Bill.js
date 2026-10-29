@@ -208,6 +208,13 @@ const billSchema = new mongoose.Schema(
       min: 0
     },
 
+    exchangePhone: {
+      model: { type: String, default: "", trim: true },
+      imei: { type: String, default: "", trim: true },
+      serialNumber: { type: String, default: "", trim: true },
+      valuation: { type: Number, default: 0, min: 0 }
+    },
+
     grandTotal: {
       type: Number,
       required: true,

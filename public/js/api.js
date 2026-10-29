@@ -227,6 +227,15 @@ const api = {
     return this.request("/bills/stats");
   },
 
+  getDailyRegister(date = "") {
+    const qs = date ? `?date=${encodeURIComponent(date)}` : "";
+    return this.request(`/bills/daily-register${qs}`);
+  },
+
+  getWarrantyLocker(phone = "") {
+    return this.request(`/bills/warranty-locker?phone=${encodeURIComponent(phone)}`);
+  },
+
   getRecentCustomers() {
     return this.request("/bills/recent-customers");
   },
@@ -456,6 +465,10 @@ const customerAPI = {
 
   getOrder(id) {
     return this.request(`/orders/${encodeURIComponent(id)}`);
+  },
+
+  getWarrantyLocker(phone = "") {
+    return this.request(`/bills/warranty-locker?phone=${encodeURIComponent(phone)}`);
   },
 
   sendForgotPasswordOtp(email) {

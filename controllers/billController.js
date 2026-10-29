@@ -33,6 +33,7 @@ async function createBill(req, res) {
       transactionId,
       items,
       discount = 0,
+      exchangePhone,
       taxRate = 0 // percent (e.g. 0 or 18)
     } = req.body || {};
 
@@ -135,7 +136,11 @@ async function createBill(req, res) {
     const totalCgst = processedItems.reduce((acc, it) => acc + (it.cgst || 0), 0);
     const totalSgst = processedItems.reduce((acc, it) => acc + (it.sgst || 0), 0);
     const cleanDiscount = Math.max(0, Math.min(parseFloat(discount) || 0, calculatedSubtotal));
-    const grandTotal = Math.max(0, Math.round((calculatedSubtotal + totalCgst + totalSgst - cleanDiscount) * 100) / 100);
+    const cleanExchangeVal = exchangePhone && typeof exchangePhone.valuation === "number"
+      ? Math.max(0, exchangePhone.valuation)
+      : Math.max(0, parseFloat(exchangePhone?.valuation) || 0);
+
+    const grandTotal = Math.max(0, Math.round((calculatedSubtotal + totalCgst + totalSgst - cleanDiscount - cleanExchangeVal) * 100) / 100);
     const totalProfit = Math.round((calculatedSubtotal - cleanDiscount - totalCost) * 100) / 100;
 
     // Deduct stock atomically
@@ -186,6 +191,12 @@ async function createBill(req, res) {
       cgst: Math.round(totalCgst * 100) / 100,
       sgst: Math.round(totalSgst * 100) / 100,
       discount: Math.round(cleanDiscount * 100) / 100,
+      exchangePhone: cleanExchangeVal > 0 ? {
+        model: (exchangePhone.model || "").trim(),
+        imei: (exchangePhone.imei || "").trim(),
+        serialNumber: (exchangePhone.serialNumber || "").trim(),
+        valuation: cleanExchangeVal
+      } : { model: "", imei: "", serialNumber: "", valuation: 0 },
       grandTotal,
       totalCost: Math.round(totalCost * 100) / 100,
       totalProfit,
@@ -605,11 +616,198 @@ async function cancelBill(req, res) {
   }
 }
 
+// GET /api/bills/daily-register - Daily Cash Register & Galla Closing Summary
+async function getDailyRegister(req, res) {
+  try {
+    let dateStr = req.query.date; // e.g. "2026-10-29"
+    let startOfDay, endOfDay;
+
+    if (dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      startOfDay = new Date(`${dateStr}T00:00:00.000Z`);
+      endOfDay = new Date(`${dateStr}T23:59:59.999Z`);
+    } else {
+      const now = new Date();
+      startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+      endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    }
+
+    const bills = await Bill.find({
+      status: "completed",
+      createdAt: { $gte: startOfDay, $lte: endOfDay }
+    }).sort({ createdAt: -1 });
+
+    let cashTotal = 0;
+    let upiTotal = 0;
+    let cardTotal = 0;
+    let financeTotal = 0;
+    let grossRevenue = 0;
+    let totalProfit = 0;
+    let totalDiscount = 0;
+    let totalExchangeVal = 0;
+    let totalHandsetsSold = 0;
+
+    bills.forEach((b) => {
+      grossRevenue += b.grandTotal || 0;
+      totalProfit += b.totalProfit || 0;
+      totalDiscount += b.discount || 0;
+      if (b.exchangePhone && b.exchangePhone.valuation) {
+        totalExchangeVal += b.exchangePhone.valuation;
+      }
+
+      if (b.items && Array.isArray(b.items)) {
+        b.items.forEach((it) => {
+          totalHandsetsSold += it.quantity || 1;
+        });
+      }
+
+      const mode = (b.paymentMode || "").toLowerCase();
+      if (mode.includes("cash")) {
+        cashTotal += b.grandTotal || 0;
+      } else if (mode.includes("upi")) {
+        upiTotal += b.grandTotal || 0;
+      } else if (mode.includes("card")) {
+        cardTotal += b.grandTotal || 0;
+      } else if (mode.includes("finance") || mode.includes("bajaj") || mode.includes("tvs") || mode.includes("dmi") || mode.includes("idfc") || mode.includes("hdb")) {
+        financeTotal += b.grandTotal || 0;
+      } else {
+        cashTotal += b.grandTotal || 0; // fallback
+      }
+    });
+
+    return res.json({
+      success: true,
+      date: dateStr || new Date().toISOString().split("T")[0],
+      summary: {
+        totalBills: bills.length,
+        totalHandsetsSold,
+        grossRevenue: Math.round(grossRevenue * 100) / 100,
+        cashTotal: Math.round(cashTotal * 100) / 100,
+        upiTotal: Math.round(upiTotal * 100) / 100,
+        cardTotal: Math.round(cardTotal * 100) / 100,
+        financeTotal: Math.round(financeTotal * 100) / 100,
+        totalDiscount: Math.round(totalDiscount * 100) / 100,
+        totalExchangeVal: Math.round(totalExchangeVal * 100) / 100,
+        totalProfit: Math.round(totalProfit * 100) / 100
+      },
+      bills: bills.map((b) => ({
+        invoiceNumber: b.invoiceNumber,
+        customerName: b.customerName,
+        customerPhone: b.customerPhone,
+        paymentMode: b.paymentMode,
+        grandTotal: b.grandTotal,
+        itemsCount: (b.items || []).length,
+        time: b.createdAt
+      }))
+    });
+  } catch (error) {
+    console.error("Daily register error:", error);
+    return res.status(500).json({ success: false, message: "Could not generate daily register summary" });
+  }
+}
+
+// GET /api/bills/warranty-locker?phone=XXXXXXXXXX
+async function getWarrantyLocker(req, res) {
+  try {
+    const rawPhone = String(req.query.phone || "").replace(/\D/g, "");
+    if (!rawPhone || rawPhone.length < 10) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a valid 10-digit mobile number"
+      });
+    }
+
+    const phone = rawPhone.slice(-10);
+
+    const bills = await Bill.find({
+      status: "completed",
+      customerPhone: { $regex: phone + "$" }
+    }).sort({ createdAt: -1 });
+
+    if (bills.length === 0) {
+      return res.json({
+        success: true,
+        customerName: "Valued Customer",
+        phone,
+        devices: [],
+        message: "No registered purchases found for this mobile number"
+      });
+    }
+
+    const customerName = bills[0].customerName || "Valued Customer";
+    const devices = [];
+
+    bills.forEach((bill) => {
+      const billDate = new Date(bill.createdAt);
+      const warrantyEndDate = new Date(billDate.getTime() + 365 * 24 * 60 * 60 * 1000);
+      const daysLeft = Math.ceil((warrantyEndDate - Date.now()) / (1000 * 60 * 60 * 24));
+      const isUnderWarranty = daysLeft > 0;
+
+      const deviceImei1 = bill.imei1 || "";
+      const deviceImei2 = bill.imei2 || "";
+      const deviceSerial = bill.serialNumber || "";
+      const modelNo = bill.modelNumber || "";
+
+      (bill.items || []).forEach((item) => {
+        devices.push({
+          productName: item.name,
+          sku: item.sku,
+          quantity: item.quantity,
+          price: item.price,
+          total: item.total,
+          invoiceNumber: bill.invoiceNumber,
+          purchaseDate: billDate.toISOString(),
+          imei1: deviceImei1,
+          imei2: deviceImei2,
+          serialNumber: deviceSerial,
+          modelNumber: modelNo,
+          warrantyPeriod: "1 Year Official Brand Warranty",
+          warrantyEndDate: warrantyEndDate.toISOString(),
+          daysLeft: Math.max(0, daysLeft),
+          isUnderWarranty,
+          paymentMode: bill.paymentMode,
+          billId: bill._id,
+          billDetails: {
+            invoiceNumber: bill.invoiceNumber,
+            date: bill.createdAt,
+            customerName: bill.customerName,
+            customerPhone: bill.customerPhone,
+            customerAddress: bill.customerAddress,
+            paymentMode: bill.paymentMode,
+            subtotal: bill.subtotal,
+            cgst: bill.cgst,
+            sgst: bill.sgst,
+            discount: bill.discount,
+            exchangePhone: bill.exchangePhone,
+            grandTotal: bill.grandTotal,
+            imei1: deviceImei1,
+            imei2: deviceImei2,
+            serialNumber: deviceSerial,
+            items: bill.items
+          }
+        });
+      });
+    });
+
+    return res.json({
+      success: true,
+      customerName,
+      phone,
+      totalDevices: devices.length,
+      devices
+    });
+  } catch (error) {
+    console.error("Warranty locker lookup error:", error);
+    return res.status(500).json({ success: false, message: "Failed to look up digital warranty records" });
+  }
+}
+
 module.exports = {
   createBill,
   getBills,
   getBillStats,
   getBillById,
   cancelBill,
-  getRecentCustomers
+  getRecentCustomers,
+  getDailyRegister,
+  getWarrantyLocker
 };

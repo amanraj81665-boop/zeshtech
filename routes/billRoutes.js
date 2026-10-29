@@ -15,11 +15,15 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-// All bill routes require authentication and admin permission
+// Customer Digital Warranty & Bill Locker (Public lookup by customer phone)
+router.get("/warranty-locker", billController.getWarrantyLocker);
+
+// All subsequent bill routes require authentication and admin permission
 router.use(authMiddleware, requireAdmin);
 
 router.post("/", billController.createBill);
 router.get("/stats", billController.getBillStats);
+router.get("/daily-register", billController.getDailyRegister);
 router.get("/recent-customers", billController.getRecentCustomers);
 router.get("/", billController.getBills);
 router.get("/:id", billController.getBillById);
