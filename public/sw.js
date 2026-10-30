@@ -1,5 +1,5 @@
 // ZESH-TECH Progressive Web App Service Worker
-const CACHE_NAME = 'zeshtech-v5.1';
+const CACHE_NAME = 'zeshtech-v5.2';
 const STATIC_ASSETS = [
   "/",
   "/index.html",

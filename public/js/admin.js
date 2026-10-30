@@ -1851,7 +1851,7 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
               <span class="btn-scan-field" data-target="add-unit-${u.id}-serial" data-label="Unit #${idx + 2} S/N" style="color:#38bdf8; cursor:pointer; font-size:10px;">📷 Scan</span>
             </label>
             <div style="display:flex; gap:4px;">
-              <input type="text" id="add-unit-${u.id}-serial" value="${escapeHTML(u.serialNumber || '')}" placeholder="Unit #${idx + 2} S/N" style="background:#090d16; border-color:var(--dark-border); color:#38bdf8; font-family:var(--font-mono); font-size:11px; flex:1;">
+              <input type="text" id="add-unit-${u.id}-serial" value="${escapeHTML(u.serialNumber || '')}" placeholder="Unit #${idx + 2} S/N" style="background:#090d16; border-color:var(--dark-border); color:#ffffff !important; -webkit-text-fill-color:#ffffff !important; font-family:var(--font-mono); font-size:11px; font-weight:700; flex:1;">
               <button type="button" class="btn btn-secondary btn-scan-field" data-target="add-unit-${u.id}-serial" data-label="Unit #${idx + 2} S/N" style="padding:0 7px; background:#1e293b; border-color:#38bdf8; color:#38bdf8; font-size:11px;">📷</button>
             </div>
           </div>
@@ -1861,7 +1861,7 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
               <span class="btn-scan-field" data-target="add-unit-${u.id}-imei1" data-label="Unit #${idx + 2} IMEI 1" style="color:#60a5fa; cursor:pointer; font-size:10px;">📷 Scan</span>
             </label>
             <div style="display:flex; gap:4px;">
-              <input type="text" id="add-unit-${u.id}-imei1" value="${escapeHTML(u.imei1 || '')}" placeholder="Unit #${idx + 2} IMEI 1" style="background:#090d16; border-color:var(--dark-border); color:white; font-family:var(--font-mono); font-size:11px; flex:1;">
+              <input type="text" id="add-unit-${u.id}-imei1" value="${escapeHTML(u.imei1 || '')}" placeholder="Unit #${idx + 2} IMEI 1" style="background:#090d16; border-color:var(--dark-border); color:#ffffff !important; -webkit-text-fill-color:#ffffff !important; font-family:var(--font-mono); font-size:11px; font-weight:700; flex:1;">
               <button type="button" class="btn btn-secondary btn-scan-field" data-target="add-unit-${u.id}-imei1" data-label="Unit #${idx + 2} IMEI 1" style="padding:0 7px; background:#1e293b; border-color:#3b82f6; color:#60a5fa; font-size:11px;">📷</button>
             </div>
           </div>
@@ -1871,7 +1871,7 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
               <span class="btn-scan-field" data-target="add-unit-${u.id}-imei2" data-label="Unit #${idx + 2} IMEI 2" style="color:#60a5fa; cursor:pointer; font-size:10px;">📷 Scan</span>
             </label>
             <div style="display:flex; gap:4px;">
-              <input type="text" id="add-unit-${u.id}-imei2" value="${escapeHTML(u.imei2 || '')}" placeholder="Unit #${idx + 2} IMEI 2" style="background:#090d16; border-color:var(--dark-border); color:white; font-family:var(--font-mono); font-size:11px; flex:1;">
+              <input type="text" id="add-unit-${u.id}-imei2" value="${escapeHTML(u.imei2 || '')}" placeholder="Unit #${idx + 2} IMEI 2" style="background:#090d16; border-color:var(--dark-border); color:#ffffff !important; -webkit-text-fill-color:#ffffff !important; font-family:var(--font-mono); font-size:11px; font-weight:700; flex:1;">
               <button type="button" class="btn btn-secondary btn-scan-field" data-target="add-unit-${u.id}-imei2" data-label="Unit #${idx + 2} IMEI 2" style="padding:0 7px; background:#1e293b; border-color:#3b82f6; color:#60a5fa; font-size:11px;">📷</button>
             </div>
           </div>
@@ -1925,7 +1925,7 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
                 ${!isSold ? `<span class="btn-scan-field" data-target="edit-unit-${u.id}-serial" data-label="Unit #${idx + 2} S/N" style="color:#38bdf8; cursor:pointer; font-size:10px;">📷 Scan</span>` : ''}
               </label>
               <div style="display:flex; gap:4px;">
-                <input type="text" id="edit-unit-${u.id}-serial" value="${escapeHTML(u.serialNumber || '')}" ${isSold ? 'readonly style="background:#111827; opacity:0.7;"' : 'style="background:#090d16;"'} placeholder="Unit #${idx + 2} S/N" style="border-color:var(--dark-border); color:#38bdf8; font-family:var(--font-mono); font-size:11px; flex:1;">
+                <input type="text" id="edit-unit-${u.id}-serial" value="${escapeHTML(u.serialNumber || '')}" ${isSold ? 'readonly style="background:#111827; opacity:0.7;"' : 'style="background:#090d16;"'} placeholder="Unit #${idx + 2} S/N" style="border-color:var(--dark-border); color:#ffffff !important; -webkit-text-fill-color:#ffffff !important; font-family:var(--font-mono); font-size:11px; font-weight:700; flex:1;">
                 ${!isSold ? `<button type="button" class="btn btn-secondary btn-scan-field" data-target="edit-unit-${u.id}-serial" data-label="Unit #${idx + 2} S/N" style="padding:0 7px; background:#1e293b; border-color:#38bdf8; color:#38bdf8; font-size:11px;">📷</button>` : ''}
               </div>
             </div>
@@ -1935,7 +1935,7 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
                 ${!isSold ? `<span class="btn-scan-field" data-target="edit-unit-${u.id}-imei1" data-label="Unit #${idx + 2} IMEI 1" style="color:#60a5fa; cursor:pointer; font-size:10px;">📷 Scan</span>` : ''}
               </label>
               <div style="display:flex; gap:4px;">
-                <input type="text" id="edit-unit-${u.id}-imei1" value="${escapeHTML(u.imei1 || '')}" ${isSold ? 'readonly style="background:#111827; opacity:0.7;"' : 'style="background:#090d16;"'} placeholder="Unit #${idx + 2} IMEI 1" style="border-color:var(--dark-border); color:white; font-family:var(--font-mono); font-size:11px; flex:1;">
+                <input type="text" id="edit-unit-${u.id}-imei1" value="${escapeHTML(u.imei1 || '')}" ${isSold ? 'readonly style="background:#111827; opacity:0.7;"' : 'style="background:#090d16;"'} placeholder="Unit #${idx + 2} IMEI 1" style="border-color:var(--dark-border); color:#ffffff !important; -webkit-text-fill-color:#ffffff !important; font-family:var(--font-mono); font-size:11px; font-weight:700; flex:1;">
                 ${!isSold ? `<button type="button" class="btn btn-secondary btn-scan-field" data-target="edit-unit-${u.id}-imei1" data-label="Unit #${idx + 2} IMEI 1" style="padding:0 7px; background:#1e293b; border-color:#3b82f6; color:#60a5fa; font-size:11px;">📷</button>` : ''}
               </div>
             </div>
@@ -1945,7 +1945,7 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
                 ${!isSold ? `<span class="btn-scan-field" data-target="edit-unit-${u.id}-imei2" data-label="Unit #${idx + 2} IMEI 2" style="color:#60a5fa; cursor:pointer; font-size:10px;">📷 Scan</span>` : ''}
               </label>
               <div style="display:flex; gap:4px;">
-                <input type="text" id="edit-unit-${u.id}-imei2" value="${escapeHTML(u.imei2 || '')}" ${isSold ? 'readonly style="background:#111827; opacity:0.7;"' : 'style="background:#090d16;"'} placeholder="Unit #${idx + 2} IMEI 2" style="border-color:var(--dark-border); color:white; font-family:var(--font-mono); font-size:11px; flex:1;">
+                <input type="text" id="edit-unit-${u.id}-imei2" value="${escapeHTML(u.imei2 || '')}" ${isSold ? 'readonly style="background:#111827; opacity:0.7;"' : 'style="background:#090d16;"'} placeholder="Unit #${idx + 2} IMEI 2" style="border-color:var(--dark-border); color:#ffffff !important; -webkit-text-fill-color:#ffffff !important; font-family:var(--font-mono); font-size:11px; font-weight:700; flex:1;">
                 ${!isSold ? `<button type="button" class="btn btn-secondary btn-scan-field" data-target="edit-unit-${u.id}-imei2" data-label="Unit #${idx + 2} IMEI 2" style="padding:0 7px; background:#1e293b; border-color:#3b82f6; color:#60a5fa; font-size:11px;">📷</button>` : ''}
               </div>
             </div>

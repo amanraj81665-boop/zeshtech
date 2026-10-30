@@ -6240,3 +6240,51 @@ body.modal-open .floating-whatsapp-btn {
     touch-action: pan-y !important;
   }
 }
+
+/* ==========================================================================
+   ADMIN & IMEI / SERIAL / EMI INPUT VISIBILITY ENHANCEMENT
+   Ensures 100% crystal-clear pure white text (#ffffff) with zero blue fading
+   ========================================================================== */
+.admin-body input[type="text"],
+.admin-body input[type="number"],
+.admin-body input[type="search"],
+.admin-body input[type="tel"],
+.admin-body input[type="email"],
+.admin-body input[type="password"],
+.admin-body select,
+.admin-body textarea {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #38bdf8 !important;
+}
+
+/* Specific IMEI & Serial & Loan inputs for 100% visibility */
+#add-prod-serial, #add-prod-imei1, #add-prod-imei2,
+#edit-prod-serial, #edit-prod-imei1, #edit-prod-imei2,
+#pos-serial-no, #pos-imei1, #pos-imei2, #pos-model-no, #pos-financier, #pos-loan-ref, #pos-exchange-imei,
+#scanner-manual-input,
+[id^="add-unit-"], [id^="edit-unit-"] {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-weight: 700 !important;
+  font-family: var(--font-mono) !important;
+  background-color: #070c18 !important;
+}
+
+/* Fix mobile browser / Chrome autofill turning text blue or dark */
+.admin-body input:-webkit-autofill,
+.admin-body input:-webkit-autofill:hover, 
+.admin-body input:-webkit-autofill:focus,
+.admin-body input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #090d16 inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  color: #ffffff !important;
+  caret-color: #ffffff !important;
+}
+
+.admin-body input::placeholder,
+.admin-body textarea::placeholder {
+  color: #64748b !important;
+  -webkit-text-fill-color: #64748b !important;
+  opacity: 0.8 !important;
+}
