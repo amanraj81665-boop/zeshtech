@@ -62,7 +62,7 @@
   <!-- Google Search Console Verification Meta Tag -->
   <meta name="google-site-verification" content="epsVB-mPq_NWWWv0wptK8GEftN5h-SJwKRHqW4pBsN4" />
 
-  <link rel="stylesheet" href="/css/style.css?v=5.0">
+  <link rel="stylesheet" href="/css/style.css?v=5.1">
 
   <!-- Official Google Identity Services (GIS) Web SDK -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -653,123 +653,127 @@
   <div class="modal-backdrop" id="upi-payment-modal-backdrop" onclick="if(event.target === this) this.classList.remove('active');">
     <div class="modal-dialog" id="upi-payment-modal-dialog" style="max-width: 480px; padding: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; border-radius: 18px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 25px 50px rgba(0,0,0,0.5);">
       <!-- Header with PhonePe Gradient -->
-      <div style="background: linear-gradient(135deg, #5f259f 0%, #3b1464 100%); color: white; padding: 22px 24px; position: relative;">
+      <div style="background: linear-gradient(135deg, #5f259f 0%, #3b1464 100%); color: white; padding: 20px 22px; position: relative;">
         <button class="modal-close-btn" id="close-upi-modal-btn" type="button" aria-label="Close" onclick="document.getElementById('upi-payment-modal-backdrop').classList.remove('active');" style="color: #0f172a !important; background: #f1f5f9 !important; border: 1.5px solid #cbd5e1 !important; top: 16px; right: 16px;">✕</button>
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-          <div style="background: white; border-radius: 50%; width: 38px; height: 38px; display: grid; place-items: center; font-weight: 900; color: #5f259f; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 6px;">
+          <div style="background: white; border-radius: 50%; width: 38px; height: 38px; display: grid; place-items: center; font-weight: 900; color: #5f259f; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); flex-shrink: 0;">
             पे
           </div>
           <div>
-            <h3 style="font-size: 18px; font-weight: 800; color: white; margin: 0; line-height: 1.2;">PhonePe &amp; Google Pay UPI</h3>
-            <span style="font-size: 11px; opacity: 0.85;">Official Store Gateway — ZESH TECH</span>
+            <h3 style="font-size: 17.5px; font-weight: 800; color: white; margin: 0; line-height: 1.2;">PhonePe UPI Payment</h3>
+            <span style="font-size: 11px; opacity: 0.9;">Store Official: ZESH TECH | 0% Extra Fee</span>
           </div>
         </div>
-        <div style="margin-top: 12px; background: rgba(255,255,255,0.12); padding: 10px 14px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-size: 12px; font-weight: 600;">Total Amount to Pay:</span>
-          <strong id="upi-modal-amount" style="font-size: 22px; font-weight: 900; color: #4ade80;">₹0.00</strong>
+        <div style="margin-top: 10px; background: rgba(255,255,255,0.12); padding: 9px 14px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 12px; font-weight: 600;">Total Payable Amount:</span>
+          <strong id="upi-modal-amount" style="font-size: 21px; font-weight: 900; color: #4ade80;">₹0.00</strong>
         </div>
       </div>
 
-      <div class="modal-body" style="padding: 20px; background: #0b101d; color: white;">
+      <div class="modal-body" style="padding: 18px; background: #0b101d; color: white;">
         
-        <!-- STEP 1: Direct 1-Tap UPI Apps (Recommended on Mobile) -->
-        <div style="background: linear-gradient(135deg, rgba(95, 37, 159, 0.3) 0%, rgba(15, 23, 42, 0.8) 100%); border: 1.5px solid rgba(168, 85, 247, 0.4); border-radius: 14px; padding: 16px; margin-bottom: 16px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <div style="font-size: 11.5px; font-weight: 800; color: #c084fc; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
-              <span>⚡ 1-TAP DIRECT APP LAUNCHER</span>
-            </div>
-            <span class="badge" style="background: rgba(34, 197, 94, 0.2); color: #4ade80; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 20px; border: 1px solid rgba(34, 197, 94, 0.4);">✓ 0% Extra Charge</span>
-          </div>
-          <p style="font-size: 12px; color: #cbd5e1; margin: 0 0 12px 0; line-height: 1.4;">
-            Tap below to open your payment app directly with <strong id="upi-apps-amount-display" style="color: #4ade80;">₹0</strong> pre-filled:
-          </p>
-
-          <div style="display: flex; flex-direction: column; gap: 10px;">
-            <!-- 1. PhonePe Direct -->
-            <a href="#" id="upi-btn-phonepe" class="btn-upi-app" style="display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #5f259f 0%, #431773 100%); color: white; padding: 12px 16px; border-radius: 12px; text-decoration: none; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 4px 14px rgba(95, 37, 159, 0.5); transition: all 0.15s ease;">
-              <div style="display: flex; align-items: center; gap: 12px;">
-                <div style="background: white; border-radius: 50%; width: 36px; height: 36px; display: grid; place-items: center; color: #5f259f; font-weight: 900; font-size: 19px; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.25);">
-                  पे
-                </div>
-                <div style="text-align: left;">
-                  <div style="font-size: 14.5px; font-weight: 800; line-height: 1.2;">Pay with PhonePe</div>
-                  <div style="font-size: 11px; color: #e9d5ff;">Directly opens PhonePe App</div>
-                </div>
-              </div>
-              <span style="font-size: 18px; font-weight: 800; color: #e9d5ff;">➔</span>
-            </a>
-
-            <!-- 2. Google Pay Direct -->
-            <a href="#" id="upi-btn-gpay" class="btn-upi-app" style="display: flex; align-items: center; justify-content: space-between; background: #ffffff; color: #0f172a; padding: 12px 16px; border-radius: 12px; text-decoration: none; border: 1.5px solid #e2e8f0; box-shadow: 0 4px 14px rgba(0,0,0,0.2); transition: all 0.15s ease;">
-              <div style="display: flex; align-items: center; gap: 12px;">
-                <div style="background: #f8fafc; border-radius: 50%; width: 36px; height: 36px; display: grid; place-items: center; flex-shrink: 0; border: 1px solid #cbd5e1;">
-                  <svg viewBox="0 0 24 24" width="20" height="20"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
-                </div>
-                <div style="text-align: left;">
-                  <div style="font-size: 14.5px; font-weight: 800; line-height: 1.2; color: #0f172a;">Pay with Google Pay</div>
-                  <div style="font-size: 11px; color: #64748b;">Directly opens Google Pay App</div>
-                </div>
-              </div>
-              <span style="font-size: 18px; font-weight: 800; color: #2563eb;">➔</span>
-            </a>
-
-            <!-- 3. Paytm & Other UPI Apps Row -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-              <!-- Paytm -->
-              <a href="#" id="upi-btn-paytm" class="btn-upi-app" style="display: flex; align-items: center; justify-content: center; gap: 8px; background: #002e6e; color: white; padding: 11px 12px; border-radius: 10px; text-decoration: none; border: 1px solid rgba(0, 185, 245, 0.4); box-shadow: 0 2px 8px rgba(0,0,0,0.25);">
-                <span style="font-weight: 900; font-size: 13.5px; color: #00b9f5; font-style: italic;">Paytm</span>
-                <span style="font-size: 12.5px; font-weight: 700;">Pay</span>
-              </a>
-
-              <!-- Any other UPI (Cred / BHIM / Amazon Pay) -->
-              <a href="#" id="upi-btn-universal" class="btn-upi-app" style="display: flex; align-items: center; justify-content: center; gap: 6px; background: #1e293b; color: white; padding: 11px 12px; border-radius: 10px; text-decoration: none; border: 1px solid #334155; box-shadow: 0 2px 8px rgba(0,0,0,0.25);">
-                <span style="font-size: 14px;">🚀</span>
-                <span style="font-size: 12px; font-weight: 700;">Any Other UPI</span>
-              </a>
-            </div>
-          </div>
+        <!-- PhonePe Security Notice -->
+        <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 10px; padding: 10px 12px; margin-bottom: 14px; font-size: 11px; color: #93c5fd; line-height: 1.45;">
+          <strong style="color: #60a5fa; display: flex; align-items: center; gap: 5px; margin-bottom: 3px;">
+            <span>🛡️ PhonePe Secure Direct Pay</span>
+          </strong>
+          Agar direct link se <em>"Payment declined for security reasons"</em> dikhe, toh PhonePe ke anusar <strong>QR Code scan karein</strong> ya <strong>PhonePe Number</strong> par pay karein — payment 100% successful ho jayegi!
         </div>
 
-        <!-- Alternate Option: Scan QR Code or Pay via PhonePe Number -->
-        <div style="background: #131b2e; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px 16px; margin-bottom: 16px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" id="toggle-qr-section-btn">
-            <div style="text-align: left;">
-              <div style="font-size: 12.5px; font-weight: 800; color: #f8fafc; display: flex; align-items: center; gap: 6px;">
-                <span>📷 Paying from another phone or PC?</span>
-              </div>
-              <div style="font-size: 11px; color: #94a3b8;">
-                Tap to view PhonePe QR Code &amp; UPI ID
-              </div>
-            </div>
-            <button type="button" class="btn btn-outline btn-small" style="font-size: 11px; padding: 4px 8px; color: #38bdf8; border-color: #38bdf8; pointer-events: none;" id="qr-toggle-btn-label">
-              Show QR Code ▼
+        <!-- METHOD 1: SCAN PHONEPE QR (Most Reliable - 100% Success) -->
+        <div style="background: #131b2e; border: 1.5px solid rgba(56, 189, 248, 0.35); border-radius: 14px; padding: 14px; text-align: center; margin-bottom: 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.3);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span style="font-size: 11px; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px;">
+              ⭐ METHOD 1: SCAN &amp; PAY (RECOMMENDED)
+            </span>
+            <span class="badge" style="background: rgba(34, 197, 94, 0.2); color: #4ade80; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 12px; border: 1px solid rgba(34,197,94,0.4);">
+              ✓ 100% Guaranteed Success
+            </span>
+          </div>
+
+          <div style="background: white; padding: 10px; border-radius: 12px; display: inline-block; margin-bottom: 10px; box-shadow: 0 4px 14px rgba(0,0,0,0.4);">
+            <img src="/images/phonepe_qr.png" alt="PhonePe QR Code" style="width: 175px; height: 175px; object-fit: contain; display: block; border-radius: 6px;">
+          </div>
+
+          <div style="font-size: 11.5px; color: #cbd5e1; margin-bottom: 10px; line-height: 1.4;">
+            <strong>PhonePe / GPay / Paytm</strong> scanner se scan karein.<br>
+            <span style="color: #94a3b8; font-size: 11px;">(Agar isi phone me hain toh screenshot lein aur PhonePe Scanner me Gallery icon se select karein)</span>
+          </div>
+
+          <!-- Quick Action Buttons -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <a href="/images/phonepe_qr.png" download="ZeshTech_PhonePe_QR.png" target="_blank" class="btn btn-outline btn-small" style="font-size: 11px; padding: 8px 10px; color: #38bdf8; border-color: rgba(56,189,248,0.4); display: flex; align-items: center; justify-content: center; gap: 5px; text-decoration: none; border-radius: 8px; background: rgba(56,189,248,0.06);">
+              <span>📥 Save / View QR</span>
+            </a>
+            <button type="button" id="copy-phone-btn" class="btn btn-outline btn-small" style="font-size: 11px; padding: 8px 10px; color: #4ade80; border-color: rgba(74,222,128,0.4); display: flex; align-items: center; justify-content: center; gap: 5px; border-radius: 8px; background: rgba(74,222,128,0.06); cursor: pointer;">
+              <span>📋 Copy PhonePe No</span>
             </button>
           </div>
+        </div>
 
-          <!-- Hidden by default so screen stays clean; expands instantly on click -->
-          <div id="upi-qr-collapse-box" class="hidden" style="margin-top: 14px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 14px; text-align: center;">
-            <div style="background: white; padding: 8px; border-radius: 12px; display: inline-block; margin-bottom: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
-              <img src="/images/phonepe_qr.png" alt="PhonePe QR Code" style="width: 170px; height: 170px; object-fit: contain; display: block;">
-            </div>
+        <!-- METHOD 2: DIRECT PHONEPE NUMBER / 1-TAP OPEN -->
+        <div style="background: linear-gradient(135deg, rgba(95, 37, 159, 0.25) 0%, rgba(15, 23, 42, 0.7) 100%); border: 1.5px solid rgba(168, 85, 247, 0.35); border-radius: 14px; padding: 14px; margin-bottom: 14px;">
+          <div style="font-size: 11px; font-weight: 800; color: #c084fc; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+            ⚡ METHOD 2: 1-TAP COPY &amp; OPEN PHONEPE
+          </div>
+          
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <!-- Copy Number and Open PhonePe -->
+            <button type="button" id="copy-number-open-phonepe-btn" style="background: linear-gradient(135deg, #5f259f 0%, #431773 100%); color: white; padding: 11px 14px; border-radius: 10px; text-decoration: none; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 4px 12px rgba(95, 37, 159, 0.4); display: flex; align-items: center; justify-content: space-between; cursor: pointer; text-align: left; width: 100%;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="background: white; border-radius: 50%; width: 32px; height: 32px; display: grid; place-items: center; color: #5f259f; font-weight: 900; font-size: 17px; flex-shrink: 0;">पे</div>
+                <div>
+                  <div style="font-size: 13.5px; font-weight: 800; line-height: 1.2;">Copy Number (9122846271) &amp; Open PhonePe</div>
+                  <div style="font-size: 10.5px; color: #e9d5ff;">Pastes in 'To Mobile Number' in PhonePe</div>
+                </div>
+              </div>
+              <span style="font-size: 16px; font-weight: 800; color: #e9d5ff;">➔</span>
+            </button>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 6px;">
-              <button type="button" id="copy-upi-btn" style="background: #090d16; border: 1px solid #334155; color: #38bdf8; padding: 8px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px;">
-                <span style="color: #94a3b8; font-size: 10px; font-weight: normal;">UPI ID</span>
-                <span>📋 9122846271-5@ybl</span>
-              </button>
-
-              <button type="button" id="copy-phone-btn" style="background: #090d16; border: 1px solid #334155; color: #4ade80; padding: 8px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px;">
-                <span style="color: #94a3b8; font-size: 10px; font-weight: normal;">PhonePe Mobile</span>
-                <span>📋 9122846271</span>
-              </button>
-            </div>
-            <small style="color: #64748b; font-size: 11px; display: block; margin-top: 6px;">Merchant: ZESH TECH | Ph: 9122846271</small>
+            <!-- Copy UPI ID and Open PhonePe -->
+            <button type="button" id="copy-upi-open-phonepe-btn" style="background: #1e293b; color: white; padding: 10px 14px; border-radius: 10px; text-decoration: none; border: 1px solid #334155; display: flex; align-items: center; justify-content: space-between; cursor: pointer; text-align: left; width: 100%;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 16px;">📋</span>
+                <div>
+                  <div style="font-size: 12.5px; font-weight: 700;">Copy UPI ID (9122846271-5@ybl) &amp; Open PhonePe</div>
+                  <div style="font-size: 10px; color: #94a3b8;">Paste in PhonePe 'To UPI ID'</div>
+                </div>
+              </div>
+              <span style="font-size: 13px; font-weight: 700; color: #38bdf8;">Copy &amp; Open</span>
+            </button>
           </div>
         </div>
 
-        <!-- Important Self-Transfer Guideline Note (Clean & Compact) -->
-        <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 10px; padding: 10px 12px; margin-bottom: 16px; font-size: 11px; color: #fde047; line-height: 1.4;">
-          <strong>💡 Note:</strong> Apne hi PhonePe number (<strong>9122846271</strong>) se self-transfer na karein. Kisi doosre number ya phone se pay karein.
+        <!-- Optional: Direct App Launcher Accordion -->
+        <div style="background: #0f172a; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 10px 14px; margin-bottom: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" id="toggle-direct-apps-btn">
+            <div>
+              <div style="font-size: 12px; font-weight: 700; color: #f8fafc;">🚀 Want to try 1-Tap Auto Link?</div>
+              <div style="font-size: 10.5px; color: #64748b;">(PhonePe, Google Pay, Paytm Direct Link)</div>
+            </div>
+            <span id="direct-apps-toggle-arrow" style="font-size: 12px; color: #94a3b8;">▼ Show</span>
+          </div>
+
+          <div id="direct-apps-collapse-box" class="hidden" style="margin-top: 12px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 12px;">
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <a href="#" id="upi-btn-phonepe" class="btn-upi-app" style="display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #5f259f 0%, #431773 100%); color: white; padding: 10px 14px; border-radius: 10px; text-decoration: none; border: 1px solid rgba(255,255,255,0.2);">
+                <span style="font-size: 13px; font-weight: 800;">Launch PhonePe Intent</span>
+                <span style="font-size: 15px;">➔</span>
+              </a>
+              <a href="#" id="upi-btn-gpay" class="btn-upi-app" style="display: flex; align-items: center; justify-content: space-between; background: #ffffff; color: #0f172a; padding: 10px 14px; border-radius: 10px; text-decoration: none; border: 1px solid #e2e8f0;">
+                <span style="font-size: 13px; font-weight: 800; color: #0f172a;">Launch Google Pay Intent</span>
+                <span style="font-size: 15px; color: #2563eb;">➔</span>
+              </a>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <a href="#" id="upi-btn-paytm" class="btn-upi-app" style="display: flex; align-items: center; justify-content: center; gap: 6px; background: #002e6e; color: white; padding: 9px; border-radius: 8px; text-decoration: none;">
+                  <span style="font-size: 12px; font-weight: 800; color: #00b9f5;">Paytm</span>
+                </a>
+                <a href="#" id="upi-btn-universal" class="btn-upi-app" style="display: flex; align-items: center; justify-content: center; gap: 6px; background: #1e293b; color: white; padding: 9px; border-radius: 8px; text-decoration: none;">
+                  <span style="font-size: 12px; font-weight: 700;">Any Other UPI</span>
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- STEP 2: Enter 12-Digit Reference / UTR Number -->
@@ -1692,9 +1696,9 @@
   </nav>
 
   <!-- Scripts with Cache Busting -->
-  <script src="/js/phoneSpecsData.js?v=5.0"></script>
-  <script src="/js/api.js?v=5.0"></script>
-  <script src="/js/app.js?v=5.0"></script>
+  <script src="/js/phoneSpecsData.js?v=5.1"></script>
+  <script src="/js/api.js?v=5.1"></script>
+  <script src="/js/app.js?v=5.1"></script>
   <script>
     // PWA Service Worker Registration
     if ('serviceWorker' in navigator) {

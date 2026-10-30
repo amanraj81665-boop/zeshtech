@@ -3523,13 +3523,39 @@
       }
     });
 
-    // QR Code collapse toggle
-    $("#toggle-qr-section-btn")?.addEventListener("click", () => {
-      const box = $("#upi-qr-collapse-box");
-      const label = $("#qr-toggle-btn-label");
+    // Direct Apps collapse toggle
+    $("#toggle-direct-apps-btn")?.addEventListener("click", () => {
+      const box = $("#direct-apps-collapse-box");
+      const arrow = $("#direct-apps-toggle-arrow");
       if (!box) return;
       const isHidden = box.classList.toggle("hidden");
-      if (label) label.textContent = isHidden ? "Show QR Code ▼" : "Hide QR Code ▲";
+      if (arrow) arrow.textContent = isHidden ? "▼ Show" : "▲ Hide";
+    });
+
+    // 1-Tap Copy PhonePe Number & Open PhonePe App
+    $("#copy-number-open-phonepe-btn")?.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText("9122846271");
+        showToast("PhonePe Mobile (9122846271) Copied! Opening PhonePe...", "success");
+      } catch (err) {
+        showToast("PhonePe Mobile: 9122846271", "info");
+      }
+      setTimeout(() => {
+        window.location.href = "phonepe://";
+      }, 350);
+    });
+
+    // 1-Tap Copy UPI ID & Open PhonePe App
+    $("#copy-upi-open-phonepe-btn")?.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText("9122846271-5@ybl");
+        showToast("UPI ID (9122846271-5@ybl) Copied! Opening PhonePe...", "success");
+      } catch (err) {
+        showToast("UPI ID: 9122846271-5@ybl", "info");
+      }
+      setTimeout(() => {
+        window.location.href = "phonepe://";
+      }, 350);
     });
 
     // Feedback toast on clicking any 1-tap UPI app button
