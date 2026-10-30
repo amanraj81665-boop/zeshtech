@@ -1693,12 +1693,24 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
           <td style="padding: 12px 10px; color: ${margin >= 0 ? '#10b981' : '#f87171'}; font-weight:600;">
             ${money(margin)} (${marginPercent}%)
           </td>
-          <td style="padding: 12px 10px;">
-            <div>${stockBadge}</div>
-            <div style="display:flex; align-items:center; gap:4px; margin-top:5px;">
-              <button type="button" class="btn-quick-stock" data-id="${p._id}" data-change="-1" title="Subtract 1 stock" style="background:#1e293b; border:1px solid #334155; color:#94a3b8; width:22px; height:22px; border-radius:4px; font-size:11px; cursor:pointer; display:grid; place-items:center;">-</button>
-              <button type="button" class="btn-quick-stock" data-id="${p._id}" data-change="1" title="Add 1 stock" style="background:#1e293b; border:1px solid #10b981; color:#34d399; width:22px; height:22px; border-radius:4px; font-size:11px; cursor:pointer; display:grid; place-items:center;">+</button>
-              <button type="button" class="btn-quick-stock" data-id="${p._id}" data-change="5" title="Add 5 stock" style="background:rgba(59,130,246,0.15); border:1px solid #3b82f6; color:#60a5fa; padding:0 6px; height:22px; border-radius:4px; font-size:10px; font-weight:700; cursor:pointer;">+5</button>
+          <td style="padding: 10px; min-width: 145px;">
+            <div style="margin-bottom: 6px;">${stockBadge}</div>
+            <div class="quick-stock-controls" style="display:inline-flex; align-items:center; background:#0b1120; border:1px solid #334155; border-radius:8px; padding:2px; box-shadow:0 2px 5px rgba(0,0,0,0.4); gap:2px;">
+              <button type="button" class="btn-quick-stock" data-id="${p._id}" data-change="-1" title="Subtract 1 stock" 
+                style="background:#dc2626; color:#ffffff !important; -webkit-text-fill-color:#ffffff !important; width:34px; height:32px; border-radius:6px; font-size:16px; font-weight:900; border:none; cursor:pointer; display:grid; place-items:center; touch-action:manipulation; user-select:none; line-height:1;" aria-label="Decrease stock by 1">
+                −
+              </button>
+              <span style="font-family:var(--font-mono); font-size:13px; font-weight:800; min-width:32px; text-align:center; color:#ffffff !important; -webkit-text-fill-color:#ffffff !important; padding:0 2px;" title="Current in-hand stock">
+                ${stock}
+              </span>
+              <button type="button" class="btn-quick-stock" data-id="${p._id}" data-change="1" title="Add 1 stock" 
+                style="background:#16a34a; color:#ffffff !important; -webkit-text-fill-color:#ffffff !important; width:34px; height:32px; border-radius:6px; font-size:16px; font-weight:900; border:none; cursor:pointer; display:grid; place-items:center; touch-action:manipulation; user-select:none; line-height:1;" aria-label="Increase stock by 1">
+                +
+              </button>
+              <button type="button" class="btn-quick-stock" data-id="${p._id}" data-change="5" title="Quick Restock +5" 
+                style="background:#2563eb; color:#ffffff !important; -webkit-text-fill-color:#ffffff !important; padding:0 8px; height:32px; border-radius:6px; font-size:11px; font-weight:800; border:none; cursor:pointer; display:grid; place-items:center; touch-action:manipulation; user-select:none; margin-left:2px;" aria-label="Increase stock by 5">
+                +5
+              </button>
             </div>
           </td>
           <td style="padding: 12px 10px; text-align: right;">
@@ -1770,13 +1782,85 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
     exportToCsv(`zeshtech-inventory-${Date.now()}.csv`, rows);
   }
 
+  // Live valuation strip updater
+  function updateInventoryStatsInPlace() {
+    if (!Array.isArray(inventoryList)) return;
+    const totalUnits = inventoryList.reduce((acc, p) => acc + (Number(p.stockQuantity) || 0), 0);
+    const costVal = inventoryList.reduce((acc, p) => acc + ((Number(p.purchasePrice) || 0) * (Number(p.stockQuantity) || 0)), 0);
+    const retailVal = inventoryList.reduce((acc, p) => acc + ((Number(p.sellingPrice) || 0) * (Number(p.stockQuantity) || 0)), 0);
+    
+    if ($("#val-total-items")) $("#val-total-items").textContent = `${inventoryList.length} items`;
+    if ($("#val-total-units")) $("#val-total-units").textContent = `${totalUnits} units`;
+    if ($("#val-cost-total")) $("#val-cost-total").textContent = money(costVal);
+    if ($("#val-retail-total")) $("#val-retail-total").textContent = money(retailVal);
+  }
+
   // Stock Adjustment Modal
+  let stockModalCurrentStock = 0;
+
+  function updateStockModalPreview() {
+    const action = $("#stock-adjust-action")?.value || "add";
+    const amount = parseInt($("#stock-adjust-amount")?.value, 10) || 0;
+    const projected = action === "add" ? (stockModalCurrentStock + amount) : Math.max(0, stockModalCurrentStock - amount);
+    const resultEl = $("#stock-projected-result");
+    if (!resultEl) return;
+
+    if (action === "add") {
+      resultEl.textContent = `${projected} units (+${amount})`;
+      resultEl.style.color = "#4ade80";
+    } else {
+      resultEl.textContent = `${projected} units (-${amount})`;
+      resultEl.style.color = (stockModalCurrentStock - amount < 0) ? "#ef4444" : "#f59e0b";
+    }
+  }
+
   function openStockModal(productId, productName, currentStock) {
+    stockModalCurrentStock = parseInt(currentStock, 10) || 0;
     $("#stock-modal-prod-id").value = productId;
     $("#stock-modal-prod-name").textContent = `Adjust Stock: ${productName}`;
-    $("#stock-modal-current-qty").textContent = currentStock;
+    $("#stock-modal-current-qty").textContent = stockModalCurrentStock;
     $("#stock-adjust-amount").value = "5";
+    
+    // Default to 'add'
+    setStockModalAction("add");
+    updateStockModalPreview();
     $("#admin-stock-modal")?.classList.add("active");
+  }
+
+  function setStockModalAction(action) {
+    const actionInput = $("#stock-adjust-action");
+    if (actionInput) actionInput.value = action;
+    const addBtn = $("#stock-btn-action-add");
+    const reduceBtn = $("#stock-btn-action-reduce");
+
+    if (action === "add") {
+      if (addBtn) {
+        addBtn.style.background = "#16a34a";
+        addBtn.style.borderColor = "#22c55e";
+        addBtn.style.color = "#ffffff";
+        addBtn.style.boxShadow = "0 2px 6px rgba(22, 163, 74, 0.4)";
+      }
+      if (reduceBtn) {
+        reduceBtn.style.background = "#1e293b";
+        reduceBtn.style.borderColor = "#334155";
+        reduceBtn.style.color = "#94a3b8";
+        reduceBtn.style.boxShadow = "none";
+      }
+    } else {
+      if (reduceBtn) {
+        reduceBtn.style.background = "#dc2626";
+        reduceBtn.style.borderColor = "#ef4444";
+        reduceBtn.style.color = "#ffffff";
+        reduceBtn.style.boxShadow = "0 2px 6px rgba(220, 38, 38, 0.4)";
+      }
+      if (addBtn) {
+        addBtn.style.background = "#1e293b";
+        addBtn.style.borderColor = "#334155";
+        addBtn.style.color = "#94a3b8";
+        addBtn.style.boxShadow = "none";
+      }
+    }
+    updateStockModalPreview();
   }
 
   async function handleStockAdjustSubmit(e) {
@@ -1791,16 +1875,34 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
       return;
     }
 
+    if (action === "reduce" && amount > stockModalCurrentStock) {
+      showToast(`Cannot reduce by ${amount}. Only ${stockModalCurrentStock} units currently in stock.`, "warning");
+      return;
+    }
+
     const change = action === "add" ? amount : -amount;
 
     try {
       btn.disabled = true;
       btn.textContent = "Updating MongoDB...";
 
-      await zeshAPI.updateStock(id, change);
-      showToast("Stock updated successfully!", "success");
+      const res = await zeshAPI.updateStock(id, change);
+      const newQty = (res && typeof res.newStock === "number")
+        ? res.newStock
+        : ((res?.product && typeof res.product.stockQuantity === "number")
+            ? res.product.stockQuantity
+            : Math.max(0, stockModalCurrentStock + change));
+
+      showToast(`Stock updated successfully! New stock: ${newQty} units`, "success");
 
       $("#admin-stock-modal")?.classList.remove("active");
+
+      const prod = inventoryList.find(p => String(p._id) === String(id));
+      if (prod) {
+        prod.stockQuantity = newQty;
+      }
+      renderInventoryTable();
+      updateInventoryStatsInPlace();
       loadInventoryView();
       loadOverview();
     } catch (err) {
@@ -3739,17 +3841,34 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
         const id = quickStockBtn.dataset.id;
         const change = parseInt(quickStockBtn.dataset.change, 10);
         if (!id || isNaN(change)) return;
+
+        const prod = inventoryList.find(p => String(p._id) === String(id));
+        if (change < 0 && prod && Number(prod.stockQuantity) <= 0) {
+          showToast(`Stock is already 0 for "${prod.name}". Cannot reduce further.`, "warning");
+          return;
+        }
+
         quickStockBtn.disabled = true;
+        quickStockBtn.style.opacity = "0.5";
         try {
           const res = await zeshAPI.updateStock(id, change);
-          showToast(`Stock updated (${change > 0 ? '+' + change : change})`, "success");
-          const prod = inventoryList.find(p => p._id === id);
-          if (prod) prod.stockQuantity = res.product?.stockQuantity ?? (prod.stockQuantity + change);
+          const newQty = (res && typeof res.newStock === "number")
+            ? res.newStock
+            : ((res?.product && typeof res.product.stockQuantity === "number")
+                ? res.product.stockQuantity
+                : (prod ? Math.max(0, Number(prod.stockQuantity) + change) : 0));
+
+          if (prod) {
+            prod.stockQuantity = newQty;
+          }
+          showToast(`Stock updated: ${prod ? prod.name : 'Product'} is now ${newQty} units (${change > 0 ? '+' + change : change})`, "success");
           renderInventoryTable();
+          updateInventoryStatsInPlace();
         } catch (err) {
           showToast(err.message || "Failed to update stock", "error");
         } finally {
           quickStockBtn.disabled = false;
+          quickStockBtn.style.opacity = "1";
         }
         return;
       }
@@ -3787,6 +3906,37 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
       $("#admin-stock-modal")?.classList.remove("active");
     });
     $("#stock-adjust-form")?.addEventListener("submit", handleStockAdjustSubmit);
+    $("#stock-btn-action-add")?.addEventListener("click", () => setStockModalAction("add"));
+    $("#stock-btn-action-reduce")?.addEventListener("click", () => setStockModalAction("reduce"));
+
+    $("#stock-qty-decrement-btn")?.addEventListener("click", () => {
+      const input = $("#stock-adjust-amount");
+      if (input) {
+        input.value = Math.max(1, (parseInt(input.value, 10) || 1) - 1);
+        updateStockModalPreview();
+      }
+    });
+
+    $("#stock-qty-increment-btn")?.addEventListener("click", () => {
+      const input = $("#stock-adjust-amount");
+      if (input) {
+        input.value = Math.min(10000, (parseInt(input.value, 10) || 0) + 1);
+        updateStockModalPreview();
+      }
+    });
+
+    $("#stock-adjust-amount")?.addEventListener("input", updateStockModalPreview);
+
+    $$(".stock-preset-chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        const qty = parseInt(chip.dataset.qty, 10);
+        const input = $("#stock-adjust-amount");
+        if (input && !isNaN(qty)) {
+          input.value = qty;
+          updateStockModalPreview();
+        }
+      });
+    });
 
     // Orders Filter Chips
     $$("[data-order-status]").forEach(btn => {

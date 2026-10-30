@@ -463,7 +463,8 @@ router.patch("/:id/stock", authMiddleware, requireAdmin, async (req, res) => {
       });
     }
 
-    const change = req.body.change;
+    const rawChange = req.body.change;
+    const change = typeof rawChange === "number" ? rawChange : parseInt(rawChange, 10);
 
     if (
       !Number.isSafeInteger(change) ||
@@ -477,8 +478,7 @@ router.patch("/:id/stock", authMiddleware, requireAdmin, async (req, res) => {
     }
 
     const filter = {
-      _id: req.params.id,
-      isActive: true
+      _id: req.params.id
     };
 
     if (change < 0) {
@@ -492,27 +492,37 @@ router.patch("/:id/stock", authMiddleware, requireAdmin, async (req, res) => {
     const product = await Product.findOneAndUpdate(
       filter,
       { $inc: { stockQuantity: change } },
-      { returnDocument: "after", runValidators: true }
+      { new: true, returnDocument: "after", runValidators: true }
     );
 
     if (!product) {
-      const exists = await Product.exists({
-        _id: req.params.id,
-        isActive: true
-      });
+      const existingProduct = await Product.findById(req.params.id).lean();
 
-      return res.status(exists ? 409 : 404).json({
+      if (!existingProduct) {
+        return res.status(404).json({
+          success: false,
+          message: "Product not found"
+        });
+      }
+
+      if (change < 0 && (Number(existingProduct.stockQuantity) || 0) < Math.abs(change)) {
+        return res.status(409).json({
+          success: false,
+          message: `Cannot reduce stock below 0. Current stock is ${Number(existingProduct.stockQuantity) || 0}.`
+        });
+      }
+
+      return res.status(409).json({
         success: false,
-        message: exists
-          ? "Insufficient stock or stock limit reached"
-          : "Product not found"
+        message: "Stock adjustment could not be applied"
       });
     }
 
     return res.json({
       success: true,
       message: "Stock updated successfully",
-      product
+      product,
+      newStock: product.stockQuantity
     });
   } catch (error) {
     return handleError(res, error, "Update stock failed");

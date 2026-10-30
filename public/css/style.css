@@ -6288,3 +6288,66 @@ body.modal-open .floating-whatsapp-btn {
   -webkit-text-fill-color: #64748b !important;
   opacity: 0.8 !important;
 }
+
+
+/* ==========================================================================
+   ADMIN QUICK STOCK & INVENTORY CONTROLS (TOUCH-FRIENDLY & HIGH-CONTRAST)
+   ========================================================================== */
+.quick-stock-controls {
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.quick-stock-controls .btn-quick-stock {
+  transition: transform 0.1s ease, filter 0.1s ease, opacity 0.1s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.quick-stock-controls .btn-quick-stock:hover {
+  filter: brightness(1.2);
+  transform: scale(1.06);
+}
+
+.quick-stock-controls .btn-quick-stock:active {
+  transform: scale(0.92);
+  filter: brightness(0.9);
+}
+
+.stock-action-tab {
+  transition: all 0.15s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.stock-action-tab:active {
+  transform: scale(0.97);
+}
+
+.stock-preset-chip {
+  transition: all 0.12s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.stock-preset-chip:hover {
+  background: #334155 !important;
+  color: #ffffff !important;
+  border-color: #3b82f6 !important;
+}
+
+.stock-preset-chip:active {
+  transform: scale(0.94);
+}
+
+#stock-qty-decrement-btn:hover,
+#stock-qty-increment-btn:hover {
+  background: #334155 !important;
+  border-color: #3b82f6 !important;
+}
+
+#stock-qty-decrement-btn:active,
+#stock-qty-increment-btn:active {
+  transform: scale(0.92);
+}

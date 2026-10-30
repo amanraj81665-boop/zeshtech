@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..800;1,9..40,400..800&family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="/css/style.css?v=5.2">
+  <link rel="stylesheet" href="/css/style.css?v=5.3">
 </head>
 <body class="admin-body">
 
@@ -1338,30 +1338,66 @@
 
   <!-- Quick Stock Adjustment Modal -->
   <div class="modal-backdrop" id="admin-stock-modal">
-    <div class="modal-dialog modal-dialog-small" style="background: #111827; color: white; border: 1px solid var(--dark-border);">
-      <button class="modal-close-btn" id="close-stock-modal" style="background:#1f2937; color:white;">✕</button>
-      <div class="modal-body">
-        <div class="eyebrow" style="color: #60a5fa;">INVENTORY ADJUSTMENT</div>
-        <h2 style="font-size: 18px; color: white; margin-bottom: 8px;" id="stock-modal-prod-name">Adjust Stock</h2>
-        <p style="color: var(--dark-text-muted); font-size: 12px; margin-bottom: 20px;">Current Stock: <b id="stock-modal-current-qty" style="color:white;">0</b> units</p>
+    <div class="modal-dialog modal-dialog-small" style="background: #0f172a; color: white; border: 1px solid #334155; border-radius: 14px; max-width: 440px;">
+      <button class="modal-close-btn" id="close-stock-modal" style="background:#1e293b; color:white;">✕</button>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="eyebrow" style="color: #38bdf8; font-weight: 700; letter-spacing: 0.5px;">INVENTORY STOCK MANAGER</div>
+        <h2 style="font-size: 19px; color: white; margin-bottom: 6px;" id="stock-modal-prod-name">Adjust Stock</h2>
+        <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid #1e293b; border-radius: 8px; padding: 10px 14px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="color: #94a3b8; font-size: 13px;">Current In-Stock:</span>
+          <span style="font-size: 16px; font-weight: 800; color: #38bdf8; font-family: var(--font-mono);"><span id="stock-modal-current-qty">0</span> units</span>
+        </div>
 
         <form id="stock-adjust-form">
           <input type="hidden" id="stock-modal-prod-id">
 
-          <div class="field">
-            <label style="color: #e2e8f0;">Adjustment Action</label>
-            <select id="stock-adjust-action" style="background:#090d16; border-color:var(--dark-border); color:white;">
-              <option value="add">Add Received Stock (+)</option>
-              <option value="reduce">Reduce Stock / Sold Externally (-)</option>
-            </select>
+          <!-- Action Toggle Pills: Add Stock vs Reduce Stock -->
+          <div class="field" style="margin-bottom: 14px;">
+            <label style="color: #e2e8f0; font-size: 12px; font-weight: 700; margin-bottom: 8px; display:block;">Select Action</label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <button type="button" id="stock-btn-action-add" class="stock-action-tab active" data-action="add"
+                style="background: #16a34a; color: white; border: 2px solid #22c55e; border-radius: 8px; padding: 10px; font-size: 13px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 6px rgba(22, 163, 74, 0.4);">
+                <span>➕ Add Stock (+)</span>
+              </button>
+              <button type="button" id="stock-btn-action-reduce" class="stock-action-tab" data-action="reduce"
+                style="background: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 8px; padding: 10px; font-size: 13px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                <span>➖ Reduce Stock (−)</span>
+              </button>
+            </div>
+            <input type="hidden" id="stock-adjust-action" value="add">
           </div>
 
-          <div class="field">
-            <label style="color: #e2e8f0;">Quantity to Change *</label>
-            <input type="number" id="stock-adjust-amount" required min="1" max="10000" value="5" style="background:#090d16; border-color:var(--dark-border); color:white;">
+          <div class="field" style="margin-bottom: 14px;">
+            <label style="color: #e2e8f0; font-size: 12px; font-weight: 700; margin-bottom: 6px; display:block;">Units to Adjust *</label>
+            <div style="display: flex; gap: 8px; align-items: stretch;">
+              <button type="button" id="stock-qty-decrement-btn" style="background: #1e293b; border: 1px solid #334155; color: white; width: 44px; border-radius: 8px; font-size: 20px; font-weight: 900; cursor: pointer; display: grid; place-items: center;">−</button>
+              <input type="number" id="stock-adjust-amount" required min="1" max="10000" value="5" 
+                style="background:#090d16; border: 1.5px solid #3b82f6; border-radius: 8px; color:white; font-size: 18px; font-weight: 800; text-align: center; font-family: var(--font-mono); flex: 1; padding: 10px;">
+              <button type="button" id="stock-qty-increment-btn" style="background: #1e293b; border: 1px solid #334155; color: white; width: 44px; border-radius: 8px; font-size: 20px; font-weight: 900; cursor: pointer; display: grid; place-items: center;">+</button>
+            </div>
           </div>
 
-          <button type="submit" class="btn btn-primary btn-full" id="stock-adjust-submit-btn">Apply Stock Adjustment</button>
+          <!-- Quick Amount Chips -->
+          <div style="margin-bottom: 16px;">
+            <div style="font-size: 11px; color: #94a3b8; margin-bottom: 6px; font-weight: 600;">Quick Presets:</div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <button type="button" class="stock-preset-chip" data-qty="1" style="background:#1e293b; border:1px solid #334155; color:#cbd5e1; border-radius:6px; padding:5px 12px; font-size:12px; font-weight:700; cursor:pointer;">1</button>
+              <button type="button" class="stock-preset-chip" data-qty="2" style="background:#1e293b; border:1px solid #334155; color:#cbd5e1; border-radius:6px; padding:5px 12px; font-size:12px; font-weight:700; cursor:pointer;">2</button>
+              <button type="button" class="stock-preset-chip" data-qty="5" style="background:#1e293b; border:1px solid #334155; color:#cbd5e1; border-radius:6px; padding:5px 12px; font-size:12px; font-weight:700; cursor:pointer;">5</button>
+              <button type="button" class="stock-preset-chip" data-qty="10" style="background:#1e293b; border:1px solid #334155; color:#cbd5e1; border-radius:6px; padding:5px 12px; font-size:12px; font-weight:700; cursor:pointer;">10</button>
+              <button type="button" class="stock-preset-chip" data-qty="25" style="background:#1e293b; border:1px solid #334155; color:#cbd5e1; border-radius:6px; padding:5px 12px; font-size:12px; font-weight:700; cursor:pointer;">25</button>
+            </div>
+          </div>
+
+          <!-- Live Preview Result -->
+          <div id="stock-adjust-preview-bar" style="background: rgba(30, 41, 59, 0.5); border: 1px dashed rgba(56, 189, 248, 0.4); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px; display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: #94a3b8;">Projected Stock:</span>
+            <strong id="stock-projected-result" style="color: #4ade80; font-family: var(--font-mono); font-size: 14px;">0 units (+5)</strong>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-full" id="stock-adjust-submit-btn" style="padding: 12px; font-size: 14px; font-weight: 800; border-radius: 8px;">
+            Apply Stock Adjustment
+          </button>
         </form>
       </div>
     </div>
@@ -1611,9 +1647,9 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Scripts -->
-  <script src="/js/quagga.min.js?v=5.2"></script>
-  <script src="/js/html5-qrcode.min.js?v=5.2"></script>
-  <script src="/js/api.js?v=5.2"></script>
-  <script src="/js/admin.js?v=5.2"></script>
+  <script src="/js/quagga.min.js?v=5.3"></script>
+  <script src="/js/html5-qrcode.min.js?v=5.3"></script>
+  <script src="/js/api.js?v=5.3"></script>
+  <script src="/js/admin.js?v=5.3"></script>
 </body>
 </html>
