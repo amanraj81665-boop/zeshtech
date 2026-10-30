@@ -6179,3 +6179,22 @@ body.modal-open .floating-whatsapp-btn {
 .btn-quick-stock:active {
   transform: scale(0.92);
 }
+
+/* ==========================================================================
+   1-TAP DIRECT UPI APP LAUNCHER BUTTONS
+   ========================================================================== */
+.btn-upi-app {
+  cursor: pointer !important;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-upi-app:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.btn-upi-app:active {
+  transform: scale(0.97) !important;
+  filter: brightness(0.95);
+}

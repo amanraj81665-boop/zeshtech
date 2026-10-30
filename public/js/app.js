@@ -1987,14 +1987,24 @@
         const modalAmount = $("#upi-modal-amount");
         if (modalAmount) modalAmount.textContent = money(total);
 
+        const appsAmountDisplay = $("#upi-apps-amount-display");
+        if (appsAmountDisplay) appsAmountDisplay.textContent = money(total);
+
         const upiVpa = "9122846271-5@ybl";
         const merchantName = "ZESH TECH";
         const note = "ZeshTech Order";
+        const amountStr = total.toFixed(2);
 
-        // Deep-link intent URLs (Universal standard UPI link)
-        const genericUpiUrl = `upi://pay?pa=${upiVpa}&pn=${encodeURIComponent(merchantName)}&cu=INR&tn=${encodeURIComponent(note)}`;
-        const anyUpiBtn = $("#upi-intent-any");
-        if (anyUpiBtn) anyUpiBtn.href = genericUpiUrl;
+        // Deep-link intent URLs (Direct App Launchers with exact amount pre-filled)
+        const phonePeUrl = `phonepe://pay?pa=${upiVpa}&pn=${encodeURIComponent(merchantName)}&am=${amountStr}&cu=INR&tn=${encodeURIComponent(note)}`;
+        const gPayUrl = `tez://upi/pay?pa=${upiVpa}&pn=${encodeURIComponent(merchantName)}&am=${amountStr}&cu=INR&tn=${encodeURIComponent(note)}`;
+        const paytmUrl = `paytmmp://pay?pa=${upiVpa}&pn=${encodeURIComponent(merchantName)}&am=${amountStr}&cu=INR&tn=${encodeURIComponent(note)}`;
+        const universalUpiUrl = `upi://pay?pa=${upiVpa}&pn=${encodeURIComponent(merchantName)}&am=${amountStr}&cu=INR&tn=${encodeURIComponent(note)}`;
+
+        if ($("#upi-btn-phonepe")) $("#upi-btn-phonepe").href = phonePeUrl;
+        if ($("#upi-btn-gpay")) $("#upi-btn-gpay").href = gPayUrl;
+        if ($("#upi-btn-paytm")) $("#upi-btn-paytm").href = paytmUrl;
+        if ($("#upi-btn-universal")) $("#upi-btn-universal").href = universalUpiUrl;
 
         // Close checkout and open PhonePe / UPI modal
         $("#checkout-modal-backdrop")?.classList.remove("active");
@@ -3511,6 +3521,22 @@
       if (e.target.id === "upi-payment-modal-backdrop") {
         $("#upi-payment-modal-backdrop").classList.remove("active");
       }
+    });
+
+    // QR Code collapse toggle
+    $("#toggle-qr-section-btn")?.addEventListener("click", () => {
+      const box = $("#upi-qr-collapse-box");
+      const label = $("#qr-toggle-btn-label");
+      if (!box) return;
+      const isHidden = box.classList.toggle("hidden");
+      if (label) label.textContent = isHidden ? "Show QR Code ▼" : "Hide QR Code ▲";
+    });
+
+    // Feedback toast on clicking any 1-tap UPI app button
+    $$(".btn-upi-app").forEach(btn => {
+      btn.addEventListener("click", () => {
+        showToast("Opening payment app on your device...", "info");
+      });
     });
 
     // Copy UPI ID button
