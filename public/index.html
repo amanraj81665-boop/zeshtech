@@ -64,7 +64,7 @@
   <meta name="google-site-verification" content="Z7vALILzh4yqUGcH_XiTjk33UtpBK2aDWU0j76iP05E" />
   <meta name="google-site-verification" content="epsVB-mPq_NWWWv0wptK8GEftN5h-SJwKRHqW4pBsN4" />
 
-  <link rel="stylesheet" href="/css/style.css?v=5.3">
+  <link rel="stylesheet" href="/css/style.css?v=6.0">
 
   <!-- Official Google Identity Services (GIS) Web SDK -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -107,6 +107,15 @@
         <a href="#catalogue-section" class="nav-link" data-cat="Audio">Audio</a>
       </nav>
 
+      <!-- Location Badge (Visible on Mobile Header) -->
+      <div class="mobile-store-location-badge">
+        <span class="loc-dot">📍</span>
+        <div class="loc-info">
+          <strong>Station Road</strong>
+          <small>Bazidpur, Barh</small>
+        </div>
+      </div>
+
       <div class="header-actions">
         <!-- Digital Warranty Locker Trigger -->
         <button class="btn btn-secondary btn-small" id="open-warranty-locker-btn" type="button" title="Check your device warranty & download tax bills" style="border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
@@ -129,6 +138,127 @@
       </div>
     </div>
   </header>
+
+  <!-- =========================================================================
+       PRO MOBILE APP EXPERIENCE (White Theme • Anand Hardware / Flipkart Grade)
+       ========================================================================= -->
+
+  <!-- 1. Mobile Sticky Top Search Bar -->
+  <div class="mobile-search-strip" id="mobile-top-search-strip">
+    <div class="mobile-search-inner">
+      <div class="mobile-search-box">
+        <svg class="mobile-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" id="mobile-app-search-input" placeholder="Search smartphones, Smart TVs, brands..." autocomplete="off" aria-label="Search Store Products">
+        <button type="button" id="mobile-search-clear-btn" class="mobile-search-clear hidden" aria-label="Clear Search">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Circular Story-Style Category Slider (Horizontal Swipe) -->
+  <div class="mobile-story-category-section" id="mobile-story-category-section">
+    <div class="mobile-story-track" id="mobile-story-track">
+      <button class="story-category-item active" data-category="All" type="button">
+        <div class="story-circle-avatar story-avatar-all">
+          <span class="story-emoji">🌟</span>
+        </div>
+        <span class="story-label">All Tech</span>
+      </button>
+
+      <button class="story-category-item" data-category="Mobile" type="button">
+        <div class="story-circle-avatar">
+          <span class="story-emoji">📱</span>
+        </div>
+        <span class="story-label">Smartphones</span>
+      </button>
+
+      <button class="story-category-item" data-category="Apple" type="button">
+        <div class="story-circle-avatar story-avatar-apple">
+          <span class="story-emoji">🍎</span>
+        </div>
+        <span class="story-label">Apple Store</span>
+      </button>
+
+      <button class="story-category-item" data-category="Television" type="button">
+        <div class="story-circle-avatar">
+          <span class="story-emoji">📺</span>
+        </div>
+        <span class="story-label">Smart TVs</span>
+      </button>
+
+      <button class="story-category-item" data-category="Appliances" type="button">
+        <div class="story-circle-avatar">
+          <span class="story-emoji">🧺</span>
+        </div>
+        <span class="story-label">Appliances</span>
+      </button>
+
+      <button class="story-category-item" data-category="Keypad" type="button">
+        <div class="story-circle-avatar">
+          <span class="story-emoji">⌨️</span>
+        </div>
+        <span class="story-label">Keypads</span>
+      </button>
+
+      <button class="story-category-item" data-category="Charger" type="button">
+        <div class="story-circle-avatar">
+          <span class="story-emoji">⚡</span>
+        </div>
+        <span class="story-label">Chargers</span>
+      </button>
+
+      <button class="story-category-item" data-category="Audio" type="button">
+        <div class="story-circle-avatar">
+          <span class="story-emoji">🎧</span>
+        </div>
+        <span class="story-label">Audio</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. Mobile Promotional Swipeable Carousel (App-Style Hero) -->
+  <div class="mobile-promo-carousel-wrap" id="mobile-promo-carousel">
+    <div class="mobile-promo-slider" id="mobile-promo-slider">
+      <!-- Slide 1: 0% EMI Fest -->
+      <div class="mobile-promo-card promo-card-blue" data-category="Mobile" role="button" tabindex="0">
+        <div class="promo-card-left">
+          <span class="promo-pill">⚡ 0% EASY EMI</span>
+          <div class="promo-heading">Mobile Phone Mela</div>
+          <div class="promo-sub">Bajaj &amp; HDFC 0% EMI • Zero Down Payment • In Barh Store</div>
+          <div class="promo-cta">Shop Smartphones ›</div>
+        </div>
+        <div class="promo-emoji-art">📱</div>
+      </div>
+
+      <!-- Slide 2: Old Phone Exchange -->
+      <div class="mobile-promo-card promo-card-emerald" data-action="whatsapp-exchange" role="button" tabindex="0">
+        <div class="promo-card-left">
+          <span class="promo-pill promo-pill-green">🔄 OLD PHONE EXCHANGE</span>
+          <div class="promo-heading">Exchange &amp; Upgrade</div>
+          <div class="promo-sub">Get Up to ₹3,000 Extra Value on your old phone in 15 mins</div>
+          <div class="promo-cta">Check Exchange Value ›</div>
+        </div>
+        <div class="promo-emoji-art">♻️</div>
+      </div>
+
+      <!-- Slide 3: Smart TVs & Appliances -->
+      <div class="mobile-promo-card promo-card-indigo" data-category="Television" role="button" tabindex="0">
+        <div class="promo-card-left">
+          <span class="promo-pill promo-pill-purple">📺 4K SMART TV FEST</span>
+          <div class="promo-heading">Smart TVs from ₹6,999</div>
+          <div class="promo-sub">Free Installation &amp; Wall-Mount Demo • 1-Yr Official Warranty</div>
+          <div class="promo-cta">Explore Smart TVs ›</div>
+        </div>
+        <div class="promo-emoji-art">📺</div>
+      </div>
+    </div>
+
+    <!-- Carousel Indicator Dots -->
+    <div class="mobile-promo-dots" id="mobile-promo-dots">
+      <span class="promo-dot active" data-index="0"></span>
+      <span class="promo-dot" data-index="1"></span>
+      <span class="promo-dot" data-index="2"></span>
+    </div>
+  </div>
 
   <!-- Hero Section -->
   <section class="hero-section">
@@ -1679,28 +1809,28 @@
       <span>Home</span>
     </a>
     <a href="#catalogue-section" class="mobile-bottom-item" id="mob-nav-shop">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
-      <span>Shop</span>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
+      <span>Mobiles</span>
+    </a>
+    <a href="javascript:void(0)" class="mobile-bottom-item" id="mob-nav-search">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <span>Search</span>
     </a>
     <a href="javascript:void(0)" class="mobile-bottom-item" id="mob-nav-cart">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
       <span>Bag</span>
       <span class="mobile-cart-badge" id="mob-cart-count">0</span>
     </a>
-    <a href="javascript:void(0)" class="mobile-bottom-item" id="mob-nav-orders">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
-      <span>Orders</span>
-    </a>
-    <a href="https://wa.me/917903746116?text=Hello%20ZeshTech%2C%20I%20have%20an%20inquiry" target="_blank" rel="noopener" class="mobile-bottom-item" style="color: #25D366;">
+    <a href="https://wa.me/917903746116?text=Hello%20ZeshTech%2C%20I%20have%20an%20inquiry%20regarding%20products" target="_blank" rel="noopener" class="mobile-bottom-item mob-whatsapp-tab">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
       <span>WhatsApp</span>
     </a>
   </nav>
 
   <!-- Scripts with Cache Busting -->
-  <script src="/js/phoneSpecsData.js?v=5.3"></script>
-  <script src="/js/api.js?v=5.3"></script>
-  <script src="/js/app.js?v=5.3"></script>
+  <script src="/js/phoneSpecsData.js?v=6.0"></script>
+  <script src="/js/api.js?v=6.0"></script>
+  <script src="/js/app.js?v=6.0"></script>
   <script>
     // PWA Service Worker Registration
     if ('serviceWorker' in navigator) {

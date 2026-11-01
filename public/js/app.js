@@ -401,6 +401,11 @@
         (p.sku && p.sku.includes("KEYPAD")) ||
         (p.name && p.name.toLowerCase().includes("keypad"))
       );
+    } else if (currentCategory === "Audio") {
+      filtered = filtered.filter(p =>
+        ["Earphones", "Headphones", "Speaker", "Audio"].includes(p.category) ||
+        (p.category && p.category.toLowerCase().includes("audio"))
+      );
     } else if (currentCategory && currentCategory !== "All") {
       filtered = filtered.filter(p => p.category === currentCategory);
     }
@@ -3582,6 +3587,148 @@
         showToast("PhonePe Mobile Number (9122846271) copied to clipboard!", "success");
       } catch (err) {
         showToast("PhonePe Number: 9122846271", "info");
+      }
+    });
+
+    // =========================================================================
+    // MOBILE APP ENGINE (Story Categories, Sticky Search, Promo Carousel, Nav)
+    // =========================================================================
+
+    // Helper: Select Category across all UI components (Stories, Chips, Main Nav)
+    function setAppCategory(cat) {
+      currentCategory = cat || "All";
+
+      // 1. Sync Story Category circles
+      document.querySelectorAll("#mobile-story-track .story-category-item").forEach(item => {
+        item.classList.toggle("active", (item.dataset.category || "All") === currentCategory);
+      });
+
+      // 2. Sync Category chips
+      document.querySelectorAll("#category-chips .category-chip").forEach(chip => {
+        chip.classList.toggle("active", (chip.dataset.category || "All") === currentCategory);
+      });
+
+      // 3. Sync Main Nav (Desktop)
+      document.querySelectorAll(".main-nav .nav-link").forEach(link => {
+        link.classList.toggle("active", (link.dataset.cat || "All") === currentCategory);
+      });
+
+      fetchCatalogue();
+    }
+
+    // Story-Style Circular Categories Click Handler
+    document.querySelector("#mobile-story-track")?.addEventListener("click", (e) => {
+      const item = e.target.closest(".story-category-item");
+      if (!item) return;
+
+      const cat = item.dataset.category || "All";
+      setAppCategory(cat);
+
+      // Smooth scroll to product grid
+      const catSec = document.querySelector("#catalogue-section");
+      if (catSec) {
+        catSec.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+
+    // Mobile Top Search Input Synchronization
+    const mobSearchInput = document.querySelector("#mobile-app-search-input");
+    const mobSearchClearBtn = document.querySelector("#mobile-search-clear-btn");
+    let mobSearchDebounce;
+
+    mobSearchInput?.addEventListener("input", (e) => {
+      const val = e.target.value;
+      if (mobSearchClearBtn) {
+        mobSearchClearBtn.classList.toggle("hidden", val.length === 0);
+      }
+
+      // Sync desktop search input
+      const deskSearch = document.querySelector("#product-search-input");
+      if (deskSearch) deskSearch.value = val;
+
+      clearTimeout(mobSearchDebounce);
+      mobSearchDebounce = setTimeout(() => {
+        searchKeyword = val.trim();
+        applyFiltersAndRender();
+      }, 200);
+    });
+
+    mobSearchClearBtn?.addEventListener("click", () => {
+      if (mobSearchInput) mobSearchInput.value = "";
+      mobSearchClearBtn.classList.add("hidden");
+
+      const deskSearch = document.querySelector("#product-search-input");
+      if (deskSearch) deskSearch.value = "";
+
+      searchKeyword = "";
+      applyFiltersAndRender();
+      mobSearchInput?.focus();
+    });
+
+    // Mobile Promotional Banner Carousel Clicks & Auto-Slide
+    const promoSlider = document.querySelector("#mobile-promo-slider");
+    const promoDots = document.querySelectorAll("#mobile-promo-dots .promo-dot");
+
+    // Click handler for promo cards
+    promoSlider?.addEventListener("click", (e) => {
+      const card = e.target.closest(".mobile-promo-card");
+      if (!card) return;
+
+      if (card.dataset.action === "whatsapp-exchange") {
+        window.open("https://wa.me/917903746116?text=" + encodeURIComponent("Hello ZeshTech, I want to check my old phone exchange value at your Barh store."), "_blank");
+        return;
+      }
+
+      const cat = card.dataset.category;
+      if (cat) {
+        setAppCategory(cat);
+        const catSec = document.querySelector("#catalogue-section");
+        if (catSec) catSec.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+
+    // Update promo dots on scroll
+    promoSlider?.addEventListener("scroll", () => {
+      const scrollLeft = promoSlider.scrollLeft;
+      const width = promoSlider.clientWidth || 1;
+      const activeIdx = Math.round(scrollLeft / width);
+      promoDots.forEach((dot, i) => {
+        dot.classList.toggle("active", i === activeIdx);
+      });
+    }, { passive: true });
+
+    // Promo dots click
+    promoDots.forEach((dot) => {
+      dot.addEventListener("click", () => {
+        const idx = parseInt(dot.dataset.index || "0", 10);
+        if (promoSlider) {
+          promoSlider.scrollTo({
+            left: idx * promoSlider.clientWidth,
+            behavior: "smooth"
+          });
+        }
+      });
+    });
+
+    // Mobile Bottom Navigation Bar Actions
+    document.querySelector("#mob-nav-home")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      setAppCategory("All");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    document.querySelector("#mob-nav-shop")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      setAppCategory("Mobile");
+      const catSec = document.querySelector("#catalogue-section");
+      if (catSec) catSec.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    document.querySelector("#mob-nav-search")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (mobSearchInput) {
+        mobSearchInput.scrollIntoView({ behavior: "smooth", block: "center" });
+        setTimeout(() => mobSearchInput.focus(), 300);
       }
     });
 
