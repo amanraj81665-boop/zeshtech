@@ -24,6 +24,19 @@ app.use(
   })
 );
 
+// Canonical Domain Redirect: Automatically forward all *.onrender.com traffic to official https://www.zeshtech.in
+app.use((req, res, next) => {
+  const host = req.get("host") || "";
+  if (host.includes("onrender.com")) {
+    // Keep /api/health responding directly so UptimeRobot can keep the server warm
+    if (req.path === "/api/health") {
+      return next();
+    }
+    return res.redirect(301, `https://www.zeshtech.in${req.originalUrl}`);
+  }
+  next();
+});
+
 // High Security Headers
 app.disable("x-powered-by");
 app.use(
