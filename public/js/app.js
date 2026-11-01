@@ -2578,8 +2578,60 @@
   }
 
   /* ==========================================================================
-     Customer Authentication Modal
+     Customer Authentication Modal & Navigation Controls
      ========================================================================== */
+
+  function hideAllAuthSubviews() {
+    $("#auth-main-view")?.classList.remove("hidden");
+    $("#auth-google-view")?.classList.add("hidden");
+    $("#auth-whatsapp-view")?.classList.add("hidden");
+    $("#auth-social-view")?.classList.add("hidden");
+    $("#auth-forgot-view")?.classList.add("hidden");
+
+    // Update back button text if present
+    const backText = $("#auth-back-nav-text");
+    if (backText) backText.textContent = "Close";
+  }
+  window.hideAllAuthSubviews = hideAllAuthSubviews;
+
+  function closeAuthModal(updateHistory = true) {
+    const modal = $("#auth-modal-backdrop");
+    if (modal) {
+      modal.classList.remove("active");
+    }
+    hideAllAuthSubviews();
+    unlockBodyScroll();
+    if (updateHistory && window.history.state && window.history.state.modalOpen === "auth") {
+      try {
+        window.history.back();
+      } catch (e) {}
+    }
+  }
+  window.closeAuthModal = closeAuthModal;
+
+  function handleAuthBackAction() {
+    const googleView = $("#auth-google-view");
+    const forgotView = $("#auth-forgot-view");
+    const waStepOtp = $("#wa-step-otp");
+
+    if (googleView && !googleView.classList.contains("hidden")) {
+      hideAllAuthSubviews();
+      return;
+    }
+    if (forgotView && !forgotView.classList.contains("hidden")) {
+      hideAllAuthSubviews();
+      return;
+    }
+    if (waStepOtp && !waStepOtp.classList.contains("hidden")) {
+      waStepOtp.classList.add("hidden");
+      $("#wa-step-phone")?.classList.remove("hidden");
+      $("#wa-phone-input")?.focus();
+      return;
+    }
+    // Main view active: back button acts as close
+    closeAuthModal();
+  }
+  window.handleAuthBackAction = handleAuthBackAction;
 
   function openAuthModal(mode = "otp") {
     const modal = $("#auth-modal-backdrop");
@@ -2592,6 +2644,10 @@
 
     modal.classList.add("active");
     lockBodyScroll();
+
+    try {
+      window.history.pushState({ modalOpen: "auth" }, "");
+    } catch (e) {}
   }
 
   function switchAuthTab(tab) {
@@ -3910,13 +3966,57 @@
       }
     });
 
-    // Auth Modal
-    $("#close-auth-modal-btn")?.addEventListener("click", () => {
-      $("#auth-modal-backdrop")?.classList.remove("active");
-    });
+    // Auth Modal Close & Back Controls
+    const authCloseBtn = $("#close-auth-modal-btn");
+    if (authCloseBtn) {
+      authCloseBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        closeAuthModal();
+      });
+      authCloseBtn.addEventListener("touchend", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        closeAuthModal();
+      }, { passive: false });
+    }
+
+    const authUniversalBackBtn = $("#auth-universal-back-btn");
+    if (authUniversalBackBtn) {
+      authUniversalBackBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        handleAuthBackAction();
+      });
+      authUniversalBackBtn.addEventListener("touchend", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        handleAuthBackAction();
+      }, { passive: false });
+    }
+
     $("#auth-modal-backdrop")?.addEventListener("click", (e) => {
       if (e.target.id === "auth-modal-backdrop") {
-        $("#auth-modal-backdrop").classList.remove("active");
+        e.preventDefault();
+        closeAuthModal();
+      }
+    });
+
+    // Mobile / Browser Popstate (Android Back Button)
+    window.addEventListener("popstate", (e) => {
+      const modal = $("#auth-modal-backdrop");
+      if (modal && modal.classList.contains("active")) {
+        closeAuthModal(false);
+      }
+    });
+
+    // Keyboard ESC key closes modal
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" || e.keyCode === 27) {
+        const modal = $("#auth-modal-backdrop");
+        if (modal && modal.classList.contains("active")) {
+          closeAuthModal();
+        }
       }
     });
     $("#auth-tab-otp")?.addEventListener("click", () => switchAuthTab("otp"));
@@ -3931,14 +4031,7 @@
     });
     setupPasswordEyeToggles();
 
-    // Auth Modal Sub-Views Manager
-    function hideAllAuthSubviews() {
-      $("#auth-main-view")?.classList.remove("hidden");
-      $("#auth-google-view")?.classList.add("hidden");
-      $("#auth-whatsapp-view")?.classList.add("hidden");
-      $("#auth-social-view")?.classList.add("hidden");
-      $("#auth-forgot-view")?.classList.add("hidden");
-    }
+    // Auth Modal Sub-Views Manager (uses top-level hideAllAuthSubviews)
 
     // "Back to login options" in all sub-views
     document.querySelectorAll(".btn-back-to-auth").forEach(btn => {

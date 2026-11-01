@@ -7204,3 +7204,62 @@ body.modal-open .floating-whatsapp-btn {
   border-color: #2563eb !important;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
 }
+
+/* Auth Modal Navigation Bar with Back & Cross buttons */
+.auth-modal-nav-bar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  z-index: 100002 !important;
+}
+
+.auth-back-nav-btn {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #1e293b !important;
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 6px 12px !important;
+  border-radius: 9999px !important;
+  transition: all 0.15s ease !important;
+  touch-action: manipulation !important;
+  user-select: none !important;
+}
+
+.auth-back-nav-btn:hover,
+.auth-back-nav-btn:active {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+  transform: translateX(-1px) !important;
+}
+
+#auth-modal-backdrop .modal-close-btn {
+  position: static !important;
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  border-radius: 50% !important;
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border: 1.5px solid #cbd5e1 !important;
+  display: grid !important;
+  place-items: center !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+}
+
+#auth-modal-backdrop .modal-close-btn:hover,
+#auth-modal-backdrop .modal-close-btn:active {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+  border-color: #ef4444 !important;
+}
