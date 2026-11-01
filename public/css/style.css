@@ -6363,7 +6363,8 @@ body.modal-open .floating-whatsapp-btn {
 .mobile-store-location-badge,
 .mobile-search-strip,
 .mobile-story-category-section,
-.mobile-promo-carousel-wrap {
+.mobile-promo-carousel-wrap,
+.brand-sub-location {
   display: none;
 }
 
@@ -6416,22 +6417,30 @@ body.modal-open .floating-whatsapp-btn {
   }
 
   .brand {
+    display: flex !important;
+    align-items: center !important;
     gap: 8px !important;
+    text-decoration: none !important;
+    flex-shrink: 0 !important;
+    max-width: 65% !important;
   }
   .brand-logo-img {
-    height: 34px !important;
+    height: 36px !important;
     width: auto !important;
+    flex-shrink: 0 !important;
   }
   .brand-text {
     display: flex !important;
     flex-direction: column !important;
-    line-height: 1.1 !important;
+    justify-content: center !important;
+    line-height: 1.15 !important;
   }
   .brand-name {
     font-size: 16px !important;
     font-weight: 900 !important;
     color: #0f172a !important;
     letter-spacing: -0.3px !important;
+    white-space: nowrap !important;
   }
   .brand-name span {
     color: #2563eb !important;
@@ -6440,24 +6449,22 @@ body.modal-open .floating-whatsapp-btn {
     display: none !important;
   }
 
-  /* Location subtitle in header */
-  .mobile-store-location-badge {
+  /* Stacked Location Subtitle right under ZESH TECH in brand */
+  .brand-sub-location {
     display: flex !important;
     align-items: center !important;
-    gap: 4px !important;
-    padding: 3px 8px !important;
-    background: #f0f9ff !important;
-    border: 1px solid #bae6fd !important;
-    border-radius: 999px !important;
-    font-size: 10.5px !important;
-    color: #0284c7 !important;
+    gap: 3px !important;
+    font-size: 10px !important;
     font-weight: 700 !important;
+    color: #0284c7 !important;
+    white-space: nowrap !important;
+    margin-top: 1px !important;
   }
-  .mobile-store-location-badge strong {
-    font-size: 11px !important;
-    color: #0369a1 !important;
+  .brand-sub-location .loc-pin {
+    font-size: 10px !important;
   }
-  .mobile-store-location-badge small {
+
+  .mobile-store-location-badge {
     display: none !important;
   }
 
@@ -6466,6 +6473,7 @@ body.modal-open .floating-whatsapp-btn {
     display: flex !important;
     align-items: center !important;
     gap: 6px !important;
+    flex-shrink: 0 !important;
   }
   #open-warranty-locker-btn {
     padding: 6px 9px !important;
@@ -6506,16 +6514,15 @@ body.modal-open .floating-whatsapp-btn {
     place-items: center !important;
   }
 
-  /* 3. Sticky App Search Bar directly under Header */
+  /* 3. App Search Bar directly under Header (normal flow, 0 overlap) */
   .mobile-search-strip {
     display: block !important;
-    position: sticky !important;
-    top: 50px !important;
-    z-index: 880 !important;
+    position: relative !important;
+    z-index: 10 !important;
     background: #ffffff !important;
     padding: 8px 12px 10px !important;
     border-bottom: 1px solid #f1f5f9 !important;
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04) !important;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03) !important;
   }
   .mobile-search-box {
     display: flex !important;
