@@ -467,15 +467,15 @@
         <article class="product-card" data-product-id="${escapeHTML(product._id)}">
           <!-- Image Cutlet Box -->
           <div class="product-thumbnail-box view-details-btn" data-id="${escapeHTML(product._id)}" title="Click to view details">
-            <!-- Top-Left Badge -->
+            <!-- Top-Left Badge (High-Impact Discount / Stock Pill) -->
             ${isOut ? `
-              <span class="card-badge-pill out-of-stock">Out of Stock</span>
+              <span class="card-badge-pill out-of-stock">Sold Out</span>
             ` : isLow ? `
-              <span class="card-badge-pill low-stock">🔥 Only ${stock} left</span>
+              <span class="card-badge-pill low-stock">⚡ Only ${stock} Left</span>
+            ` : discountPct > 5 ? `
+              <span class="card-badge-pill discount-top-pill">${discountPct}% OFF</span>
             ` : `
-              <span class="card-badge-pill assured-badge">
-                <span class="star-sparkle">★</span> Zesh Assured
-              </span>
+              <span class="card-badge-pill assured-badge">★ Assured</span>
             `}
 
             <!-- Top-Right Wishlist Button -->
@@ -507,12 +507,6 @@
               <span class="rating-count">(${reviews})</span>
             </div>
 
-            <!-- Quick Compare Button for Mobile Phones -->
-            ${product.category === "Mobile" ? `
-              <button class="card-compare-pill compare-this-btn" data-id="${escapeHTML(product._id)}" title="Compare this phone" type="button">
-                ⚖️ Compare
-              </button>
-            ` : ""}
           </div>
 
           <!-- Product Body Content -->
