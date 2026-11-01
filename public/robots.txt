@@ -4,4 +4,4 @@ Allow: /
 Disallow: /admin.html
 Disallow: /api/admin/
 
-Sitemap: https://zeshtech.onrender.com/sitemap.xml
+Sitemap: https://www.zeshtech.in/sitemap.xml
