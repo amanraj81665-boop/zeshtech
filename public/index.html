@@ -64,7 +64,7 @@
   <meta name="google-site-verification" content="Z7vALILzh4yqUGcH_XiTjk33UtpBK2aDWU0j76iP05E" />
   <meta name="google-site-verification" content="epsVB-mPq_NWWWv0wptK8GEftN5h-SJwKRHqW4pBsN4" />
 
-  <link rel="stylesheet" href="/css/style.css?v=6.3">
+  <link rel="stylesheet" href="/css/style.css?v=6.4">
 
   <!-- Official Google Identity Services (GIS) Web SDK -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -1150,80 +1150,219 @@
     </div>
   </div>
 
-  <!-- Customer Auth Modal (Sign In / Register) -->
+  <!-- Customer Auth Modal (Sign In / Register / Mobile OTP) -->
   <div class="modal-backdrop" id="auth-modal-backdrop" onclick="if(event.target === this) this.classList.remove('active');">
-    <div class="modal-dialog modal-dialog-small">
+    <div class="modal-dialog modal-dialog-small" style="max-width: 440px;">
       <button class="modal-close-btn" id="close-auth-modal-btn" type="button" aria-label="Close" onclick="document.getElementById('auth-modal-backdrop').classList.remove('active');">✕</button>
-      <div class="modal-body" style="padding: 28px;">
-        <!-- Main Auth View (Tabs + Social Buttons + Email/Password Form) -->
+      <div class="modal-body" style="padding: 24px 20px;">
+        <!-- Main Auth View (Tabs + Google 1-Tap + Phone OTP / Password / Register) -->
         <div id="auth-main-view">
-        <div class="eyebrow" id="auth-modal-eyebrow">WELCOME TO ZESH-TECH</div>
-        <h2 style="font-size: 22px; margin-bottom: 6px;" id="auth-modal-heading">Sign In to Your Account</h2>
-        <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;" id="auth-modal-subtext">Access your orders, tracking, and warranty details.</p>
+          <!-- Brand & Store Header -->
+          <div class="auth-brand-strip" style="text-align: center; margin-bottom: 12px;">
+            <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(37, 99, 235, 0.08); padding: 4px 12px; border-radius: 999px; margin-bottom: 8px;">
+              <span style="font-size: 11px; font-weight: 800; color: #2563eb; letter-spacing: 0.5px;">📍 OFFICIAL STORE • STATION ROAD, BARH</span>
+            </div>
+            <h2 style="font-size: 21px; font-weight: 900; margin: 0 0 4px; color: #0f172a; letter-spacing: -0.3px;" id="auth-modal-heading">ZESH TECH Portal</h2>
+            <p style="color: #64748b; font-size: 12.5px; margin: 0;" id="auth-modal-subtext">Access your orders, tracking, warranty locker &amp; fast checkout.</p>
+          </div>
 
-        <!-- Mode Toggle Tabs -->
-        <div style="display: flex; background: var(--surface-alt); border-radius: var(--radius-md); padding: 4px; margin-bottom: 16px;">
-          <button type="button" class="btn btn-full btn-small" id="auth-tab-login" style="background: white; box-shadow: var(--shadow-xs);">Sign In</button>
-          <button type="button" class="btn btn-full btn-small" id="auth-tab-register" style="color: var(--text-muted);">Create Account</button>
-        </div>
+          <!-- Value Perks Banner -->
+          <div class="auth-perks-banner" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px 8px; margin-bottom: 14px; text-align: center;">
+            <div>
+              <div style="font-size: 15px;">🚚</div>
+              <div style="font-size: 10.5px; font-weight: 800; color: #0f172a; margin-top: 2px;">Barh Express</div>
+              <div style="font-size: 9px; color: #64748b;">Fast Delivery</div>
+            </div>
+            <div style="border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+              <div style="font-size: 15px;">🛡️</div>
+              <div style="font-size: 10.5px; font-weight: 800; color: #0f172a; margin-top: 2px;">Warranty Locker</div>
+              <div style="font-size: 9px; color: #64748b;">100% Genuine</div>
+            </div>
+            <div>
+              <div style="font-size: 15px;">🧾</div>
+              <div style="font-size: 10.5px; font-weight: 800; color: #0f172a; margin-top: 2px;">GST Invoices</div>
+              <div style="font-size: 9px; color: #64748b;">Paperless Bills</div>
+            </div>
+          </div>
 
-        <!-- Quick Social Sign-In Options (Google, Facebook, WhatsApp, Apple) -->
-        <div class="social-auth-grid">
-          <!-- Google / Gmail -->
-          <button type="button" class="btn-social btn-social-google" id="social-btn-google">
+          <!-- Google 1-Tap CTA -->
+          <button type="button" class="btn-social btn-social-google" id="social-btn-google" style="height: 44px; font-weight: 700; border-radius: 10px; border: 1.5px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 12px;">
             <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
-            <span>Continue with Google / Gmail</span>
+            <span>Continue with Google (1-Tap)</span>
           </button>
 
-          <!-- Facebook -->
-          <button type="button" class="btn-social btn-social-fb" id="social-btn-facebook">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-            <span>Continue with Facebook</span>
-          </button>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-            <!-- WhatsApp Quick Sign In -->
-            <button type="button" class="btn-social btn-social-whatsapp" id="social-btn-whatsapp" style="font-size: 11.5px; padding: 8px 6px;">
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-              <span>WhatsApp Login</span>
-            </button>
-
-            <!-- Apple ID -->
-            <button type="button" class="btn-social btn-social-apple" id="social-btn-apple" style="font-size: 11.5px; padding: 8px 6px;">
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.36c.64-.78 1.08-1.86.96-2.95-1 .04-2.12.67-2.77 1.44-.57.67-1.08 1.76-.94 2.83 1.12.09 2.15-.58 2.75-1.32"/></svg>
-              <span>Apple ID</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="social-auth-separator">
-          <span>OR CONTINUE WITH EMAIL</span>
-        </div>
-
-        <form id="auth-form">
-          <div class="field hidden" id="auth-name-field">
-            <label>Full Name *</label>
-            <input type="text" id="auth-name-input" placeholder="e.g. Aman Raj">
+          <div class="social-auth-separator" style="margin: 0 0 12px;">
+            <span>OR SIGN IN WITH</span>
           </div>
 
-          <div class="field">
-            <label>Email Address *</label>
-            <input type="email" id="auth-email-input" required placeholder="your.name@example.com">
+          <!-- 3-Tab Segmented Selector -->
+          <div class="auth-segmented-nav" style="display: flex; background: #f1f5f9; border-radius: 10px; padding: 3px; margin-bottom: 14px; gap: 4px;">
+            <button type="button" class="auth-segmented-btn active" id="auth-tab-otp" style="flex: 1; padding: 8px 4px; border: none; border-radius: 8px; font-size: 12px; font-weight: 800; cursor: pointer; transition: all 0.15s ease; background: white; color: #0f172a; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">📱 Mobile OTP</button>
+            <button type="button" class="auth-segmented-btn" id="auth-tab-login" style="flex: 1; padding: 8px 4px; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.15s ease; background: transparent; color: #64748b;">🔑 Password</button>
+            <button type="button" class="auth-segmented-btn" id="auth-tab-register" style="flex: 1; padding: 8px 4px; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.15s ease; background: transparent; color: #64748b;">✨ Register</button>
           </div>
 
-          <div class="field">
-            <label>Password *</label>
-            <input type="password" id="auth-password-input" required minlength="8" placeholder="Minimum 8 characters">
+          <!-- PANE 1: Mobile OTP Login (Default, Fastest) -->
+          <div id="auth-pane-otp">
+            <!-- Step 1: Phone input -->
+            <div id="wa-step-phone">
+              <div class="field" style="margin-bottom: 10px;">
+                <label style="font-size: 12px; font-weight: 700; color: #1e293b;">10-Digit Mobile Number *</label>
+                <div style="display: flex; gap: 8px;">
+                  <span style="background: #f8fafc; border: 1.5px solid #cbd5e1; padding: 10px 12px; border-radius: 10px; font-weight: 800; font-size: 13.5px; color: #0f172a; display: flex; align-items: center; gap: 4px;">
+                    <span>🇮🇳</span><span>+91</span>
+                  </span>
+                  <input type="tel" id="wa-phone-input" placeholder="98765 43210" maxlength="10" inputmode="numeric" required autocomplete="tel" style="flex: 1; font-size: 15px; font-weight: 700; letter-spacing: 1px; border-radius: 10px;">
+                </div>
+              </div>
+
+              <div class="field" style="margin-bottom: 12px;">
+                <label style="font-size: 12px; font-weight: 700; color: #1e293b;">Your Name (Optional)</label>
+                <input type="text" id="wa-name-input" placeholder="e.g. Rahul Sharma" autocomplete="name" style="border-radius: 10px;">
+              </div>
+
+              <div id="wa-phone-alert" class="badge badge-danger hidden" style="width: 100%; padding: 10px; margin-bottom: 12px; border-radius: var(--radius-md);"></div>
+
+              <button type="button" class="btn btn-full btn-large" id="wa-send-otp-btn" style="background: #25D366; color: white; font-weight: 800; font-size: 14px; padding: 13px; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(37,211,102,0.35);">
+                <span>📲 Get WhatsApp OTP (Fast &amp; Free)</span>
+              </button>
+            </div>
+
+            <!-- Step 2: OTP Verification -->
+            <div id="wa-step-otp" class="hidden">
+              <div id="wa-incoming-pill" style="background: rgba(37, 211, 102, 0.12); border: 1px solid rgba(37, 211, 102, 0.4); border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                <div style="font-size: 12px; line-height: 1.4;">
+                  <span style="color: #16a34a; font-weight: 800; display: block;">🟢 OTP Arrived:</span>
+                  <span style="font-family: var(--font-mono); font-size: 16px; font-weight: 800; color: #0f172a;" id="wa-received-otp-text">123456</span>
+                </div>
+                <button type="button" id="wa-auto-fill-btn" style="background: #25D366; color: white; border: none; font-size: 11px; font-weight: 800; padding: 6px 12px; border-radius: 6px; cursor: pointer;">
+                  1-Tap Auto Fill
+                </button>
+              </div>
+
+              <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+                <button type="button" id="wa-change-phone-btn" style="background: none; border: none; color: #2563eb; font-size: 11.5px; font-weight: 700; cursor: pointer; padding: 0;">
+                  ← Change Mobile Number
+                </button>
+                <a href="#" target="_blank" id="wa-chat-link" style="color: #16a34a; font-size: 11.5px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                  <span>💬 Open WhatsApp</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                </a>
+              </div>
+
+              <p style="font-size: 12px; color: var(--text-muted); text-align: center; margin-bottom: 8px;">
+                Enter 6-digit verification code below:
+              </p>
+
+              <div class="otp-inputs-row">
+                <input type="text" inputmode="numeric" class="otp-digit-box" maxlength="1" data-index="0" autofocus>
+                <input type="text" inputmode="numeric" class="otp-digit-box" maxlength="1" data-index="1">
+                <input type="text" inputmode="numeric" class="otp-digit-box" maxlength="1" data-index="2">
+                <input type="text" inputmode="numeric" class="otp-digit-box" maxlength="1" data-index="3">
+                <input type="text" inputmode="numeric" class="otp-digit-box" maxlength="1" data-index="4">
+                <input type="text" inputmode="numeric" class="otp-digit-box" maxlength="1" data-index="5">
+              </div>
+
+              <div id="wa-otp-alert" class="badge badge-danger hidden" style="width: 100%; padding: 10px; margin-bottom: 12px; border-radius: var(--radius-md);"></div>
+
+              <button type="button" class="btn btn-full btn-large" id="wa-verify-otp-btn" style="background: #22c55e; color: white; font-weight: 800; font-size: 14px; padding: 13px; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(34,197,94,0.35);">
+                <span>✓ Verify OTP &amp; Sign In</span>
+              </button>
+
+              <div style="text-align: center; margin-top: 12px;">
+                <button type="button" id="wa-resend-btn" disabled style="background: none; border: none; color: var(--text-muted); font-size: 12px; cursor: pointer;">
+                  Resend OTP in <span id="wa-countdown">30</span>s
+                </button>
+              </div>
+            </div>
           </div>
 
-          <div id="auth-alert-msg" class="badge badge-danger hidden" style="width: 100%; padding: 10px; margin-bottom: 16px; border-radius: var(--radius-md);"></div>
+          <!-- PANE 2: Password Login (Mobile or Email + Password) -->
+          <div id="auth-pane-login" class="hidden">
+            <form id="auth-form">
+              <div class="field" style="margin-bottom: 12px;">
+                <label style="font-size: 12px; font-weight: 700; color: #1e293b;">Mobile Number or Email *</label>
+                <input type="text" id="auth-email-input" placeholder="e.g. 9876543210 or yourname@gmail.com" required autocomplete="username" style="border-radius: 10px;">
+              </div>
 
-          <div style="display: flex; justify-content: flex-end; margin-top: -6px; margin-bottom: 14px;">
-            <button type="button" id="open-customer-forgot-btn" style="background: none; border: none; color: #2563eb; cursor: pointer; font-size: 12px; font-weight: 700; padding: 0; text-decoration: underline;">Forgot Password?</button>
+              <div class="field" style="margin-bottom: 6px;">
+                <label style="font-size: 12px; font-weight: 700; color: #1e293b;">Password *</label>
+                <div style="position: relative;">
+                  <input type="password" id="auth-password-input" minlength="8" placeholder="Enter your password" required autocomplete="current-password" style="padding-right: 42px; border-radius: 10px;">
+                  <button type="button" class="password-eye-toggle-btn" data-target="auth-password-input" aria-label="Toggle password visibility">
+                    <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <svg class="eye-closed hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div style="display: flex; justify-content: flex-end; margin-bottom: 14px;">
+                <button type="button" id="open-customer-forgot-btn" style="background: none; border: none; color: #2563eb; cursor: pointer; font-size: 12px; font-weight: 700; padding: 0;">Forgot Password?</button>
+              </div>
+
+              <div id="auth-alert-msg" class="badge badge-danger hidden" style="width: 100%; padding: 10px; margin-bottom: 14px; border-radius: var(--radius-md);"></div>
+
+              <button type="submit" class="btn btn-primary btn-full btn-large" id="auth-submit-btn" style="font-weight: 800; border-radius: 10px; padding: 13px;">Sign In with Password</button>
+            </form>
           </div>
 
-          <button type="submit" class="btn btn-primary btn-full btn-large" id="auth-submit-btn">Sign In</button>
-        </form>
+          <!-- PANE 3: Customer Registration (Name + Mobile + Email + Password) -->
+          <div id="auth-pane-register" class="hidden">
+            <form id="auth-register-form">
+              <div class="field" style="margin-bottom: 10px;">
+                <label style="font-size: 12px; font-weight: 700; color: #1e293b;">Full Name *</label>
+                <input type="text" id="auth-register-name-input" placeholder="e.g. Rahul Sharma" required autocomplete="name" style="border-radius: 10px;">
+              </div>
+
+              <div class="field" style="margin-bottom: 10px;">
+                <label style="font-size: 12px; font-weight: 700; color: #1e293b;">10-Digit Mobile Number * (For Barh Delivery &amp; Warranty)</label>
+                <div style="display: flex; gap: 8px;">
+                  <span style="background: #f8fafc; border: 1.5px solid #cbd5e1; padding: 10px 12px; border-radius: 10px; font-weight: 800; font-size: 13.5px; color: #0f172a; display: flex; align-items: center; gap: 4px;">
+                    <span>🇮🇳</span><span>+91</span>
+                  </span>
+                  <input type="tel" id="auth-register-phone-input" placeholder="98765 43210" maxlength="10" inputmode="numeric" required autocomplete="tel" style="flex: 1; font-size: 15px; font-weight: 700; letter-spacing: 1px; border-radius: 10px;">
+                </div>
+              </div>
+
+              <div class="field" style="margin-bottom: 10px;">
+                <label style="font-size: 12px; font-weight: 700; color: #1e293b;">Email Address * (For GST Invoice)</label>
+                <input type="email" id="auth-register-email-input" placeholder="your.name@gmail.com" required autocomplete="email" style="border-radius: 10px;">
+              </div>
+
+              <div class="field" style="margin-bottom: 14px;">
+                <label style="font-size: 12px; font-weight: 700; color: #1e293b;">Create Password * (Min 8 Characters)</label>
+                <div style="position: relative;">
+                  <input type="password" id="auth-register-password-input" minlength="8" placeholder="Minimum 8 characters" required autocomplete="new-password" style="padding-right: 42px; border-radius: 10px;">
+                  <button type="button" class="password-eye-toggle-btn" data-target="auth-register-password-input" aria-label="Toggle password visibility">
+                    <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <svg class="eye-closed hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div id="auth-register-alert-msg" class="badge badge-danger hidden" style="width: 100%; padding: 10px; margin-bottom: 14px; border-radius: var(--radius-md);"></div>
+
+              <button type="submit" class="btn btn-primary btn-full btn-large" id="auth-register-submit-btn" style="background: linear-gradient(135deg, #2563eb, #1d4ed8); font-weight: 800; border-radius: 10px; padding: 13px; box-shadow: 0 4px 14px rgba(37,99,235,0.35);">
+                <span>🚀 Create Account &amp; Sign In</span>
+              </button>
+
+              <div style="font-size: 11px; color: #64748b; text-align: center; margin-top: 10px;">
+                🔒 100% Genuine Retailer • Data protected for Barh delivery &amp; warranty.
+              </div>
+            </form>
+          </div>
+
+          <!-- Hidden Backward Compatibility Stubs -->
+          <div style="display: none !important;">
+            <div id="auth-name-field"><input type="text" id="auth-name-input"></div>
+            <button id="social-btn-whatsapp"></button>
+            <button id="social-btn-facebook"></button>
+            <button id="social-btn-apple"></button>
+            <div id="auth-whatsapp-view"></div>
+            <div id="auth-social-view">
+              <form id="social-auth-form"><input id="social-name-input"><input id="social-id-input"><button id="social-submit-btn"></button></form>
+            </div>
+          </div>
         </div>
 
         <!-- 1. Dedicated Google Native App-Style Account Chooser View -->
@@ -1269,133 +1408,7 @@
           </form>
         </div>
 
-        <!-- 2. Dedicated WhatsApp Real OTP Verification View -->
-        <div id="auth-whatsapp-view" class="hidden">
-          <button type="button" class="btn-back-to-auth btn btn-small" style="background: none; border: none; color: var(--primary); padding: 0; margin-bottom: 16px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
-            <span>Back to login options</span>
-          </button>
-
-          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px;">
-            <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(37, 211, 102, 0.15); color: #25D366; display: grid; place-items: center; flex-shrink: 0;">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-            </div>
-            <div>
-              <h3 style="margin: 0; font-size: 18px; font-weight: 800;">WhatsApp OTP Login</h3>
-              <div style="font-size: 12px; color: #16a34a; font-weight: 600;">Direct OTP on your WhatsApp</div>
-            </div>
-          </div>
-
-          <!-- Step 1: Enter Phone Number -->
-          <div id="wa-step-phone">
-            <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 16px;">
-              Apna WhatsApp number enter karein, verification OTP turant WhatsApp par aayega:
-            </p>
-
-            <div class="field" style="margin-bottom: 12px;">
-              <label style="font-size: 12px; font-weight: 700;">Your Full Name *</label>
-              <input type="text" id="wa-name-input" placeholder="e.g. Rahul Sharma" required autocomplete="name">
-            </div>
-
-            <div class="field" style="margin-bottom: 14px;">
-              <label style="font-size: 12px; font-weight: 700;">10-Digit WhatsApp Mobile Number *</label>
-              <div style="display: flex; gap: 8px;">
-                <span style="background: var(--surface-alt); border: 1.5px solid var(--border); padding: 10px 12px; border-radius: var(--radius-md); font-weight: 700; font-size: 13px;">+91</span>
-                <input type="tel" id="wa-phone-input" placeholder="9876543210" maxlength="10" required autocomplete="tel" style="flex: 1;">
-              </div>
-            </div>
-
-            <div id="wa-phone-alert" class="badge badge-danger hidden" style="width: 100%; padding: 10px; margin-bottom: 12px; border-radius: var(--radius-md);"></div>
-
-            <button type="button" class="btn btn-full btn-large" id="wa-send-otp-btn" style="background: #25D366; color: white; font-weight: 800; font-size: 14px; padding: 13px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; gap: 8px;">
-              <span>📲 Send OTP on WhatsApp</span>
-            </button>
-          </div>
-
-          <!-- Step 2: Enter & Verify 6-Digit OTP -->
-          <div id="wa-step-otp" class="hidden">
-            <!-- Simulated Incoming WhatsApp Notification Card -->
-            <div id="wa-incoming-pill" style="background: rgba(37, 211, 102, 0.12); border: 1px solid rgba(37, 211, 102, 0.4); border-radius: 10px; padding: 12px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-              <div style="font-size: 12px; line-height: 1.4;">
-                <span style="color: #16a34a; font-weight: 800; display: block;">🟢 WhatsApp OTP Arrived:</span>
-                <span style="font-family: var(--font-mono); font-size: 16px; font-weight: 800; color: #0f172a;" id="wa-received-otp-text">123456</span>
-              </div>
-              <button type="button" id="wa-auto-fill-btn" style="background: #25D366; color: white; border: none; font-size: 11px; font-weight: 800; padding: 6px 10px; border-radius: 6px; cursor: pointer;">
-                1-Tap Auto Fill
-              </button>
-            </div>
-
-            <!-- Link to open WhatsApp app directly -->
-            <div style="margin-bottom: 16px; text-align: center;">
-              <a href="#" target="_blank" id="wa-chat-link" class="btn btn-secondary btn-small" style="color: #16a34a; border-color: #25D366; font-size: 11.5px; display: inline-flex; align-items: center; gap: 6px;">
-                <span>💬 Open in WhatsApp App</span>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-              </a>
-            </div>
-
-            <p style="font-size: 12px; color: var(--text-muted); text-align: center; margin-bottom: 8px;">
-              Enter 6-digit verification code below:
-            </p>
-
-            <!-- 6-Digit OTP Boxes -->
-            <div class="otp-inputs-row">
-              <input type="text" inputmode="numeric" class="otp-digit-box" maxlength="1" data-index="0" autofocus>
-              <input type="text" inputmode="numeric" class="otp-digit-box" maxlength="1" data-index="1">
-              <input type="text" inputmode="numeric" class="otp-digit-box" maxlength="1" data-index="2">
-              <input type="text" inputmode="numeric" class="otp-digit-box" maxlength="1" data-index="3">
-              <input type="text" inputmode="numeric" class="otp-digit-box" maxlength="1" data-index="4">
-              <input type="text" inputmode="numeric" class="otp-digit-box" maxlength="1" data-index="5">
-            </div>
-
-            <div id="wa-otp-alert" class="badge badge-danger hidden" style="width: 100%; padding: 10px; margin-bottom: 12px; border-radius: var(--radius-md);"></div>
-
-            <button type="button" class="btn btn-full btn-large" id="wa-verify-otp-btn" style="background: #22c55e; color: white; font-weight: 800; font-size: 14px; padding: 13px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; gap: 8px;">
-              <span>✓ Verify &amp; Sign In</span>
-            </button>
-
-            <div style="text-align: center; margin-top: 14px;">
-              <button type="button" id="wa-resend-btn" disabled style="background: none; border: none; color: var(--text-muted); font-size: 12px; cursor: pointer;">
-                Resend OTP in <span id="wa-countdown">30</span>s
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 3. Dedicated Social Login View (Facebook, Apple) -->
-        <div id="auth-social-view" class="hidden">
-          <button type="button" class="btn-back-to-auth btn btn-small" style="background: none; border: none; color: var(--primary); padding: 0; margin-bottom: 16px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
-            <span>Back to login options</span>
-          </button>
-
-          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-            <div id="social-header-icon" style="width: 38px; height: 38px; display: grid; place-items: center; border-radius: 8px; background: var(--surface-alt);"></div>
-            <div>
-              <h3 id="social-view-title" style="margin: 0; font-size: 18px; font-weight: 800;">Sign in</h3>
-              <div id="social-view-subtitle" style="font-size: 12px; color: var(--text-muted);">Personal customer account</div>
-            </div>
-          </div>
-
-          <form id="social-auth-form">
-            <div class="field" id="social-name-group">
-              <label id="social-name-label">Your Full Name *</label>
-              <input type="text" id="social-name-input" placeholder="e.g. Rahul Sharma" required autocomplete="name">
-            </div>
-
-            <div class="field" id="social-id-group">
-              <label id="social-id-label">Email or Username *</label>
-              <input type="text" id="social-id-input" placeholder="e.g. user@example.com" required>
-            </div>
-
-            <div id="social-alert-msg" class="badge badge-danger hidden" style="width: 100%; padding: 10px; margin-bottom: 14px; border-radius: var(--radius-md);"></div>
-
-            <button type="submit" class="btn btn-full btn-large" id="social-submit-btn" style="background: #1877F2; color: white; font-weight: 800; font-size: 14px; padding: 13px; border-radius: var(--radius-md);">
-              Continue
-            </button>
-          </form>
-        </div>
-
-        <!-- 4. Dedicated Customer Forgot Password View with Real Email OTP -->
+        <!-- 2. Dedicated Customer Forgot Password View with Real Email OTP -->
         <div id="auth-forgot-view" class="hidden">
           <button type="button" class="btn-back-to-auth btn btn-small" id="forgot-back-btn" style="background: none; border: none; color: var(--primary); padding: 0; margin-bottom: 16px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
@@ -1443,12 +1456,24 @@
 
             <div class="field" style="margin-bottom: 12px;">
               <label style="font-size: 12px; font-weight: 700;">New Password (Min 8 Characters) *</label>
-              <input type="password" id="customer-forgot-new-pass" minlength="8" required placeholder="New secure password">
+              <div style="position: relative;">
+                <input type="password" id="customer-forgot-new-pass" minlength="8" required placeholder="New secure password" style="padding-right: 42px;">
+                <button type="button" class="password-eye-toggle-btn" data-target="customer-forgot-new-pass" aria-label="Toggle password visibility">
+                  <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg class="eye-closed hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+                </button>
+              </div>
             </div>
 
             <div class="field" style="margin-bottom: 14px;">
               <label style="font-size: 12px; font-weight: 700;">Confirm New Password *</label>
-              <input type="password" id="customer-forgot-confirm-pass" minlength="8" required placeholder="Re-enter new password">
+              <div style="position: relative;">
+                <input type="password" id="customer-forgot-confirm-pass" minlength="8" required placeholder="Re-enter new password" style="padding-right: 42px;">
+                <button type="button" class="password-eye-toggle-btn" data-target="customer-forgot-confirm-pass" aria-label="Toggle password visibility">
+                  <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg class="eye-closed hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+                </button>
+              </div>
             </div>
 
             <div id="customer-forgot-step2-alert" class="badge badge-danger hidden" style="width: 100%; padding: 10px; margin-bottom: 12px; border-radius: var(--radius-md);"></div>
@@ -1463,7 +1488,7 @@
     </div>
   </div>
 
-  <!-- Customer Digital Warranty & Bills Locker Modal -->
+    <!-- Customer Digital Warranty & Bills Locker Modal -->
   <div class="modal-backdrop" id="warranty-locker-modal" onclick="if(event.target === this) this.classList.remove('active');">
     <div class="modal-dialog modal-dialog-large" style="max-width: 680px;">
       <button class="modal-close-btn" id="close-warranty-locker-btn" type="button" aria-label="Close" onclick="document.getElementById('warranty-locker-modal').classList.remove('active');">✕</button>
@@ -1828,9 +1853,9 @@
   </nav>
 
   <!-- Scripts with Cache Busting -->
-  <script src="/js/phoneSpecsData.js?v=6.3"></script>
-  <script src="/js/api.js?v=6.3"></script>
-  <script src="/js/app.js?v=6.3"></script>
+  <script src="/js/phoneSpecsData.js?v=6.4"></script>
+  <script src="/js/api.js?v=6.4"></script>
+  <script src="/js/app.js?v=6.4"></script>
   <script>
     // PWA Service Worker Registration
     if ('serviceWorker' in navigator) {

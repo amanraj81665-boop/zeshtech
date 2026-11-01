@@ -366,10 +366,10 @@ const customerAPI = {
   },
 
   // Customer registration
-  async register({ name, email, password }) {
+  async register({ name, email, password, phone }) {
     return this.request("/auth/register", {
       method: "POST",
-      body: JSON.stringify({ name, email, password })
+      body: JSON.stringify({ name, email, password, phone })
     });
   },
 

@@ -2581,83 +2581,213 @@
      Customer Authentication Modal
      ========================================================================== */
 
-  function openAuthModal(mode = "login") {
-    authMode = mode;
+  function openAuthModal(mode = "otp") {
     const modal = $("#auth-modal-backdrop");
-    const alertBox = $("#auth-alert-msg");
     if (!modal) return;
 
-    // Reset views to main email/social grid
-    $("#auth-main-view")?.classList.remove("hidden");
-    $("#auth-google-view")?.classList.add("hidden");
-    $("#auth-whatsapp-view")?.classList.add("hidden");
-    $("#auth-social-view")?.classList.add("hidden");
+    hideAllAuthSubviews();
 
-    if (alertBox) alertBox.classList.add("hidden");
-    setAuthModeUI(mode);
+    const targetTab = (mode === "register" || mode === "login") ? mode : "otp";
+    switchAuthTab(targetTab);
+
     modal.classList.add("active");
+    lockBodyScroll();
   }
 
-  function setAuthModeUI(mode) {
-    authMode = mode;
-    const isLogin = mode === "login";
+  function switchAuthTab(tab) {
+    const tabOtp = $("#auth-tab-otp");
+    const tabLogin = $("#auth-tab-login");
+    const tabRegister = $("#auth-tab-register");
 
-    $("#auth-tab-login").style.background = isLogin ? "white" : "transparent";
-    $("#auth-tab-login").style.boxShadow = isLogin ? "var(--shadow-xs)" : "none";
-    $("#auth-tab-login").style.color = isLogin ? "var(--text-main)" : "var(--text-muted)";
+    const paneOtp = $("#auth-pane-otp");
+    const paneLogin = $("#auth-pane-login");
+    const paneRegister = $("#auth-pane-register");
 
-    $("#auth-tab-register").style.background = isLogin ? "transparent" : "white";
-    $("#auth-tab-register").style.boxShadow = isLogin ? "none" : "var(--shadow-xs)";
-    $("#auth-tab-register").style.color = isLogin ? "var(--text-muted)" : "var(--text-main)";
+    // Reset tab button states
+    [tabOtp, tabLogin, tabRegister].forEach(b => {
+      if (b) {
+        b.classList.remove("active");
+        b.style.background = "transparent";
+        b.style.color = "#64748b";
+        b.style.boxShadow = "none";
+      }
+    });
 
-    $("#auth-modal-heading").textContent = isLogin ? "Sign In to Your Account" : "Create a Customer Account";
-    $("#auth-modal-subtext").textContent = isLogin ? "Access your orders, tracking, and warranty details." : "Join ZESH-TECH for fast checkout and delivery updates.";
-    $("#auth-submit-btn").textContent = isLogin ? "Sign In" : "Register Account";
+    // Hide all panes
+    [paneOtp, paneLogin, paneRegister].forEach(p => p?.classList.add("hidden"));
 
-    if (isLogin) {
-      $("#auth-name-field")?.classList.add("hidden");
-      $("#auth-name-input")?.removeAttribute("required");
-    } else {
-      $("#auth-name-field")?.classList.remove("hidden");
-      $("#auth-name-input")?.setAttribute("required", "true");
+    if (tab === "otp") {
+      if (tabOtp) {
+        tabOtp.classList.add("active");
+        tabOtp.style.background = "white";
+        tabOtp.style.color = "#0f172a";
+        tabOtp.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)";
+      }
+      paneOtp?.classList.remove("hidden");
+      $("#wa-phone-input")?.focus();
+    } else if (tab === "login") {
+      if (tabLogin) {
+        tabLogin.classList.add("active");
+        tabLogin.style.background = "white";
+        tabLogin.style.color = "#0f172a";
+        tabLogin.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)";
+      }
+      paneLogin?.classList.remove("hidden");
+      $("#auth-email-input")?.focus();
+    } else if (tab === "register") {
+      if (tabRegister) {
+        tabRegister.classList.add("active");
+        tabRegister.style.background = "white";
+        tabRegister.style.color = "#0f172a";
+        tabRegister.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)";
+      }
+      paneRegister?.classList.remove("hidden");
+      $("#auth-register-name-input")?.focus();
     }
   }
 
+  // Password Login Handler (Mobile or Email + Password)
   async function handleAuthSubmit(e) {
     e.preventDefault();
     const submitBtn = $("#auth-submit-btn");
     const alertBox = $("#auth-alert-msg");
-    const email = $("#auth-email-input").value.trim();
-    const password = $("#auth-password-input").value;
-    const name = $("#auth-name-input")?.value?.trim() || "";
+    const identifier = $("#auth-email-input")?.value?.trim() || "";
+    const password = $("#auth-password-input")?.value || "";
+
+    if (!identifier) {
+      if (alertBox) {
+        alertBox.textContent = "Please enter your 10-digit mobile number or email.";
+        alertBox.classList.remove("hidden");
+      }
+      $("#auth-email-input")?.focus();
+      return;
+    }
+
+    if (!password) {
+      if (alertBox) {
+        alertBox.textContent = "Please enter your account password.";
+        alertBox.classList.remove("hidden");
+      }
+      $("#auth-password-input")?.focus();
+      return;
+    }
 
     try {
-      submitBtn.disabled = true;
-      submitBtn.textContent = "Please wait...";
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Signing in...";
+      }
       if (alertBox) alertBox.classList.add("hidden");
 
-      if (authMode === "login") {
-        await zeshCustomerAPI.login(email, password, true);
-        showToast("Signed in successfully!", "success");
-      } else {
-        await zeshCustomerAPI.register({ name, email, password });
-        await zeshCustomerAPI.login(email, password, true);
-        showToast("Account created successfully!", "success");
-      }
-
+      const user = await zeshCustomerAPI.login(identifier, password, true);
       $("#auth-modal-backdrop")?.classList.remove("active");
       updateCustomerAuthHeader();
+      const firstName = (user.name || "Customer").split(" ")[0];
+      showToast(`Welcome back, ${firstName}! Signed in successfully. 🚀`, "success");
     } catch (err) {
-      console.error("Auth failed:", err);
+      console.error("Login failed:", err);
       if (alertBox) {
-        alertBox.textContent = err.message || "Authentication failed.";
+        alertBox.textContent = err.message || "Invalid mobile number/email or password.";
         alertBox.classList.remove("hidden");
       }
       showToast(err.message || "Authentication error", "error");
     } finally {
-      submitBtn.disabled = false;
-      submitBtn.textContent = authMode === "login" ? "Sign In" : "Register Account";
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Sign In with Password";
+      }
     }
+  }
+
+  // Customer Registration Handler (Name + 10-Digit Mobile + Email + Password)
+  async function handleRegisterSubmit(e) {
+    e.preventDefault();
+    const submitBtn = $("#auth-register-submit-btn");
+    const alertBox = $("#auth-register-alert-msg");
+    const name = $("#auth-register-name-input")?.value?.trim() || "";
+    const phone = ($("#auth-register-phone-input")?.value || "").replace(/\D/g, "").slice(-10);
+    const email = $("#auth-register-email-input")?.value?.trim().toLowerCase() || "";
+    const password = $("#auth-register-password-input")?.value || "";
+
+    if (!name || name.length < 2) {
+      if (alertBox) {
+        alertBox.textContent = "Please enter your full name (minimum 2 characters).";
+        alertBox.classList.remove("hidden");
+      }
+      $("#auth-register-name-input")?.focus();
+      return;
+    }
+
+    if (!phone || phone.length !== 10) {
+      if (alertBox) {
+        alertBox.textContent = "Please enter a valid 10-digit mobile number for Barh delivery & warranty.";
+        alertBox.classList.remove("hidden");
+      }
+      $("#auth-register-phone-input")?.focus();
+      return;
+    }
+
+    if (!email || !email.includes("@")) {
+      if (alertBox) {
+        alertBox.textContent = "Please enter a valid email address.";
+        alertBox.classList.remove("hidden");
+      }
+      $("#auth-register-email-input")?.focus();
+      return;
+    }
+
+    if (!password || password.length < 8) {
+      if (alertBox) {
+        alertBox.textContent = "Password must be at least 8 characters.";
+        alertBox.classList.remove("hidden");
+      }
+      $("#auth-register-password-input")?.focus();
+      return;
+    }
+
+    try {
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Creating Account...";
+      }
+      if (alertBox) alertBox.classList.add("hidden");
+
+      await zeshCustomerAPI.register({ name, email, password, phone });
+      // Automatically log the customer in right after registration!
+      await zeshCustomerAPI.login(phone, password, true);
+
+      $("#auth-modal-backdrop")?.classList.remove("active");
+      updateCustomerAuthHeader();
+      const firstName = name.split(" ")[0];
+      showToast(`Welcome to ZESH TECH, ${firstName}! 🚀 Your account is active.`, "success");
+    } catch (err) {
+      console.error("Registration failed:", err);
+      if (alertBox) {
+        alertBox.textContent = err.message || "Registration failed. Please try again.";
+        alertBox.classList.remove("hidden");
+      }
+      showToast(err.message || "Registration error", "error");
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = "<span>🚀 Create Account &amp; Sign In</span>";
+      }
+    }
+  }
+
+  function setupPasswordEyeToggles() {
+    document.querySelectorAll(".password-eye-toggle-btn").forEach(btn => {
+      btn.onclick = (e) => {
+        e.preventDefault();
+        const targetId = btn.getAttribute("data-target");
+        const input = document.getElementById(targetId);
+        if (!input) return;
+        const isPass = input.type === "password";
+        input.type = isPass ? "text" : "password";
+        btn.querySelector(".eye-open")?.classList.toggle("hidden", isPass);
+        btn.querySelector(".eye-closed")?.classList.toggle("hidden", !isPass);
+      };
+    });
   }
 
   /* ==========================================================================
@@ -3789,9 +3919,17 @@
         $("#auth-modal-backdrop").classList.remove("active");
       }
     });
-    $("#auth-tab-login")?.addEventListener("click", () => setAuthModeUI("login"));
-    $("#auth-tab-register")?.addEventListener("click", () => setAuthModeUI("register"));
+    $("#auth-tab-otp")?.addEventListener("click", () => switchAuthTab("otp"));
+    $("#auth-tab-login")?.addEventListener("click", () => switchAuthTab("login"));
+    $("#auth-tab-register")?.addEventListener("click", () => switchAuthTab("register"));
     $("#auth-form")?.addEventListener("submit", handleAuthSubmit);
+    $("#auth-register-form")?.addEventListener("submit", handleRegisterSubmit);
+    $("#wa-change-phone-btn")?.addEventListener("click", () => {
+      $("#wa-step-otp")?.classList.add("hidden");
+      $("#wa-step-phone")?.classList.remove("hidden");
+      $("#wa-phone-input")?.focus();
+    });
+    setupPasswordEyeToggles();
 
     // Auth Modal Sub-Views Manager
     function hideAllAuthSubviews() {
@@ -4257,16 +4395,10 @@
     const nameInput = $("#wa-name-input");
     const phoneInput = $("#wa-phone-input");
 
-    const name = (nameInput?.value || "").trim();
     const phone = (phoneInput?.value || "").trim().replace(/\D/g, "");
-
+    let name = (nameInput?.value || "").trim();
     if (!name) {
-      if (alertMsg) {
-        alertMsg.textContent = "Please enter your name.";
-        alertMsg.classList.remove("hidden");
-      }
-      nameInput?.focus();
-      return;
+      name = `Customer (${phone.slice(-4) || "Guest"})`;
     }
 
     if (phone.length < 10) {

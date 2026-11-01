@@ -74,7 +74,7 @@ router.get("/config", (req, res) => {
 // Customer registration
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, password } = req.body || {};
+    const { name, email, password, phone } = req.body || {};
 
     if (
       typeof name !== "string" ||
@@ -89,6 +89,7 @@ router.post("/register", async (req, res) => {
 
     const cleanName = name.trim();
     const cleanEmail = email.trim().toLowerCase();
+    const cleanPhone = (phone || "").toString().replace(/\D/g, "").slice(-10);
 
     if (cleanName.length < 2 || cleanName.length > 60) {
       return res.status(400).json({
@@ -104,6 +105,13 @@ router.post("/register", async (req, res) => {
       });
     }
 
+    if (cleanPhone && cleanPhone.length !== 10) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a valid 10-digit mobile number"
+      });
+    }
+
     if (
       password.length < PASSWORD_MIN ||
       password.length > PASSWORD_MAX
@@ -115,13 +123,28 @@ router.post("/register", async (req, res) => {
     }
 
     const existingUser = await User.findOne({
-      email: cleanEmail
-    }).select("_id");
+      $or: [
+        { email: cleanEmail },
+        ...(cleanPhone ? [{ phone: cleanPhone }] : [])
+      ]
+    }).select("_id email phone");
 
     if (existingUser) {
+      if (existingUser.email === cleanEmail) {
+        return res.status(409).json({
+          success: false,
+          message: "An account with this email already exists"
+        });
+      }
+      if (cleanPhone && existingUser.phone === cleanPhone) {
+        return res.status(409).json({
+          success: false,
+          message: "An account with this mobile number already exists"
+        });
+      }
       return res.status(409).json({
         success: false,
-        message: "An account with this email already exists"
+        message: "An account with these details already exists"
       });
     }
 
@@ -131,6 +154,7 @@ router.post("/register", async (req, res) => {
     const user = await User.create({
       name: cleanName,
       email: cleanEmail,
+      phone: cleanPhone || "",
       password: hashedPassword,
       role: "customer"
     });
@@ -144,7 +168,7 @@ router.post("/register", async (req, res) => {
     if (error.code === 11000) {
       return res.status(409).json({
         success: false,
-        message: "An account with this email already exists"
+        message: "An account with this email or mobile number already exists"
       });
     }
 
@@ -164,20 +188,24 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// Shared login for customers and admins
+// Shared login for customers and admins (Supports Email OR 10-Digit Mobile Number)
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body || {};
+    const identifier = typeof email === "string" ? email.trim() : "";
+    const cleanDigits = identifier.replace(/\D/g, "");
+    const isPhoneLogin = cleanDigits.length === 10;
+    const isEmailLogin = validEmail(identifier);
 
     if (
-      !validEmail(email) ||
+      (!isPhoneLogin && !isEmailLogin) ||
       typeof password !== "string" ||
       password.length === 0 ||
       password.length > PASSWORD_MAX
     ) {
       return res.status(400).json({
         success: false,
-        message: "Valid email and password are required"
+        message: "Valid email or 10-digit mobile number and password are required"
       });
     }
 
@@ -190,16 +218,29 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    const cleanEmail = email.trim().toLowerCase();
-
-    const user = await User.findOne({
-      email: cleanEmail
-    }).select("+password");
+    let user;
+    if (isPhoneLogin) {
+      const cleanPhone = cleanDigits.slice(-10);
+      user = await User.findOne({
+        $or: [
+          { phone: cleanPhone },
+          { email: `${cleanPhone}@phone.zeshtech.com` }
+        ]
+      }).select("+password");
+    } else {
+      const cleanEmail = identifier.toLowerCase();
+      user = await User.findOne({
+        $or: [
+          { email: cleanEmail },
+          { phone: cleanEmail }
+        ]
+      }).select("+password");
+    }
 
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: "Invalid email or password"
+        message: "Invalid email/mobile number or password"
       });
     }
 
@@ -265,7 +306,13 @@ router.post("/social", async (req, res) => {
 
     const userName = (name || "").trim() || (authProvider.toUpperCase() + " User");
 
-    let user = await User.findOne({ email: userEmail });
+    const cleanSocialPhone = (phone || "").replace(/\D/g, "").slice(-10);
+    let user = await User.findOne({
+      $or: [
+        ...(cleanSocialPhone ? [{ phone: cleanSocialPhone }] : []),
+        { email: userEmail }
+      ]
+    });
     if (!user) {
       user = await User.create({
         name: userName,
@@ -420,7 +467,13 @@ router.post("/whatsapp/verify-otp", async (req, res) => {
     const userName = (name || storedData.name || "").trim() || `Customer (${cleanPhone.slice(-4)})`;
     const userEmail = `${cleanPhone}@phone.zeshtech.com`;
 
-    let user = await User.findOne({ email: userEmail });
+    const cleanSocialPhone = (phone || "").replace(/\D/g, "").slice(-10);
+    let user = await User.findOne({
+      $or: [
+        ...(cleanSocialPhone ? [{ phone: cleanSocialPhone }] : []),
+        { email: userEmail }
+      ]
+    });
     if (!user) {
       user = await User.create({
         name: userName,

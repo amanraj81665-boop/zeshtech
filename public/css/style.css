@@ -7147,3 +7147,60 @@ body.modal-open .floating-whatsapp-btn {
 
 /* Remove compare pill from product cards */
 .product-card .card-compare-pill, .card-compare-pill { display: none !important; }
+
+
+/* ==========================================================================
+   Revamped Customer Auth Experience (Apple Studio + Indian Retail)
+   ========================================================================== */
+
+.password-eye-toggle-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease;
+  z-index: 2;
+}
+.password-eye-toggle-btn:hover {
+  color: #0f172a;
+}
+.password-eye-toggle-btn svg {
+  display: block;
+}
+
+.auth-segmented-nav {
+  user-select: none;
+}
+.auth-segmented-btn {
+  outline: none;
+}
+.auth-segmented-btn:hover {
+  color: #0f172a;
+}
+.auth-segmented-btn.active {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Auth Perks Banner Hover Micro-interaction */
+.auth-perks-banner > div {
+  transition: transform 0.15s ease;
+}
+.auth-perks-banner > div:hover {
+  transform: translateY(-1px);
+}
+
+/* Polish OTP inputs focus */
+.otp-digit-box:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
+}
