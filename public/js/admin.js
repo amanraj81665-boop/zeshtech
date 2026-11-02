@@ -2065,6 +2065,73 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
     });
   }
 
+  // High-performance client-side image optimizer for mobile camera shots & high-res photos
+  async function compressImageFile(file, maxWidth = 1400, quality = 0.85) {
+    if (!file || !file.type || !file.type.startsWith("image/")) return file;
+    if (file.type === "image/svg+xml" || file.size < 120 * 1024) return file;
+
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            let width = img.naturalWidth || img.width;
+            let height = img.naturalHeight || img.height;
+            if (width > maxWidth || height > maxWidth) {
+              if (width > height) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+              } else {
+                width = Math.round((width * maxWidth) / height);
+                height = maxWidth;
+              }
+            }
+
+            const canvas = document.createElement("canvas");
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = "high";
+            ctx.drawImage(img, 0, 0, width, height);
+
+            canvas.toBlob(
+              (blob) => {
+                if (blob && blob.size < file.size) {
+                  const safeName = (file.name || "photo").replace(/\.[^.]+$/, "") + ".webp";
+                  resolve(new File([blob], safeName, { type: "image/webp", lastModified: Date.now() }));
+                } else {
+                  canvas.toBlob(
+                    (jpgBlob) => {
+                      if (jpgBlob && jpgBlob.size < file.size) {
+                        const safeName = (file.name || "photo").replace(/\.[^.]+$/, "") + ".jpg";
+                        resolve(new File([jpgBlob], safeName, { type: "image/jpeg", lastModified: Date.now() }));
+                      } else {
+                        resolve(file);
+                      }
+                    },
+                    "image/jpeg",
+                    quality
+                  );
+                }
+              },
+              "image/webp",
+              quality
+            );
+          } catch (err) {
+            console.warn("Image compression fallback to original:", err);
+            resolve(file);
+          }
+        };
+        img.onerror = () => resolve(file);
+        img.src = e.target.result;
+      };
+      reader.onerror = () => resolve(file);
+      reader.readAsDataURL(file);
+    });
+  }
+
   function renderAddProductImagesPreview() {
     const previewBox = $("#add-product-files-preview");
     const countLabel = $("#add-prod-file-count");
@@ -2414,18 +2481,60 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
     }
 
     const formData = new FormData(form);
+    const nameVal = formData.get("name")?.trim() || "";
+    let skuVal = formData.get("sku")?.trim().toUpperCase() || "";
+    const brandVal = formData.get("brand")?.trim() || "";
+    const modelVal = formData.get("model")?.trim() || "";
+    const categoryVal = formData.get("category") || "Mobile";
+
+    if (!nameVal) {
+      showToast("Please enter Product Name", "warning");
+      form.querySelector('[name="name"]')?.focus();
+      return;
+    }
+
+    // Auto-generate SKU if user skipped or left it blank
+    if (!skuVal) {
+      const bCode = (brandVal.replace(/[^a-zA-Z0-9]/g, "").slice(0, 3) || "ZT").toUpperCase();
+      const nCode = nameVal.replace(/[^a-zA-Z0-9]/g, "").slice(0, 5).toUpperCase() || "PROD";
+      const rnd = Math.random().toString(36).substring(2, 6).toUpperCase();
+      skuVal = `${bCode}-${nCode}-${rnd}`;
+      const skuInp = document.getElementById("add-prod-sku");
+      if (skuInp) skuInp.value = skuVal;
+    }
+
+    const sellingPriceVal = parseFloat(formData.get("sellingPrice"));
+    if (isNaN(sellingPriceVal) || sellingPriceVal < 0) {
+      showToast("Please enter a valid Retail Price (₹)", "warning");
+      form.querySelector('[name="sellingPrice"]')?.focus();
+      return;
+    }
+
+    let purchasePriceVal = parseFloat(formData.get("purchasePrice"));
+    if (isNaN(purchasePriceVal) || purchasePriceVal < 0) {
+      // Safe fallback to 82% of retail price so backend Mongoose never rejects it
+      purchasePriceVal = Math.round(sellingPriceVal * 0.82);
+      const ppInp = form.querySelector('[name="purchasePrice"]');
+      if (ppInp) ppInp.value = purchasePriceVal;
+    }
+
+    let stockVal = parseInt(formData.get("stockQuantity"), 10);
+    if (isNaN(stockVal) || stockVal < 0) {
+      stockVal = 10;
+    }
+
     const productPayload = {
-      name: formData.get("name")?.trim(),
-      sku: formData.get("sku")?.trim().toUpperCase(),
-      category: formData.get("category"),
-      brand: formData.get("brand")?.trim() || "",
-      model: formData.get("model")?.trim() || "",
+      name: nameVal,
+      sku: skuVal,
+      category: categoryVal,
+      brand: brandVal,
+      model: modelVal,
       serialNumber: formData.get("serialNumber")?.trim() || "",
       imei1: formData.get("imei1")?.trim() || "",
       imei2: formData.get("imei2")?.trim() || "",
-      purchasePrice: parseFloat(formData.get("purchasePrice")),
-      sellingPrice: parseFloat(formData.get("sellingPrice")),
-      stockQuantity: parseInt(formData.get("stockQuantity"), 10),
+      purchasePrice: purchasePriceVal,
+      sellingPrice: sellingPriceVal,
+      stockQuantity: stockVal,
       ram: formData.get("ram")?.trim() || "",
       storage: formData.get("storage")?.trim() || "",
       color: formData.get("color")?.trim() || "",
@@ -2454,44 +2563,32 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
       productPayload.imeiRecords = allImeis;
     }
 
-    if (!productPayload.name) {
-      showToast("Product name is required", "error");
-      return;
-    }
-    if (!productPayload.sku) {
-      showToast("SKU is required", "error");
-      return;
-    }
-    if (isNaN(productPayload.sellingPrice)) {
-      showToast("Valid retail price is required", "error");
-      return;
-    }
-
     try {
       btn.disabled = true;
       btn.textContent = "Saving to Catalogue...";
-      if (errBox) errBox.classList.add("hidden");
+      if (errBox) {
+        errBox.classList.add("hidden");
+        errBox.textContent = "";
+      }
 
       // Check if user selected photos via the multi-file manager or file input
-      if (addProductImageFiles.length > 0) {
-        btn.textContent = `Uploading ${addProductImageFiles.length} photo(s)...`;
-        const uploadRes = await zeshAPI.uploadProductImages(addProductImageFiles);
+      let filesToUpload = [...addProductImageFiles];
+      if (filesToUpload.length === 0) {
+        const fileInput = $("#add-product-file-input");
+        if (fileInput && fileInput.files && fileInput.files.length > 0) {
+          filesToUpload = Array.from(fileInput.files);
+        }
+      }
+
+      if (filesToUpload.length > 0) {
+        btn.textContent = `Optimizing & Uploading ${filesToUpload.length} photo(s)...`;
+        const compressedList = await Promise.all(filesToUpload.map(f => compressImageFile(f)));
+        btn.textContent = `Uploading ${compressedList.length} photo(s)...`;
+        const uploadRes = await zeshAPI.uploadProductImages(compressedList);
         if (uploadRes && uploadRes.imageUrls && uploadRes.imageUrls.length > 0) {
           productPayload.images = uploadRes.imageUrls;
           if (!productPayload.imageUrl || productPayload.imageUrl.startsWith("blob:")) {
             productPayload.imageUrl = uploadRes.imageUrls[0];
-          }
-        }
-      } else {
-        const fileInput = $("#add-product-file-input");
-        if (fileInput && fileInput.files && fileInput.files.length > 0) {
-          btn.textContent = `Uploading ${fileInput.files.length} photo(s)...`;
-          const uploadRes = await zeshAPI.uploadProductImages(fileInput.files);
-          if (uploadRes && uploadRes.imageUrls && uploadRes.imageUrls.length > 0) {
-            productPayload.images = uploadRes.imageUrls;
-            if (!productPayload.imageUrl || productPayload.imageUrl.startsWith("blob:")) {
-              productPayload.imageUrl = uploadRes.imageUrls[0];
-            }
           }
         }
       }
@@ -2522,8 +2619,9 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
     } catch (err) {
       console.error("Add product failed:", err);
       if (errBox) {
-        errBox.textContent = err.message || "Failed to add product.";
+        errBox.textContent = err.message || "Failed to add product. Please check details.";
         errBox.classList.remove("hidden");
+        errBox.scrollIntoView({ behavior: "smooth", block: "center" });
       }
       showToast(err.message || "Failed to add product", "error");
     } finally {
@@ -2662,8 +2760,10 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
 
       // Upload newly added files if any
       if (editProductImageFiles.length > 0) {
-        btn.textContent = `Uploading ${editProductImageFiles.length} new photo(s)...`;
-        const uploadRes = await zeshAPI.uploadProductImages(editProductImageFiles);
+        btn.textContent = `Optimizing & Uploading ${editProductImageFiles.length} photo(s)...`;
+        const compressedEditFiles = await Promise.all(editProductImageFiles.map(f => compressImageFile(f)));
+        btn.textContent = `Uploading ${compressedEditFiles.length} photo(s)...`;
+        const uploadRes = await zeshAPI.uploadProductImages(compressedEditFiles);
         if (uploadRes && uploadRes.imageUrls) {
           updates.images = [...updates.images, ...uploadRes.imageUrls];
         }
@@ -3784,14 +3884,19 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
     });
     $("#add-product-form")?.addEventListener("submit", handleAddProductSubmit);
 
-    // Multi-image file accumulation & live preview for Add Product
-    $("#add-product-file-input")?.addEventListener("change", (e) => {
+    // Multi-image file accumulation & live preview for Add Product (with automatic compression)
+    $("#add-product-file-input")?.addEventListener("change", async (e) => {
       const newFiles = Array.from(e.target.files || []);
-      newFiles.forEach((f) => {
-        if (!addProductImageFiles.some(existing => existing.name === f.name && existing.size === f.size)) {
-          addProductImageFiles.push(f);
+      const countLabel = $("#add-prod-file-count");
+      if (countLabel && newFiles.length > 0) {
+        countLabel.textContent = `Optimizing ${newFiles.length} photo(s)...`;
+      }
+      for (const f of newFiles) {
+        const compressed = await compressImageFile(f);
+        if (!addProductImageFiles.some(existing => existing.name === compressed.name && existing.size === compressed.size)) {
+          addProductImageFiles.push(compressed);
         }
-      });
+      }
       // Clear value so the user can tap Choose Files again to add more photos/camera shots
       e.target.value = "";
       renderAddProductImagesPreview();
@@ -3803,13 +3908,18 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
     });
 
     // Multi-image file accumulation & live preview for Edit Product
-    $("#edit-product-file-input")?.addEventListener("change", (e) => {
+    $("#edit-product-file-input")?.addEventListener("change", async (e) => {
       const newFiles = Array.from(e.target.files || []);
-      newFiles.forEach((f) => {
-        if (!editProductImageFiles.some(existing => existing.name === f.name && existing.size === f.size)) {
-          editProductImageFiles.push(f);
+      const countLabel = $("#edit-prod-file-count");
+      if (countLabel && newFiles.length > 0) {
+        countLabel.textContent = `Optimizing ${newFiles.length} photo(s)...`;
+      }
+      for (const f of newFiles) {
+        const compressed = await compressImageFile(f);
+        if (!editProductImageFiles.some(existing => existing.name === compressed.name && existing.size === compressed.size)) {
+          editProductImageFiles.push(compressed);
         }
-      });
+      }
       e.target.value = "";
       renderEditProductImagesPreview();
     });

@@ -59,7 +59,7 @@ async function saveImageSafe(file) {
 
   if (hasCloudinary) {
     try {
-      const cRes = await new Promise((resolve, reject) => {
+      const uploadPromise = new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
           {
             folder: "zesh-tech/products",
@@ -74,9 +74,17 @@ async function saveImageSafe(file) {
         );
         Readable.from(file.buffer).pipe(stream);
       });
-      return cRes.secure_url;
+
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Cloudinary upload timeout (12s)")), 12000)
+      );
+
+      const cRes = await Promise.race([uploadPromise, timeoutPromise]);
+      if (cRes && cRes.secure_url) {
+        return cRes.secure_url;
+      }
     } catch (cErr) {
-      console.warn("Cloudinary upload failed, falling back to local file storage:", cErr.message);
+      console.warn("Cloudinary upload failed/timeout, falling back to local file storage:", cErr.message);
     }
   }
 
@@ -139,11 +147,7 @@ router.post(
         });
       }
 
-      const imageUrls = [];
-      for (const f of files) {
-        const url = await saveImageSafe(f);
-        imageUrls.push(url);
-      }
+      const imageUrls = await Promise.all(files.map(f => saveImageSafe(f)));
 
       return res.status(201).json({
         success: true,
