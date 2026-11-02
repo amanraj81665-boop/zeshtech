@@ -16,7 +16,7 @@
     }).format(Number(val) || 0);
 
   const imageFallback = "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=600&q=80";
-  const ASSET_CACHE_VERSION = "v=6.9";
+  const ASSET_CACHE_VERSION = "v=7.0";
 
   function resolveProductImageUrl(url) {
     if (!url || typeof url !== "string") return imageFallback;
@@ -1062,10 +1062,10 @@
               <!-- Action Buttons Row (Buy Now, Add to Bag, Compare) - Right below price -->
               <div class="fk-actions-bottom-row">
                 <button class="btn btn-primary fk-btn-buy direct-buy-btn" data-id="${escapeHTML(product._id)}" ${isOut ? "disabled" : ""}>
-                  ⚡ Instant Buy Now
+                  ⚡ Buy Now
                 </button>
                 <button class="btn btn-secondary fk-btn-bag add-to-bag-btn" data-id="${escapeHTML(product._id)}" ${isOut ? "disabled" : ""}>
-                  🛒 Add to Bag
+                  🛍️ Add to Bag
                 </button>
                 ${product.category === "Mobile" ? `
                   <button class="btn btn-dark fk-btn-compare compare-this-btn" data-id="${escapeHTML(product._id)}" type="button">
@@ -1923,13 +1923,23 @@
 
   function openCartDrawer() {
     syncCartWithLiveProducts();
+    lockBodyScroll();
     $("#cart-drawer")?.classList.add("active");
     $("#cart-drawer-overlay")?.classList.add("active");
+    try {
+      window.history.pushState({ modalOpen: "cart" }, "");
+    } catch (e) {}
   }
 
-  function closeCartDrawer() {
+  function closeCartDrawer(updateHistory = true) {
     $("#cart-drawer")?.classList.remove("active");
     $("#cart-drawer-overlay")?.classList.remove("active");
+    unlockBodyScroll();
+    if (updateHistory && window.history.state && window.history.state.modalOpen === "cart") {
+      try {
+        window.history.back();
+      } catch (e) {}
+    }
   }
 
   /* ==========================================================================
@@ -3747,10 +3757,11 @@
       }
     });
 
-    // Global Escape Key to close any active modal
+    // Global Escape Key to close any active modal or drawer
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
-        $$(".modal-backdrop.active").forEach(m => m.classList.remove("active"));
+        $(".modal-backdrop.active").forEach(m => m.classList.remove("active"));
+        closeCartDrawer(false);
       }
     });
 
@@ -4122,9 +4133,37 @@
 
     // Mobile / Browser Popstate (Android Back Button)
     window.addEventListener("popstate", (e) => {
-      const modal = $("#auth-modal-backdrop");
-      if (modal && modal.classList.contains("active")) {
+      // 1. Cart Drawer
+      const drawer = $("#cart-drawer");
+      if (drawer && drawer.classList.contains("active")) {
+        closeCartDrawer(false);
+        return;
+      }
+      // 2. Auth Modal
+      const authModal = $("#auth-modal-backdrop");
+      if (authModal && authModal.classList.contains("active")) {
         closeAuthModal(false);
+        return;
+      }
+      // 3. Product Details Modal
+      const prodModal = $("#product-modal-backdrop");
+      if (prodModal && prodModal.classList.contains("active")) {
+        prodModal.classList.remove("active");
+        unlockBodyScroll();
+        return;
+      }
+      // 4. Checkout Modal
+      const checkModal = $("#checkout-modal-backdrop");
+      if (checkModal && checkModal.classList.contains("active")) {
+        checkModal.classList.remove("active");
+        unlockBodyScroll();
+        return;
+      }
+      // 5. Any active backdrop
+      const anyActive = document.querySelector(".modal-backdrop.active");
+      if (anyActive) {
+        anyActive.classList.remove("active");
+        unlockBodyScroll();
       }
     });
 

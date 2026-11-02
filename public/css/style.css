@@ -1445,7 +1445,8 @@ select {
   inset: 0;
   background-color: rgba(15, 23, 42, 0.6);
   backdrop-filter: blur(4px);
-  z-index: 50;
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1000 !important;
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--transition-normal);
@@ -1464,11 +1465,18 @@ select {
   width: min(440px, 100%);
   background-color: var(--surface);
   box-shadow: var(--shadow-xl);
-  z-index: 51;
+  z-index: 1001 !important;
   display: flex;
   flex-direction: column;
   transform: translateX(100%);
   transition: transform var(--transition-slow);
+}
+
+.drawer-footer {
+  padding: 16px 20px calc(16px + env(safe-area-inset-bottom, 0px)) !important;
+  background-color: var(--surface);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .cart-drawer.active {
@@ -6413,19 +6421,23 @@ body.modal-open .floating-whatsapp-btn {
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
-    gap: 8px !important;
+    gap: 4px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .brand {
     display: flex !important;
     align-items: center !important;
-    gap: 8px !important;
+    gap: 6px !important;
     text-decoration: none !important;
-    flex-shrink: 0 !important;
-    max-width: 65% !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    max-width: 52% !important;
+    overflow: hidden !important;
   }
   .brand-logo-img {
-    height: 36px !important;
+    height: 32px !important;
     width: auto !important;
     flex-shrink: 0 !important;
   }
@@ -6434,9 +6446,11 @@ body.modal-open .floating-whatsapp-btn {
     flex-direction: column !important;
     justify-content: center !important;
     line-height: 1.15 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
   }
   .brand-name {
-    font-size: 16px !important;
+    font-size: 15px !important;
     font-weight: 900 !important;
     color: #0f172a !important;
     letter-spacing: -0.3px !important;
@@ -6454,14 +6468,16 @@ body.modal-open .floating-whatsapp-btn {
     display: flex !important;
     align-items: center !important;
     gap: 3px !important;
-    font-size: 10px !important;
+    font-size: 9px !important;
     font-weight: 700 !important;
     color: #0284c7 !important;
     white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
     margin-top: 1px !important;
   }
   .brand-sub-location .loc-pin {
-    font-size: 10px !important;
+    font-size: 9px !important;
   }
 
   .mobile-store-location-badge {
@@ -6472,36 +6488,41 @@ body.modal-open .floating-whatsapp-btn {
   .header-actions {
     display: flex !important;
     align-items: center !important;
-    gap: 6px !important;
+    gap: 4px !important;
     flex-shrink: 0 !important;
   }
   #open-warranty-locker-btn {
-    padding: 6px 9px !important;
-    font-size: 11.5px !important;
+    padding: 5px 8px !important;
+    font-size: 11px !important;
     font-weight: 700 !important;
     border-radius: 999px !important;
     background: #f0f9ff !important;
     color: #0284c7 !important;
     border: 1px solid #bae6fd !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
   }
   .locker-long-text {
     display: none !important;
   }
-    #auth-header-container {
+  #auth-header-container {
     display: inline-flex !important;
     align-items: center !important;
+    flex-shrink: 0 !important;
   }
   #open-auth-btn {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    padding: 6px 9px !important;
-    font-size: 11.5px !important;
+    padding: 5px 8px !important;
+    font-size: 11px !important;
     font-weight: 700 !important;
     border-radius: 999px !important;
     background: #f8fafc !important;
     color: #0f172a !important;
     border: 1px solid #cbd5e1 !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
   }
   #open-auth-btn span {
     display: none !important;
@@ -6510,29 +6531,53 @@ body.modal-open .floating-whatsapp-btn {
     padding: 3px 8px 3px 3px !important;
     font-size: 11px !important;
     border-radius: 999px !important;
+    flex-shrink: 0 !important;
   }
   .cart-trigger {
-    padding: 6px 12px !important;
-    font-size: 12px !important;
+    padding: 5px 10px !important;
+    font-size: 11.5px !important;
     font-weight: 800 !important;
     border-radius: 999px !important;
     background: #eff6ff !important;
     color: #1d4ed8 !important;
     border: 1px solid #bfdbfe !important;
-    display: flex !important;
+    display: inline-flex !important;
     align-items: center !important;
-    gap: 5px !important;
+    gap: 4px !important;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    box-sizing: border-box !important;
+    margin-right: 0 !important;
+  }
+  .cart-trigger svg {
+    width: 16px !important;
+    height: 16px !important;
+    flex-shrink: 0 !important;
   }
   .cart-badge {
-    min-width: 18px !important;
-    height: 18px !important;
+    min-width: 17px !important;
+    height: 17px !important;
     background: #ef4444 !important;
     color: #ffffff !important;
     border-radius: 999px !important;
-    font-size: 10px !important;
+    font-size: 9.5px !important;
     font-weight: 800 !important;
     display: grid !important;
     place-items: center !important;
+    padding: 0 4px !important;
+    flex-shrink: 0 !important;
+  }
+
+  @media (max-width: 390px) {
+    .cart-trigger span:not(.cart-badge) {
+      display: none !important;
+    }
+    .cart-trigger {
+      padding: 5px 8px !important;
+    }
+    .header-actions {
+      gap: 3px !important;
+    }
   }
 
   /* 3. App Search Bar directly under Header (normal flow, 0 overlap) */
@@ -7133,9 +7178,12 @@ body.modal-open .floating-whatsapp-btn {
     margin-top: 10px !important;
     display: flex !important;
     gap: 6px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
   .btn-buy-now {
-    flex: 1 !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
     height: 36px !important;
     background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
     color: #ffffff !important;
@@ -7146,14 +7194,20 @@ body.modal-open .floating-whatsapp-btn {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    box-sizing: border-box !important;
     transition: transform 0.1s ease !important;
   }
   .btn-buy-now:active {
     transform: scale(0.95) !important;
   }
   .btn-add-bag {
+    flex: 0 0 36px !important;
     width: 36px !important;
     height: 36px !important;
+    min-width: 36px !important;
     background: #f1f5f9 !important;
     border: 1.5px solid #cbd5e1 !important;
     color: #1e293b !important;
@@ -7161,6 +7215,7 @@ body.modal-open .floating-whatsapp-btn {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
+    box-sizing: border-box !important;
     transition: transform 0.1s ease !important;
   }
   .btn-add-bag:active {
@@ -7188,6 +7243,7 @@ body.modal-open .floating-whatsapp-btn {
     padding-inline: 4px !important;
   }
   .mobile-bottom-item {
+    flex: 1 !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
@@ -7196,9 +7252,10 @@ body.modal-open .floating-whatsapp-btn {
     text-decoration: none !important;
     font-size: 10px !important;
     font-weight: 700 !important;
-    gap: 3px !important;
+    gap: 2px !important;
     position: relative !important;
-    padding: 6px 12px !important;
+    padding: 5px 2px !important;
+    min-width: 0 !important;
     transition: all 0.15s ease !important;
   }
   .mobile-bottom-item svg {
@@ -7223,13 +7280,17 @@ body.modal-open .floating-whatsapp-btn {
   .mobile-cart-badge {
     position: absolute !important;
     top: 2px !important;
-    right: 14px !important;
+    left: calc(50% + 4px) !important;
+    right: auto !important;
     background: #ef4444 !important;
     color: #ffffff !important;
     border-radius: 9999px !important;
     padding: 1px 5px !important;
     font-size: 9px !important;
     font-weight: 800 !important;
+    line-height: 1.2 !important;
+    min-width: 15px !important;
+    text-align: center !important;
   }
 
   /* Position floating WhatsApp button above bottom bar */
