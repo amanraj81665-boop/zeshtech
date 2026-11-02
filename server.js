@@ -109,7 +109,7 @@ app.use(
       if (filePath.endsWith(".html")) {
         res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
       } else if (filePath.match(/\.(jpg|jpeg|png|webp|svg|ico)$/i)) {
-        res.setHeader("Cache-Control", "public, max-age=604800, immutable");
+        res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
       } else if (filePath.match(/\.(css|js)$/i)) {
         res.setHeader("Cache-Control", "public, max-age=86400");
       }

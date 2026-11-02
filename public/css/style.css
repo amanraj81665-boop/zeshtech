@@ -6487,8 +6487,29 @@ body.modal-open .floating-whatsapp-btn {
   .locker-long-text {
     display: none !important;
   }
+    #auth-header-container {
+    display: inline-flex !important;
+    align-items: center !important;
+  }
   #open-auth-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 6px 9px !important;
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    border-radius: 999px !important;
+    background: #f8fafc !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+  }
+  #open-auth-btn span {
     display: none !important;
+  }
+  .user-menu-pill {
+    padding: 3px 8px 3px 3px !important;
+    font-size: 11px !important;
+    border-radius: 999px !important;
   }
   .cart-trigger {
     padding: 6px 12px !important;
@@ -7263,3 +7284,25 @@ body.modal-open .floating-whatsapp-btn {
   color: #ffffff !important;
   border-color: #ef4444 !important;
 }
+
+
+  .mob-nav-avatar-slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+  }
+  .mob-avatar-badge {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #2563eb, #3b82f6);
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
+  }

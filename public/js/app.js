@@ -16,6 +16,25 @@
     }).format(Number(val) || 0);
 
   const imageFallback = "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=600&q=80";
+  const ASSET_CACHE_VERSION = "v=6.7";
+
+  function resolveProductImageUrl(url) {
+    if (!url || typeof url !== "string") return imageFallback;
+    const trimmed = url.trim();
+    if (!trimmed || trimmed.startsWith("data:") || trimmed.startsWith("blob:")) return imageFallback;
+    // Don't append if it's already an external CDN with versioning or not our local /images/
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+      if (trimmed.includes("zeshtech.in/images/")) {
+        const sep = trimmed.includes("?") ? "&" : "?";
+        return trimmed.includes("v=") ? trimmed.replace(/v=[^&]+/, ASSET_CACHE_VERSION) : `${trimmed}${sep}${ASSET_CACHE_VERSION}`;
+      }
+      return trimmed;
+    }
+    // Local path e.g. /images/products/... or images/...
+    const sep = trimmed.includes("?") ? "&" : "?";
+    return trimmed.includes("v=") ? trimmed.replace(/v=[^&]+/, ASSET_CACHE_VERSION) : `${trimmed}${sep}${ASSET_CACHE_VERSION}`;
+  }
+
 
   /* ==========================================================================
      Modal Isolation & Body Scroll Lock (Prevents Background Rubberband Glitch)
@@ -452,12 +471,12 @@
       const isOut = stock <= 0;
       const isLow = !isOut && stock <= (product.lowStockThreshold || 2);
       const isWish = wishlist.includes(product._id);
-      const rawImages = [
+            const rawImages = [
         product.imageUrl,
         ...(Array.isArray(product.images) ? product.images : [])
       ].filter(Boolean);
-      const productImages = Array.from(new Set(rawImages));
-      const img = productImages[0] || product.imageUrl || imageFallback;
+      const productImages = Array.from(new Set(rawImages)).map(resolveProductImageUrl);
+      const img = productImages[0] || resolveProductImageUrl(product.imageUrl) || imageFallback;
       const hasMultiImages = productImages.length > 1;
       const specs = extractProductSpecs(product);
       const { mrp, discountPct } = calculateDiscount(product.sellingPrice);
@@ -595,7 +614,7 @@
   // Smart Color & Sibling Image Resolver for Smartphones & Retail
   function getProductColorVariants(product, allProds = [], specs = null) {
     const brand = (product.brand || "").toLowerCase();
-    const baseImg = product.imageUrl || imageFallback;
+    const baseImg = resolveProductImageUrl(product.imageUrl) || imageFallback;
     const variants = [];
     const seenColors = new Set();
     const productKey = getCanonicalModelKey(product);
@@ -640,7 +659,7 @@
         seenColors.add(cName.toLowerCase());
         variants.push({
           color: cName,
-          image: p.imageUrl || baseImg,
+          image: resolveProductImageUrl(p.imageUrl) || baseImg,
           productId: p._id,
           isCurrent: false,
           price: p.sellingPrice,
@@ -791,12 +810,12 @@
     try {
       const stock = Number(product.stockQuantity) || 0;
       const isOut = stock <= 0;
-      const rawAllImages = [
+            const rawAllImages = [
         product.imageUrl,
         ...(Array.isArray(product.images) ? product.images : [])
       ].filter(Boolean);
-      const allProductImages = Array.from(new Set(rawAllImages));
-      const img = allProductImages[0] || product.imageUrl || imageFallback;
+      const allProductImages = Array.from(new Set(rawAllImages)).map(resolveProductImageUrl);
+      const img = allProductImages[0] || resolveProductImageUrl(product.imageUrl) || imageFallback;
       const { mrp, discountPct } = calculateDiscount(product.sellingPrice);
       const ratingInfo = getProductRating(product);
       const { rating, ratingsFormatted, reviewsFormatted } = ratingInfo;
@@ -2142,32 +2161,51 @@
 
   function updateCustomerAuthHeader() {
     const container = $("#auth-header-container");
-    if (!container) return;
+    const mobAvatarSlot = $("#mob-nav-avatar-slot");
+    const mobLabel = $("#mob-nav-profile-label");
 
     if (zeshCustomerAPI.isLoggedIn()) {
-      const user = zeshCustomerAPI.user;
+      const user = zeshCustomerAPI.user || {};
       const initial = (user.name || "C").charAt(0).toUpperCase();
+      const firstName = user.name ? user.name.split(" ")[0] : "Account";
 
-      container.innerHTML = `
-        <button class="user-menu-pill" id="customer-profile-trigger">
-          <span class="user-avatar-circle">${escapeHTML(initial)}</span>
-          <span>${escapeHTML(user.name.split(" ")[0])}</span>
-        </button>
-      `;
+      if (container) {
+        container.innerHTML = `
+          <button class="user-menu-pill" id="customer-profile-trigger">
+            <span class="user-avatar-circle">${escapeHTML(initial)}</span>
+            <span>${escapeHTML(firstName)}</span>
+          </button>
+        `;
+        $("#customer-profile-trigger")?.addEventListener("click", () => openCustomerPortal("profile"));
+      }
 
-      $("#customer-profile-trigger")?.addEventListener("click", openCustomerPortal);
+      if (mobAvatarSlot) {
+        mobAvatarSlot.innerHTML = `<span class="mob-avatar-badge">${escapeHTML(initial)}</span>`;
+      }
+      if (mobLabel) {
+        mobLabel.textContent = firstName.length > 7 ? firstName.slice(0, 6) + "…" : firstName;
+      }
     } else {
-      container.innerHTML = `
-        <button class="btn btn-secondary btn-small" id="open-auth-btn" type="button">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          <span>Sign In</span>
-        </button>
-      `;
-      $("#open-auth-btn")?.addEventListener("click", () => openAuthModal("login"));
+      if (container) {
+        container.innerHTML = `
+          <button class="btn btn-secondary btn-small" id="open-auth-btn" type="button" title="Sign In">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span>Sign In</span>
+          </button>
+        `;
+        $("#open-auth-btn")?.addEventListener("click", () => openAuthModal("login"));
+      }
+
+      if (mobAvatarSlot) {
+        mobAvatarSlot.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+      }
+      if (mobLabel) {
+        mobLabel.textContent = "Account";
+      }
     }
   }
 
-  async function openCustomerPortal() {
+  async function openCustomerPortal(targetTab = "orders") {
     if (!zeshCustomerAPI.isLoggedIn()) {
       openAuthModal("login");
       return;
@@ -2182,8 +2220,8 @@
     // Render VIP Header Info
     renderCustomerVipCard();
 
-    // Switch to orders tab by default
-    switchPortalTab("orders");
+    // Switch to requested tab
+    switchPortalTab(targetTab || "orders");
 
     // Load orders in background and update metrics
     await loadCustomerOrders();
@@ -3914,9 +3952,18 @@
 
     // Mobile App Bottom Navigation Bar
     $("#mob-nav-cart")?.addEventListener("click", () => openCartDrawer());
-    $("#mob-nav-orders")?.addEventListener("click", () => {
+    $("#mob-nav-orders")?.addEventListener("click", (e) => {
+      e?.preventDefault();
       if (zeshCustomerAPI.isLoggedIn()) {
-        openCustomerPortal();
+        openCustomerPortal("orders");
+      } else {
+        openAuthModal("login");
+      }
+    });
+    $("#mob-nav-profile")?.addEventListener("click", (e) => {
+      e?.preventDefault();
+      if (zeshCustomerAPI.isLoggedIn()) {
+        openCustomerPortal("profile");
       } else {
         openAuthModal("login");
       }
