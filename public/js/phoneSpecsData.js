@@ -1188,52 +1188,11 @@ window.ZeshSpecs = (function () {
     const nameLower = (product.name || "").toLowerCase();
     const modelLower = (product.model || "").toLowerCase();
     const combined = `${nameLower} ${modelLower}`;
-
-    // Exact or word-boundary key match in specsDB (sorted by key length descending)
-    const sortedEntries = Object.entries(specsDB).sort((a, b) => b[0].length - a[0].length);
-    for (const [key, val] of sortedEntries) {
-      // Check word boundary so e.g. "redmi 15" does not falsely match "redmi 15a"
-      const regex = new RegExp("(?:^|[^a-z0-9])" + key.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&") + "(?:$|[^a-z0-9])", "i");
-      if (regex.test(combined) || combined === key) {
-        const custom = parseCustomSpecs(product.description, product.name);
-        const resolvedRamRom = custom.ramRom || val.ramRom;
-        const resolvedBattery = custom.battery || val.battery;
-        const resolvedCamera = custom.rearCamera || val.rearCamera;
-        const resolvedDisplay = custom.display || val.display;
-        const resolvedOS = custom.os || val.os;
-
-        const customBadges = val.customBadges || [
-          { icon: "🔋", title: resolvedBattery.split("with")[0].trim(), subtitle: "Long Lasting Battery" },
-          { icon: "📸", title: resolvedCamera.split("+")[0].split("Camera")[0].trim() || "AI Camera", subtitle: "AI Portrait Camera" },
-          { icon: "📱", title: resolvedDisplay.includes('"') ? resolvedDisplay.split('"')[0] + '"' : (resolvedDisplay.split("(")[0].trim() || "Smooth Display"), subtitle: `${custom.refreshRate || val.refreshRate || "120Hz"} Display` },
-          { icon: "⚡", title: resolvedRamRom.split("|")[0].trim() || "Fast RAM", subtitle: (custom.chipset || val.chipset || "Fast Processor").split("(")[0].trim() }
-        ];
-
-        return {
-          ...val,
-          model: product.model || product.name,
-          ramRom: resolvedRamRom,
-          battery: resolvedBattery,
-          rearCamera: resolvedCamera,
-          frontCamera: custom.frontCamera || val.frontCamera,
-          display: resolvedDisplay,
-          refreshRate: custom.refreshRate || val.refreshRate,
-          chipset: custom.chipset || val.chipset,
-          os: resolvedOS,
-          uiName: custom.uiName || val.uiName,
-          color: custom.color || "",
-          customBadges,
-          originalProduct: product,
-          categoryType: "mobile"
-        };
-      }
-    }
-
     const price = product.sellingPrice || 19999;
     const brand = product.brand || "Zesh Verified";
     const cat = (product.category || "").toLowerCase();
 
-    // 1. WASHING MACHINE & HOME APPLIANCES
+    // 1. WASHING MACHINE & HOME APPLIANCES (Must check before specsDB)
     if (cat === "appliances" || combined.includes("washing") || combined.includes("machine") || combined.includes("wm")) {
       const capMatch = product.name.match(/(\d+(\.\d+)?\s*kg)/i);
       const cap = capMatch ? capMatch[0] : "7.5 Kg";
@@ -1246,10 +1205,10 @@ window.ZeshSpecs = (function () {
         gpu: "N/A (Home Appliance)",
         display: "Digital LED Touch Control Panel / Soft Dial",
         resolution: "5 Wash Programs (Normal, Gentle, Heavy, Quick, Soak)",
-        refreshRate: "1350 RPM",
+        refreshRate: "1350 RPM Super Air Turbo Dry",
         rearCamera: "N/A (Home Appliance)",
         frontCamera: "N/A (Home Appliance)",
-        video: "Magic Filter with Rust-Proof Polypropylene Body",
+        video: "Magic Lint Filter with Rust-Proof Polypropylene Body",
         battery: "230V AC / 50Hz • 5 Star Energy Efficient",
         os: "Smart Auto-Restart & Water Level Sensor",
         uiName: "Rotary Knob & Touch UI",
@@ -1258,7 +1217,7 @@ window.ZeshSpecs = (function () {
         sim: "N/A",
         weight: "26.5 kg",
         dimensions: { width: "790 mm", depth: "480 mm", height: "960 mm" },
-        inBox: "Washing Machine, Inlet Hose, Drain Pipe, Lint Filter, User Manual",
+        inBox: "Washing Machine Unit, Water Inlet Hose, Flexible Drain Pipe, Magic Lint Filter, Anti-Rat Mesh, User Manual & 10-Yr Warranty Card",
         zeshScore: 9.4,
         categoryTags: ["value", "appliance"],
         bestForBadge: "🧺 Premium Home Appliance",
@@ -1280,48 +1239,49 @@ window.ZeshSpecs = (function () {
       };
     }
 
-    // 2. SMART TELEVISIONS
+    // 2. SMART TELEVISIONS (Must check before specsDB so TV never matches mobile specs)
     if (cat === "television" || combined.includes("tv")) {
       const is43 = combined.includes("43");
+      const isFire = combined.includes("fire");
       const sizeText = is43 ? '43" (108 cm) 4K Ultra HD' : '32" (80 cm) Bezel-Less HD';
       return {
         brand: brand,
         model: product.model || product.name,
         categoryType: "tv",
-        chipset: "Quad Core A55 64-bit Processor with Mali GPU",
-        cpu: "Quad Core A55 (1.5 GHz)",
-        gpu: "Mali G31 MP2 GPU",
+        chipset: "Quad Core A55 64-bit High-Speed Processor",
+        cpu: "Quad Core A55 High-Speed Processor (1.5 GHz)",
+        gpu: "Mali G31 MP2 High Performance GPU",
         display: is43 ? '43" 4K Ultra HD A+ Grade IPS Display, HDR10' : '32" Bezel-Less HD Ready Display',
-        resolution: is43 ? "3840 x 2160 Pixels 4K UHD" : "1366 x 768 Pixels HD",
+        resolution: is43 ? "3840 x 2160 Pixels (4K Ultra HD)" : "1366 x 768 Pixels (HD Ready)",
         refreshRate: "60 Hz Vivid Motion Engine",
         rearCamera: "N/A (Smart TV)",
         frontCamera: "N/A (Smart TV)",
-        video: "24W Dolby Audio Stereo Speakers with DTS-HD",
-        battery: "Power: AC 100-240V ~ 50/60Hz, Eco Mode",
-        os: "Google TV / Android TV OS with Play Store & Chromecast",
-        uiName: "Google TV Interface",
+        video: "24W Powerful Stereo Box Speakers with Dolby Audio & DTS-HD",
+        battery: "Power: AC 100-240V ~ 50/60Hz (Eco Power Saver)",
+        os: isFire ? "Fire TV OS with Alexa Voice Remote & App Store" : "Google TV OS with Google Assistant & Chromecast Built-in",
+        uiName: isFire ? "Fire TV Interface" : "Google TV Interface",
         ramRom: is43 ? "2 GB RAM | 16 GB Storage" : "1.5 GB RAM | 8 GB Storage",
-        build: "Metal Bezel-Less Frameless Design with Table Stand",
-        sim: "N/A • Dual Band WiFi (2.4/5GHz) + Bluetooth 5.0",
+        build: "Metal Bezel-Less Frameless Design with Table Stand & Wall Mount Kit",
+        sim: "Dual Band Wi-Fi (2.4/5GHz) + Bluetooth 5.0",
         weight: is43 ? "6.8 kg" : "3.9 kg",
         dimensions: { width: is43 ? "965 mm" : "720 mm", depth: "85 mm", height: is43 ? "560 mm" : "430 mm" },
-        inBox: "Smart TV, Smart Voice Remote, AAA Batteries, Wall Mount, Stand, Power Cable",
+        inBox: "Smart LED Television Unit, Smart Voice Remote, 2x AAA Batteries, Table Stand Legs, Wall Mount Kit, Power Cable, User Manual & Warranty Card",
         zeshScore: 9.3,
         categoryTags: ["tv", "entertainment"],
         bestForBadge: "📺 Home Cinema Champion",
         highlights: [
           `${sizeText} with 1.07 Billion Colors & HDR10`,
           "24W Dolby Audio with Cinematic Virtual Surround",
-          "Google TV with Netflix, Prime Video, YouTube & Hotstar",
+          isFire ? "Fire TV OS with Alexa Voice Remote (12,000+ Apps)" : "Google TV OS with Netflix, Prime Video, YouTube & Hotstar",
           "3 HDMI, 2 USB, Dual Band WiFi, Bluetooth 5.0"
         ],
         customBadges: [
           { icon: "📺", title: is43 ? "4K Ultra HD" : "HD Bezel-Less", subtitle: "Vivid Picture Engine" },
           { icon: "🔊", title: "24W Dolby Audio", subtitle: "Cinema Surround Sound" },
-          { icon: "📶", title: "Google TV OS", subtitle: "Netflix, YouTube, Apps" },
-          { icon: "⚡", title: "3 HDMI + 2 USB", subtitle: "Full Connectivity" }
+          { icon: isFire ? "🔥" : "📶", title: isFire ? "Fire TV OS" : "Google TV OS", subtitle: "Prime, Netflix, Apps" },
+          { icon: "🔌", title: "3 HDMI + 2 USB", subtitle: "Full Connectivity" }
         ],
-        pros: ["Cinema sound quality", "Stunning vivid colors", "Official Google TV with Play Store"],
+        pros: ["Cinema sound quality", "Stunning vivid colors", isFire ? "Official Fire TV with Alexa" : "Official Google TV with Play Store"],
         cons: ["Wall mounting installation recommended"],
         originalProduct: product
       };
@@ -1415,6 +1375,46 @@ window.ZeshSpecs = (function () {
       };
     }
 
+    // 5. EXACT OR WORD-BOUNDARY KEY MATCH IN SPECSDB (for Smartphones / Tablets)
+    const sortedEntries = Object.entries(specsDB).sort((a, b) => b[0].length - a[0].length);
+    for (const [key, val] of sortedEntries) {
+      // Check word boundary so e.g. "redmi 15" does not falsely match "redmi 15a"
+      const regex = new RegExp("(?:^|[^a-z0-9])" + key.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&") + "(?:$|[^a-z0-9])", "i");
+      if (regex.test(combined) || combined === key) {
+        const custom = parseCustomSpecs(product.description, product.name);
+        const resolvedRamRom = custom.ramRom || val.ramRom;
+        const resolvedBattery = custom.battery || val.battery;
+        const resolvedCamera = custom.rearCamera || val.rearCamera;
+        const resolvedDisplay = custom.display || val.display;
+        const resolvedOS = custom.os || val.os;
+
+        const customBadges = val.customBadges || [
+          { icon: "🔋", title: resolvedBattery.split("with")[0].trim(), subtitle: "Long Lasting Battery" },
+          { icon: "📸", title: resolvedCamera.split("+")[0].split("Camera")[0].trim() || "AI Camera", subtitle: "AI Portrait Camera" },
+          { icon: "📱", title: resolvedDisplay.includes('"') ? resolvedDisplay.split('"')[0] + '"' : (resolvedDisplay.split("(")[0].trim() || "Smooth Display"), subtitle: `${custom.refreshRate || val.refreshRate || "120Hz"} Display` },
+          { icon: "⚡", title: resolvedRamRom.split("|")[0].trim() || "Fast RAM", subtitle: (custom.chipset || val.chipset || "Fast Processor").split("(")[0].trim() }
+        ];
+
+        return {
+          ...val,
+          model: product.model || product.name,
+          ramRom: resolvedRamRom,
+          battery: resolvedBattery,
+          rearCamera: resolvedCamera,
+          frontCamera: custom.frontCamera || val.frontCamera,
+          display: resolvedDisplay,
+          refreshRate: custom.refreshRate || val.refreshRate,
+          chipset: custom.chipset || val.chipset,
+          os: resolvedOS,
+          uiName: custom.uiName || val.uiName,
+          color: custom.color || "",
+          customBadges,
+          originalProduct: product,
+          categoryType: "mobile"
+        };
+      }
+    }
+
     // 5. SMARTPHONES & MOBILE PHONES (Dynamic Generator)
     const is5G = combined.includes("5g") || price >= 18000;
     const isAMOLED = price >= 23000;
@@ -1447,6 +1447,7 @@ window.ZeshSpecs = (function () {
     return {
       brand: brand,
       model: product.model || product.name,
+      categoryType: "mobile",
       chipset,
       cpu: "Octa-Core (High Performance Cores)",
       gpu: "Advanced Mobile Gaming GPU",

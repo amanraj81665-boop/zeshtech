@@ -16,7 +16,7 @@
     }).format(Number(val) || 0);
 
   const imageFallback = "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=600&q=80";
-  const ASSET_CACHE_VERSION = "v=6.8";
+  const ASSET_CACHE_VERSION = "v=6.9";
 
   function resolveProductImageUrl(url) {
     if (!url || typeof url !== "string") return imageFallback;
@@ -834,12 +834,26 @@
       const variantsList = getProductVariants(product, allProducts, specs);
 
       // Category Badges (accurate for phones, TVs, washing machines, audio)
-      const posterBadges = specs?.customBadges || [
-        { icon: "🔋", title: specs?.battery?.split("with")[0]?.trim() || "5000 mAh", subtitle: "Long Lasting Battery" },
-        { icon: "📸", title: specs?.rearCamera?.split("+")[0]?.trim() || "50MP AI", subtitle: "AI Portrait Camera" },
-        { icon: "📱", title: specs?.display?.split(",")[0]?.trim() || "6.79 inch", subtitle: `${specs?.refreshRate || "120Hz"} Display` },
-        { icon: "⚡", title: specs?.antutuScore || "5,47,000+*", subtitle: "Leading AnTuTu Score" }
-      ];
+      const isTV = (product.category || "").toLowerCase() === "television" || (product.name || "").toLowerCase().includes("tv");
+      const isAppliance = (product.category || "").toLowerCase() === "appliances" || (product.name || "").toLowerCase().includes("washing");
+      const posterBadges = specs?.customBadges || (
+        isTV ? [
+          { icon: "📺", title: "4K Ultra HD", subtitle: "Vivid Picture Engine" },
+          { icon: "🔊", title: "24W Dolby Audio", subtitle: "Cinema Surround Sound" },
+          { icon: "🎬", title: "Smart TV OS", subtitle: "Netflix, YouTube, Apps" },
+          { icon: "🔌", title: "3 HDMI + 2 USB", subtitle: "Full Connectivity" }
+        ] : isAppliance ? [
+          { icon: "🧺", title: "Family Capacity", subtitle: "Dual Storm Pulsator" },
+          { icon: "⚡", title: "1350 RPM Speed", subtitle: "Super Air Turbo Dry" },
+          { icon: "⭐", title: "5 Star Rating", subtitle: "Lowest Power & Water" },
+          { icon: "🛡️", title: "10 Yr Warranty", subtitle: "Long Life Motor" }
+        ] : [
+          { icon: "🔋", title: specs?.battery?.split("with")[0]?.trim() || "5000 mAh", subtitle: "Long Lasting Battery" },
+          { icon: "📸", title: specs?.rearCamera?.split("+")[0]?.trim() || "50MP AI", subtitle: "AI Portrait Camera" },
+          { icon: "📱", title: specs?.display?.split(",")[0]?.trim() || "6.79 inch", subtitle: `${specs?.refreshRate || "120Hz"} Display` },
+          { icon: "⚡", title: specs?.antutuScore || "5,47,000+*", subtitle: "Leading AnTuTu Score" }
+        ]
+      );
 
       const has360View = product.category === "Mobile" || product.category === "Television";
 
@@ -1258,8 +1272,46 @@
                       </div>
                     </div>
 
-                    <!-- Features -->
-                    ${specs.rearCamera && specs.rearCamera !== "N/A (Home Appliance)" && specs.rearCamera !== "N/A" ? `
+                    <!-- TV Specific Features -->
+                    ${specs.categoryType === "tv" ? `
+                      <div class="fk-specs-group">
+                        <h3 class="fk-group-title">Smart TV OS &amp; Connectivity</h3>
+                        <div class="fk-spec-item-line">
+                          <span class="fk-spec-name">Smart Operating System</span>
+                          <strong class="fk-spec-val">${escapeHTML(specs.os)}</strong>
+                        </div>
+                        <div class="fk-spec-item-line">
+                          <span class="fk-spec-name">Sound Output / Audio</span>
+                          <strong class="fk-spec-val">${escapeHTML(specs.video)}</strong>
+                        </div>
+                        <div class="fk-spec-item-line">
+                          <span class="fk-spec-name">Ports &amp; Wireless</span>
+                          <strong class="fk-spec-val">${escapeHTML(specs.sim || "3x HDMI, 2x USB, Dual Band WiFi, Bluetooth 5.0")}</strong>
+                        </div>
+                      </div>
+                    ` : ""}
+
+                    <!-- Appliance Specific Features -->
+                    ${specs.categoryType === "appliance" ? `
+                      <div class="fk-specs-group">
+                        <h3 class="fk-group-title">Washing &amp; Motor Performance</h3>
+                        <div class="fk-spec-item-line">
+                          <span class="fk-spec-name">Wash Capacity</span>
+                          <strong class="fk-spec-val">${escapeHTML(specs.ramRom)}</strong>
+                        </div>
+                        <div class="fk-spec-item-line">
+                          <span class="fk-spec-name">Pulsator System</span>
+                          <strong class="fk-spec-val">${escapeHTML(specs.cpu)}</strong>
+                        </div>
+                        <div class="fk-spec-item-line">
+                          <span class="fk-spec-name">Spin Dry Speed</span>
+                          <strong class="fk-spec-val">${escapeHTML(specs.refreshRate)}</strong>
+                        </div>
+                      </div>
+                    ` : ""}
+
+                    <!-- Mobile Camera & Video Features -->
+                    ${specs.categoryType === "mobile" && specs.rearCamera && !specs.rearCamera.startsWith("N/A") ? `
                       <div class="fk-specs-group">
                         <h3 class="fk-group-title">Camera &amp; Video</h3>
                         <div class="fk-spec-item-line">
@@ -1269,6 +1321,17 @@
                         <div class="fk-spec-item-line">
                           <span class="fk-spec-name">Selfie Camera</span>
                           <strong class="fk-spec-val">${escapeHTML(specs.frontCamera)}</strong>
+                        </div>
+                      </div>
+                    ` : ""}
+
+                    <!-- In-Box Accessories & Package Contents -->
+                    ${specs.inBox ? `
+                      <div class="fk-specs-group">
+                        <h3 class="fk-group-title">What's In The Box (Accessories)</h3>
+                        <div class="fk-spec-item-line">
+                          <span class="fk-spec-name">Package Contents</span>
+                          <strong class="fk-spec-val">${escapeHTML(specs.inBox)}</strong>
                         </div>
                       </div>
                     ` : ""}
