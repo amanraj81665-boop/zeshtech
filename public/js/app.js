@@ -16,7 +16,7 @@
     }).format(Number(val) || 0);
 
   const imageFallback = "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=600&q=80";
-  const ASSET_CACHE_VERSION = "v=6.7";
+  const ASSET_CACHE_VERSION = "v=6.8";
 
   function resolveProductImageUrl(url) {
     if (!url || typeof url !== "string") return imageFallback;
@@ -3387,8 +3387,13 @@
     });
 
     // Product Card Clicks: Buy Now, Wishlist, Quick View, Multi-photo Flips, and Add to Bag
+    let isCardSwipe = false;
     const prodContainer = $("#products-container");
     prodContainer?.addEventListener("click", (e) => {
+      if (isCardSwipe) {
+        isCardSwipe = false;
+        return;
+      }
       // 0a. Multi-image arrow flips on card (prev/next)
       const prevBtn = e.target.closest(".card-prev-img");
       if (prevBtn) {
@@ -3472,19 +3477,22 @@
     let cardTouchStartY = 0;
     prodContainer?.addEventListener("touchstart", (e) => {
       const thumb = e.target.closest(".product-thumbnail-box");
-      if (thumb) {
+      if (thumb && e.touches[0]) {
         cardTouchStartX = e.touches[0].clientX;
         cardTouchStartY = e.touches[0].clientY;
+        isCardSwipe = false;
       }
     }, { passive: true });
 
     prodContainer?.addEventListener("touchend", (e) => {
       const thumb = e.target.closest(".product-thumbnail-box");
-      if (!thumb) return;
+      if (!thumb || !e.changedTouches || !e.changedTouches[0]) return;
       const pid = thumb.dataset.id;
       const diffX = e.changedTouches[0].clientX - cardTouchStartX;
       const diffY = e.changedTouches[0].clientY - cardTouchStartY;
-      if (Math.abs(diffX) > 35 && Math.abs(diffX) > Math.abs(diffY)) {
+
+      if (Math.abs(diffX) > 25 && Math.abs(diffX) > Math.abs(diffY)) {
+        isCardSwipe = true;
         if (diffX < 0) flipCardProductImage(pid, 1);
         else flipCardProductImage(pid, -1);
       }

@@ -6885,13 +6885,85 @@ body.modal-open .floating-whatsapp-btn {
     transform: scale(1.04) !important;
   }
 
-  /* Hide distracting elements inside photo box */
+  /* Hide non-essential rows on mobile, keeping visual dots & gallery active */
   .card-compare-pill,
-  .card-nav-arrow,
-  .card-img-dots,
   .product-specs-row,
   .product-category-sub {
     display: none !important;
+  }
+
+  /* Highly Visible 3-Dot Swipe Navigation on Mobile Product Cards */
+  .card-img-dots {
+    display: flex !important;
+    position: absolute !important;
+    bottom: 6px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    align-items: center !important;
+    gap: 5px !important;
+    z-index: 6 !important;
+    background: rgba(15, 23, 42, 0.5) !important;
+    backdrop-filter: blur(6px) !important;
+    -webkit-backdrop-filter: blur(6px) !important;
+    padding: 3px 8px !important;
+    border-radius: 999px !important;
+    pointer-events: auto !important;
+  }
+  .card-img-dot {
+    width: 5px !important;
+    height: 5px !important;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, 0.6) !important;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    cursor: pointer !important;
+  }
+  .card-img-dot.active {
+    width: 15px !important;
+    border-radius: 999px !important;
+    background: #ffffff !important;
+    box-shadow: 0 0 6px rgba(255, 255, 255, 0.9) !important;
+  }
+
+  /* Compact Finger-Friendly Arrow Controls on Mobile Cards */
+  .card-nav-arrow {
+    display: flex !important;
+    position: absolute !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    width: 26px !important;
+    height: 26px !important;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.16) !important;
+    color: #0f172a !important;
+    font-size: 15px !important;
+    font-weight: 800 !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 6 !important;
+    cursor: pointer !important;
+    opacity: 0.85 !important;
+  }
+  .card-prev-img {
+    left: 6px !important;
+  }
+  .card-next-img {
+    right: 6px !important;
+  }
+
+  /* Multi-Photo Count Badge on Mobile Cards */
+  .card-multi-img-badge {
+    display: inline-flex !important;
+    position: absolute !important;
+    bottom: 6px !important;
+    right: 6px !important;
+    background: rgba(15, 23, 42, 0.8) !important;
+    color: #ffffff !important;
+    font-size: 9px !important;
+    font-weight: 800 !important;
+    border-radius: 999px !important;
+    padding: 2px 6px !important;
+    z-index: 5 !important;
   }
 
   /* High Impact Top-Left Discount Badge */
