@@ -1,14 +1,14 @@
 // ZESH-TECH Progressive Web App Service Worker
-const CACHE_NAME = 'zeshtech-v7.0';
+const CACHE_NAME = 'zeshtech-v7.1';
 const STATIC_ASSETS = [
   "/",
   "/index.html",
   "/admin.html",
-  "/css/style.css?v=5.0",
-  "/js/phoneSpecsData.js?v=5.0",
-  "/js/app.js?v=5.0",
-  "/js/admin.js?v=5.0",
-  "/js/api.js?v=5.0",
+  "/css/style.css?v=7.1",
+  "/js/phoneSpecsData.js?v=7.1",
+  "/js/app.js?v=7.1",
+  "/js/admin.js?v=7.1",
+  "/js/api.js?v=7.1",
   "/images/logo.png",
   "/images/screenshots/desktop.png",
   "/images/screenshots/mobile.png",
@@ -42,31 +42,53 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  // Let API requests always go directly to network
-  if (event.request.url.includes("/api/")) {
+  const url = event.request.url;
+
+  // 1. API requests: always network only
+  if (url.includes("/api/")) {
     return;
   }
 
+  // 2. Images, fonts, stylesheets, scripts: Cache First (Instant 0ms display!) + Background Revalidate
+  const isImageOrStatic = event.request.destination === "image" ||
+                          url.includes("/images/") ||
+                          url.includes("res.cloudinary.com") ||
+                          url.match(/\.(jpg|jpeg|png|webp|svg|ico|css|js|woff2)$/i);
+
+  if (isImageOrStatic) {
+    event.respondWith(
+      caches.match(event.request).then((cachedResponse) => {
+        // Background fetch to update cache for next load
+        const networkFetch = fetch(event.request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return networkResponse;
+        }).catch(() => null);
+
+        // If in cache, return immediately (0ms delay!)
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+
+        // Otherwise wait for network fetch
+        return networkFetch;
+      })
+    );
+    return;
+  }
+
+  // 3. HTML Navigation requests: Network first with Cache fallback
   event.respondWith(
     fetch(event.request)
       .then((response) => {
         if (response && response.status === 200) {
           const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
         }
         return response;
       })
-      .catch(() => {
-        return caches.match(event.request).then((cachedResponse) => {
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-          if (event.request.mode === "navigate") {
-            return caches.match("/index.html");
-          }
-        });
-      })
+      .catch(() => caches.match(event.request).then((res) => res || caches.match("/index.html")))
   );
 });

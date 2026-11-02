@@ -54,7 +54,9 @@
   <link rel="icon" type="image/png" href="/images/logo.png">
   <link rel="apple-touch-icon" href="/images/logo.png">
 
-  <!-- Typography: DM Sans & Manrope -->
+  <!-- Preconnect to CDN & Fonts for ultra-fast image loading -->
+  <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
+  <link rel="dns-prefetch" href="https://res.cloudinary.com">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..800;1,9..40,400..800&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -64,7 +66,7 @@
   <meta name="google-site-verification" content="Z7vALILzh4yqUGcH_XiTjk33UtpBK2aDWU0j76iP05E" />
   <meta name="google-site-verification" content="epsVB-mPq_NWWWv0wptK8GEftN5h-SJwKRHqW4pBsN4" />
 
-  <link rel="stylesheet" href="/css/style.css?v=7.0">
+  <link rel="stylesheet" href="/css/style.css?v=7.1">
 
   <!-- Official Google Identity Services (GIS) Web SDK -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -1862,9 +1864,9 @@
   </nav>
 
   <!-- Scripts with Cache Busting -->
-  <script src="/js/phoneSpecsData.js?v=7.0"></script>
-  <script src="/js/api.js?v=7.0"></script>
-  <script src="/js/app.js?v=7.0"></script>
+  <script src="/js/phoneSpecsData.js?v=7.1"></script>
+  <script src="/js/api.js?v=7.1"></script>
+  <script src="/js/app.js?v=7.1"></script>
   <script>
     // PWA Service Worker Registration
     if ('serviceWorker' in navigator) {

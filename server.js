@@ -17,10 +17,11 @@ const compression = require("compression");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// High-speed Gzip/Brotli Compression
+// High-speed Gzip/Brotli Compression with tuned threshold
 app.use(
   compression({
-    threshold: 1024
+    threshold: 512,
+    level: 6
   })
 );
 

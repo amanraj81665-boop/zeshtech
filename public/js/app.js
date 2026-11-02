@@ -16,13 +16,32 @@
     }).format(Number(val) || 0);
 
   const imageFallback = "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=600&q=80";
-  const ASSET_CACHE_VERSION = "v=7.0";
+  const ASSET_CACHE_VERSION = "v=7.1";
 
-  function resolveProductImageUrl(url) {
+  function resolveProductImageUrl(url, width = 600) {
     if (!url || typeof url !== "string") return imageFallback;
     const trimmed = url.trim();
     if (!trimmed || trimmed.startsWith("data:") || trimmed.startsWith("blob:")) return imageFallback;
-    // Don't append if it's already an external CDN with versioning or not our local /images/
+
+    // 1. Cloudinary optimization: convert to auto-format (WebP/AVIF), auto-quality, responsive width
+    if (trimmed.includes("res.cloudinary.com") && trimmed.includes("/upload/")) {
+      if (!trimmed.includes("/upload/f_auto") && !trimmed.includes("/upload/w_")) {
+        return trimmed.replace("/upload/", `/upload/f_auto,q_auto:good,w_${width}/`);
+      }
+      return trimmed;
+    }
+
+    // 2. Apple CDN optimization
+    if (trimmed.includes("store.storeimages.cdn-apple.com")) {
+      return trimmed.replace(/wid=\d+/, `wid=${width}`).replace(/hei=\d+/, `hei=${width}`);
+    }
+
+    // 3. Flipkart CDN optimization
+    if (trimmed.includes("rukmini1.flixcart.com/image/")) {
+      return trimmed.replace(/\/image\/\d+\/\d+\//, `/image/${width}/${width}/`);
+    }
+
+    // 4. Local path with versioning
     if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
       if (trimmed.includes("zeshtech.in/images/")) {
         const sep = trimmed.includes("?") ? "&" : "?";
@@ -30,7 +49,7 @@
       }
       return trimmed;
     }
-    // Local path e.g. /images/products/... or images/...
+
     const sep = trimmed.includes("?") ? "&" : "?";
     return trimmed.includes("v=") ? trimmed.replace(/v=[^&]+/, ASSET_CACHE_VERSION) : `${trimmed}${sep}${ASSET_CACHE_VERSION}`;
   }
@@ -272,12 +291,31 @@
     const countBadge = $("#product-count-badge");
     if (!container) return;
 
-    container.innerHTML = `
-      <div style="grid-column: 1 / -1; text-align: center; padding: 48px; color: var(--text-muted);">
-        <div class="live-dot pulse-dot" style="margin: 0 auto 12px; width: 10px; height: 10px;"></div>
-        <div>Loading verified retail catalogue...</div>
-      </div>
-    `;
+    // Check instant session cache for 0ms startup render
+    let renderedFromCache = false;
+    const cacheKey = `zesh_cat_${currentCategory || "All"}_${sortBy || "featured"}`;
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        const cachedProducts = JSON.parse(cached);
+        if (Array.isArray(cachedProducts) && cachedProducts.length > 0) {
+          allProducts = cachedProducts;
+          if (countBadge) countBadge.textContent = `${allProducts.length} items available`;
+          applyFiltersAndRender();
+          initCurationsAndComparison();
+          renderedFromCache = true;
+        }
+      }
+    } catch (e) {}
+
+    if (!renderedFromCache) {
+      container.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 48px; color: var(--text-muted);">
+          <div class="live-dot pulse-dot" style="margin: 0 auto 12px; width: 10px; height: 10px;"></div>
+          <div>Loading verified retail catalogue...</div>
+        </div>
+      `;
+    }
 
     try {
       const params = { limit: 100 };
@@ -291,6 +329,11 @@
       const res = await zeshAPI.getProducts(params);
       allProducts = res.products || [];
 
+      // Save to instant session cache
+      try {
+        sessionStorage.setItem(cacheKey, JSON.stringify(allProducts));
+      } catch (e) {}
+
       if (countBadge) {
         countBadge.textContent = `${allProducts.length} items available`;
       }
@@ -299,15 +342,17 @@
       applyFiltersAndRender();
       initCurationsAndComparison();
     } catch (err) {
-      console.error("Failed to load catalogue:", err);
-      container.innerHTML = `
-        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; background: white; border-radius: var(--radius-lg); border: 1px solid var(--border);">
-          <div style="color: var(--danger); font-size: 16px; font-weight: 700; margin-bottom: 8px;">Could not connect to catalogue</div>
-          <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px;">${escapeHTML(err.message)}</p>
-          <button class="btn btn-secondary btn-small" id="retry-load-btn">Retry Connection</button>
-        </div>
-      `;
-      $("#retry-load-btn")?.addEventListener("click", fetchCatalogue);
+      if (!renderedFromCache) {
+        console.error("Failed to load catalogue:", err);
+        container.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 40px; background: white; border-radius: var(--radius-lg); border: 1px solid var(--border);">
+            <div style="color: var(--danger); font-size: 16px; font-weight: 700; margin-bottom: 8px;">Could not connect to catalogue</div>
+            <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px;">${escapeHTML(err.message)}</p>
+            <button class="btn btn-secondary btn-small" id="retry-load-btn">Retry Connection</button>
+          </div>
+        `;
+        $("#retry-load-btn")?.addEventListener("click", fetchCatalogue);
+      }
     }
   }
 
@@ -466,7 +511,7 @@
 
     noProductsView?.classList.add("hidden");
 
-    container.innerHTML = filtered.map(product => {
+    container.innerHTML = filtered.map((product, cardIdx) => {
       const stock = Number(product.stockQuantity) || 0;
       const isOut = stock <= 0;
       const isLow = !isOut && stock <= (product.lowStockThreshold || 2);
@@ -510,7 +555,7 @@
             ` : ""}
 
             <!-- Product Image with contain fit -->
-            <img src="${escapeHTML(img)}" id="card-img-${escapeHTML(product._id)}" data-images="${escapeHTML(JSON.stringify(productImages))}" data-current="0" alt="${escapeHTML(product.name)}" loading="lazy" onerror="this.onerror=null;this.src='${imageFallback}';">
+            <img src="${escapeHTML(img)}" id="card-img-${escapeHTML(product._id)}" data-images="${escapeHTML(JSON.stringify(productImages))}" data-current="0" alt="${escapeHTML(product.name)}" ${cardIdx < 4 ? 'loading="eager" fetchpriority="high"' : 'loading="lazy"'} decoding="async" onerror="this.onerror=null;this.src='${imageFallback}';">
 
             <!-- Card Image Dots for Multi-Photos -->
             ${hasMultiImages ? `
