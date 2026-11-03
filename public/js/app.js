@@ -793,17 +793,29 @@
     setCardProductImageIndex(pid, curr + direction);
   }
 
+  // Extract base model name ignoring storage variant and color
+  function getBaseModelName(p) {
+    if (!p || !p.name) return "";
+    let name = p.name;
+    const parenIdx = name.indexOf("(");
+    if (parenIdx > -1) {
+      name = name.slice(0, parenIdx);
+    } else {
+      const dashIdx = name.indexOf(" - ");
+      if (dashIdx > -1) {
+        name = name.slice(0, dashIdx);
+      }
+    }
+    return name.trim();
+  }
+
   // Canonical Model Key Extractor: Identifies exact smartphone model without being misled by color or storage
   function getCanonicalModelKey(p) {
     if (!p) return "";
-    const raw = `${p.brand || ""} ${p.model || ""} ${p.name || ""}`.toLowerCase();
-    return raw
-      .replace(/\((?:[^)]*?(?:ram|rom|storage|gb|tb|5g|4g|nvme)[^)]*?)\)/gi, "")
-      .replace(/\b\d+\s*(?:gb|tb)\b/gi, "")
-      .replace(/\b\d+\s*gb\s*ram\b/gi, "")
-      .replace(/-\s*(?:black|white|blue|gold|silver|purple|lavender|green|violet|titanium|grey|gray|red|yellow|orange|pink|brown|twilight|mocha|emerald|ocean|lake|carbon|glacier|charcoal|starlight|midnight|aqua)[^-(]*$/i, "")
-      .replace(/[^a-z0-9]/g, "")
-      .trim();
+    const base = getBaseModelName(p);
+    const brand = (p.brand || "").trim();
+    const raw = `${brand} ${base}`.toLowerCase();
+    return raw.replace(/[^a-z0-9]/g, "").trim();
   }
 
   // Smart Color & Sibling Image Resolver for Smartphones & Retail
@@ -868,13 +880,16 @@
 
   // Resolve Real & Dynamic Storage/RAM Variants
   function getProductVariants(product, allProds = [], specs = null) {
-    let currentRamRom = specs?.ramRom || "Standard Variant";
+    let currentRamRom = "";
     if (product.ram && product.storage) {
       currentRamRom = `${product.ram} / ${product.storage}`;
-    } else if (product.ram) {
-      currentRamRom = `${product.ram} RAM`;
-    } else if (product.storage) {
-      currentRamRom = `${product.storage} ROM`;
+    } else {
+      const match = (product.name || "").match(/\(([^)]*?(?:GB|TB)[^)]*?)\)/i);
+      if (match) {
+        currentRamRom = match[1].replace(/\//g, " / ").trim();
+      } else {
+        currentRamRom = specs?.ramRom || "Standard Variant";
+      }
     }
     const { mrp, discountPct } = calculateDiscount(product.sellingPrice);
     const brand = (product.brand || "").toLowerCase();
@@ -882,13 +897,16 @@
 
     const variantsList = [
       {
-        id: product._id,
+        id: String(product._id),
+        productId: String(product._id),
         title: currentRamRom,
         price: product.sellingPrice,
         mrp: mrp,
         discountPct: discountPct,
         isActive: true,
-        isRealProduct: true
+        isRealProduct: true,
+        name: product.name,
+        product: product
       }
     ];
 
@@ -901,45 +919,42 @@
     });
 
     siblings.forEach(sib => {
-      const sibSpecs = window.ZeshSpecs ? window.ZeshSpecs.getPhoneSpecs(sib) : null;
-      const sibTitle = (sib.ram && sib.storage)
-        ? `${sib.ram} / ${sib.storage}`
-        : (sibSpecs?.ramRom || sib.name.match(/\d+GB\/\d+GB/i)?.[0] || sib.name);
+      let sibTitle = "";
+      if (sib.ram && sib.storage) {
+        sibTitle = `${sib.ram} / ${sib.storage}`;
+      } else {
+        const sMatch = (sib.name || "").match(/\(([^)]*?(?:GB|TB)[^)]*?)\)/i);
+        if (sMatch) {
+          sibTitle = sMatch[1].replace(/\//g, " / ").trim();
+        } else {
+          const sibSpecs = window.ZeshSpecs ? window.ZeshSpecs.getPhoneSpecs(sib) : null;
+          sibTitle = sibSpecs?.ramRom || "Variant";
+        }
+      }
+
       const sibDisc = calculateDiscount(sib.sellingPrice);
-      if (!variantsList.some(v => v.title.toLowerCase() === sibTitle.toLowerCase())) {
+      const existing = variantsList.find(v => v.title.toLowerCase().replace(/\s+/g, "") === sibTitle.toLowerCase().replace(/\s+/g, ""));
+      if (!existing) {
         variantsList.push({
-          id: sib._id,
+          id: String(sib._id),
+          productId: String(sib._id),
           title: sibTitle,
           price: sib.sellingPrice,
           mrp: sibDisc.mrp,
           discountPct: sibDisc.discountPct,
           isActive: false,
-          isRealProduct: true
+          isRealProduct: true,
+          name: sib.name,
+          product: sib
         });
       }
     });
 
-    // If only 1 real variant in inventory and it's a mobile, show an intelligent option
-    if (variantsList.length === 1 && product.category === "Mobile") {
-      const parsedRam = parseInt(specs?.ram || "4", 10) || 4;
-      const parsedRom = parseInt(specs?.rom || "128", 10) || 128;
-      const nextRam = parsedRam === 4 ? 6 : parsedRam === 6 ? 8 : 12;
-      const nextRom = parsedRom === 64 ? 128 : parsedRom === 128 ? 256 : 512;
-      const nextPrice = product.sellingPrice + 2000;
-      const nextMrp = mrp + 3000;
-      const nextDisc = Math.round(((nextMrp - nextPrice) / nextMrp) * 100);
-
-      variantsList.push({
-        id: null,
-        title: `${nextRam}GB RAM | ${nextRom}GB Storage`,
-        price: nextPrice,
-        mrp: nextMrp,
-        discountPct: nextDisc,
-        isActive: false,
-        isRealProduct: false,
-        note: "Store Order"
-      });
-    }
+    // Sort variants ascending by price
+    variantsList.sort((a, b) => (a.price || 0) - (b.price || 0));
+    variantsList.forEach(v => {
+      v.isActive = String(v.id) === String(product._id);
+    });
 
     return variantsList;
   }
@@ -1180,7 +1195,7 @@
                 <div class="fk-section-subhead">Variant: <b>${escapeHTML(ramRomText)}</b></div>
                 <div class="fk-variant-boxes-row">
                   ${variantsList.map(v => `
-                    <div class="fk-variant-box ${v.isActive ? 'active' : ''}" data-variant-id="${v.id || ''}" style="${v.isRealProduct && !v.isActive ? 'cursor:pointer;' : ''}">
+                    <div class="fk-variant-box ${v.isActive ? 'active' : ''}" data-variant-id="${v.id || ''}" data-price="${v.price}" data-mrp="${v.mrp}" data-discount="${v.discountPct}" data-title="${escapeHTML(v.title)}" style="cursor:pointer;">
                       <div class="fk-variant-title">${escapeHTML(v.title)}</div>
                       <div class="fk-variant-discount">↓${v.discountPct}% <span class="fk-mrp-strike">${money(v.mrp)}</span></div>
                       <div class="fk-variant-price">${money(v.price)} ${v.note ? `<small style="font-size:10px; color:#2563eb; display:block; margin-top:2px;">(${v.note})</small>` : ''}</div>
@@ -1190,7 +1205,7 @@
               </div>
 
               <!-- Product Title & Verified Rating -->
-              <h1 class="fk-product-title">${escapeHTML(product.name)} (${escapeHTML(ramRomText)})</h1>
+              <h1 class="fk-product-title">${product.name.includes("(") ? escapeHTML(product.name) : `${escapeHTML(product.name)} (${escapeHTML(ramRomText)})`}</h1>
 
               <div class="fk-rating-row">
                 <span class="fk-rating-pill">
@@ -1850,11 +1865,43 @@
         });
       }
 
-      // Variant Box Click
+      // Real-time Storage Variant Switcher (Updates price, EMI, titles & buy buttons)
       modalContent.querySelectorAll(".fk-variant-box").forEach(box => {
         box.addEventListener("click", () => {
+          const variantPid = box.dataset.variantId;
+          if (variantPid && String(variantPid) !== String(product._id)) {
+            // Sibling variant in inventory: seamlessly re-open modal with target variant!
+            openQuickView(variantPid);
+            return;
+          }
+
           modalContent.querySelectorAll(".fk-variant-box").forEach(b => b.classList.remove("active"));
           box.classList.add("active");
+
+          const newPrice = Number(box.dataset.price);
+          const newMrp = Number(box.dataset.mrp);
+          const newDisc = Number(box.dataset.discount);
+          const varTitle = box.dataset.title || "";
+
+          if (newPrice && !isNaN(newPrice)) {
+            const actualPriceEl = modalContent.querySelector(".fk-actual-price");
+            const mrpEl = modalContent.querySelector(".fk-mrp-line");
+            const discEl = modalContent.querySelector(".fk-discount-green");
+            const subheadEl = modalContent.querySelector(".fk-section-subhead b");
+
+            if (actualPriceEl) actualPriceEl.textContent = money(newPrice);
+            if (mrpEl) mrpEl.textContent = money(newMrp);
+            if (discEl) discEl.textContent = `↓${newDisc}% Off`;
+            if (subheadEl && varTitle) subheadEl.textContent = varTitle;
+
+            const emiEl = modalContent.querySelector(".fk-emi-power-card div div div");
+            if (emiEl) emiEl.textContent = `0% Easy EMI from ${money(Math.round(newPrice / 6))}/month`;
+
+            product.sellingPrice = newPrice;
+            if (typeof refreshModalOfferUI === "function") {
+              refreshModalOfferUI();
+            }
+          }
         });
       });
 
