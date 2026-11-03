@@ -1286,6 +1286,34 @@ select {
   letter-spacing: 0.6px;
 }
 
+.network-badge {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  line-height: 1.2;
+}
+.network-badge.badge-5g {
+  background: linear-gradient(135deg, #0284c7, #2563eb);
+  color: #ffffff;
+  box-shadow: 0 1px 4px rgba(2, 132, 199, 0.25);
+}
+.network-badge.badge-4g {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+.network-badge.badge-2g {
+  background: #f8fafc;
+  color: #64748b;
+  border: 1px solid #cbd5e1;
+}
+
 .product-category-sub {
   font-size: 10px;
   font-weight: 600;
@@ -1327,6 +1355,18 @@ select {
   padding: 2px 6px;
   border-radius: 4px;
   border: 1px solid #e2e8f0;
+}
+.spec-cutlet.spec-5g {
+  background: #f0f9ff;
+  color: #0284c7;
+  border-color: #bae6fd;
+  font-weight: 700;
+}
+.spec-cutlet.spec-4g {
+  background: #f0fdf4;
+  color: #15803d;
+  border-color: #bbf7d0;
+  font-weight: 700;
 }
 
 /* Zesh Tech Pricing Row */

@@ -500,12 +500,56 @@
     }
   }
 
+  // 5G vs 4G Network Detector for Mobiles
+  function getPhoneNetworkType(product) {
+    if (!product || product.category !== "Mobile") return null;
+    const name = product.name || "";
+    const model = product.model || "";
+    const desc = product.description || "";
+    const combined = `${name} ${model} ${desc}`;
+
+    if (/keypad/i.test(combined) || (product.sku && product.sku.includes("KEYPAD"))) {
+      if (/\b4G\b/i.test(combined)) return "4G";
+      return "2G";
+    }
+
+    if (/\b5G\b/i.test(name) || /\b5G\b/i.test(model)) {
+      return "5G";
+    }
+
+    if (/\b4G\b/i.test(name) && !/\b5G\b/i.test(name)) {
+      return "4G";
+    }
+
+    if (/A7 Pro|Redmi A7\b|Poco C85x|Keypad/i.test(name)) {
+      return "4G";
+    }
+
+    if (window.ZeshSpecs) {
+      const specs = window.ZeshSpecs.getPhoneSpecs(product);
+      if (specs?.sim && specs.sim.toLowerCase().includes("5g")) return "5G";
+      if (specs?.chipset && specs.chipset.toLowerCase().includes("5g")) return "5G";
+    }
+
+    if (Number(product.sellingPrice) >= 17000) {
+      return "5G";
+    }
+
+    return "4G";
+  }
+
   // Extract key specs for Zesh Tech cute cutlet pills
   function extractProductSpecs(product) {
     const specs = [];
     const name = product.name || "";
 
-    // 0. Explicit RAM & Storage properties from admin variant selector
+    // 0. Network cutlet (5G vs 4G)
+    const net = getPhoneNetworkType(product);
+    if (net === "5G") specs.push("⚡ 5G Ready");
+    else if (net === "4G") specs.push("📶 4G VoLTE");
+    else if (net === "2G") specs.push("📶 2G Keypad");
+
+    // Explicit RAM & Storage properties from admin variant selector
     if (product.ram && product.storage) {
       specs.push(`${product.ram} / ${product.storage}`);
     } else if (product.ram) {
@@ -513,7 +557,7 @@
     } else if (product.storage) {
       specs.push(`${product.storage}`);
     } else {
-      // 1. Storage / RAM regex fallback
+      // Storage / RAM regex fallback
       const ramRomMatch = name.match(/(\d+\s*GB\s*\/\s*\d+\s*GB|\d+\/\d+|\d+\s*GB)/i);
       if (ramRomMatch) specs.push(ramRomMatch[0].trim());
     }
@@ -599,7 +643,11 @@
     let filtered = [...allProducts];
 
     // Category filter including special tabs
-    if (currentCategory === "Apple") {
+    if (currentCategory === "5G") {
+      filtered = filtered.filter(p => p.category === "Mobile" && getPhoneNetworkType(p) === "5G");
+    } else if (currentCategory === "4G") {
+      filtered = filtered.filter(p => p.category === "Mobile" && getPhoneNetworkType(p) === "4G");
+    } else if (currentCategory === "Apple") {
       filtered = filtered.filter(p =>
         (p.brand && p.brand.toLowerCase() === "apple") ||
         (p.name && (p.name.includes("iPhone") || p.name.includes("iPad")))
@@ -625,17 +673,22 @@
 
     // Search keyword filter
     if (searchKeyword) {
-      const q = searchKeyword.toLowerCase();
-      filtered = filtered.filter(p =>
-        (p.name && p.name.toLowerCase().includes(q)) ||
-        (p.brand && p.brand.toLowerCase().includes(q)) ||
-        (p.model && p.model.toLowerCase().includes(q)) ||
-        (p.category && p.category.toLowerCase().includes(q)) ||
-        (p.sku && p.sku.toLowerCase().includes(q)) ||
-        (p.ram && p.ram.toLowerCase().includes(q)) ||
-        (p.storage && p.storage.toLowerCase().includes(q)) ||
-        (p.color && p.color.toLowerCase().includes(q))
-      );
+      const q = searchKeyword.toLowerCase().trim();
+      filtered = filtered.filter(p => {
+        const net = getPhoneNetworkType(p);
+        if (q === "5g" && net === "5G") return true;
+        if (q === "4g" && net === "4G") return true;
+        return (
+          (p.name && p.name.toLowerCase().includes(q)) ||
+          (p.brand && p.brand.toLowerCase().includes(q)) ||
+          (p.model && p.model.toLowerCase().includes(q)) ||
+          (p.category && p.category.toLowerCase().includes(q)) ||
+          (p.sku && p.sku.toLowerCase().includes(q)) ||
+          (p.ram && p.ram.toLowerCase().includes(q)) ||
+          (p.storage && p.storage.toLowerCase().includes(q)) ||
+          (p.color && p.color.toLowerCase().includes(q))
+        );
+      });
     }
 
     // In stock only filter
@@ -670,6 +723,7 @@
       const specs = extractProductSpecs(product);
       const { mrp, discountPct } = calculateDiscount(product.sellingPrice);
       const { rating, reviews } = getProductRating(product);
+      const net = getPhoneNetworkType(product);
 
       return `
         <article class="product-card" data-product-id="${escapeHTML(product._id)}">
@@ -721,7 +775,11 @@
           <div class="product-content">
             <div class="product-brand-row">
               <span class="product-brand-pill">${escapeHTML(product.brand || "ZESH TECH")}</span>
-              <span class="product-category-sub">${escapeHTML(product.category || "Verified")}</span>
+              ${net ? `
+                <span class="network-badge badge-${net.toLowerCase()}">${net === '5G' ? '⚡ 5G' : net === '4G' ? '📶 4G' : '📶 2G'}</span>
+              ` : `
+                <span class="product-category-sub">${escapeHTML(product.category || "Verified")}</span>
+              `}
             </div>
 
             <h3 class="product-title view-details-btn" data-id="${escapeHTML(product._id)}" title="${escapeHTML(product.name)}">
@@ -730,7 +788,10 @@
 
             <!-- Micro Specs Cutlet Pills -->
             <div class="product-specs-row">
-              ${specs.map(s => `<span class="spec-cutlet">${escapeHTML(s)}</span>`).join("")}
+              ${specs.map(s => {
+                const netClass = s.includes("5G") ? "spec-5g" : (s.includes("4G") ? "spec-4g" : "");
+                return `<span class="spec-cutlet ${netClass}">${escapeHTML(s)}</span>`;
+              }).join("")}
             </div>
 
             <!-- Zesh Tech Pricing Row -->
@@ -1032,6 +1093,7 @@
 
       // Get rich specs from our Knowledge Base or intelligent generator
       const specs = window.ZeshSpecs ? window.ZeshSpecs.getPhoneSpecs(product) : null;
+      const net = getPhoneNetworkType(product);
 
       // Color variants with real photos
       const colorVariants = getProductColorVariants(product, allProducts, specs);
@@ -1216,6 +1278,11 @@
                 <span class="card-badge-pill assured-badge" style="margin-left: 8px;">
                   <span class="star-sparkle">★</span> Zesh Assured
                 </span>
+                ${net ? `
+                  <span class="card-badge-pill" style="${net === '5G' ? 'background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; font-weight: 800;' : 'background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; font-weight: 700;'} margin-left: 6px;">
+                    ${net === '5G' ? '⚡ 5G High-Speed Device' : '📶 4G VoLTE Dual SIM'}
+                  </span>
+                ` : ''}
               </div>
 
               <!-- Main Price Display -->
@@ -1442,6 +1509,31 @@
 
                   <!-- Tab 1: Specifications (Default Active) -->
                   <div class="fk-tab-pane active" id="fk-tab-specs">
+                    <!-- Network & Connectivity (5G / 4G) -->
+                    ${product.category === "Mobile" ? `
+                      <div class="fk-specs-group">
+                        <h3 class="fk-group-title">Network &amp; Connectivity (5G / 4G)</h3>
+                        <div class="fk-spec-item-line">
+                          <span class="fk-spec-name">Network Technology</span>
+                          <strong class="fk-spec-val" style="color: ${net === '5G' ? '#0284c7' : '#15803d'}; font-weight: 800;">
+                            ${net === '5G' ? '⚡ True 5G (SA / NSA) • Jio & Airtel 5G Supported' : '📶 4G VoLTE / 3G / 2G (All 4G SIM Supported)'}
+                          </strong>
+                        </div>
+                        <div class="fk-spec-item-line">
+                          <span class="fk-spec-name">SIM Slot</span>
+                          <strong class="fk-spec-val">${escapeHTML(specs?.sim || (net === '5G' ? 'Dual 5G Nano SIM' : 'Dual 4G Nano SIM'))}</strong>
+                        </div>
+                        <div class="fk-spec-item-line">
+                          <span class="fk-spec-name">5G Frequency Bands</span>
+                          <strong class="fk-spec-val">${net === '5G' ? 'n1 / n3 / n5 / n8 / n28 / n40 / n77 / n78 (All Indian 5G Bands)' : 'N/A (Standard 4G LTE Bands)'}</strong>
+                        </div>
+                        <div class="fk-spec-item-line">
+                          <span class="fk-spec-name">Wireless Connectivity</span>
+                          <strong class="fk-spec-val">Dual Band Wi-Fi (2.4GHz + 5GHz), Bluetooth 5.3</strong>
+                        </div>
+                      </div>
+                    ` : ""}
+
                     <!-- Power & Performance -->
                     <div class="fk-specs-group">
                       <h3 class="fk-group-title">Performance &amp; Power</h3>
