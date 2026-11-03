@@ -4,6 +4,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const Product = require("../models/Product");
+const StockNotification = require("../models/StockNotification");
 const authMiddleware = require("../middleware/authMiddleware");
 
 const router = express.Router();
@@ -518,12 +519,19 @@ router.patch("/:id/stock", authMiddleware, requireAdmin, async (req, res) => {
       });
     }
 
-    return res.json({
-      success: true,
-      message: "Stock updated successfully",
-      product,
-      newStock: product.stockQuantity
-    });
+      if (product.stockQuantity > 0) {
+        StockNotification.updateMany(
+          { product: product._id, notified: false },
+          { $set: { notified: true, notifiedAt: new Date() } }
+        ).exec().catch(err => console.warn("Stock notification update warning:", err.message));
+      }
+
+      return res.json({
+        success: true,
+        message: "Stock updated successfully",
+        product,
+        newStock: product.stockQuantity
+      });
   } catch (error) {
     return handleError(res, error, "Update stock failed");
   }
@@ -560,6 +568,73 @@ router.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
     });
   } catch (error) {
     return handleError(res, error, "Deactivate product failed");
+  }
+});
+
+// POST /api/products/:id/notify-stock
+// Public: Customer registers to be notified when sold out product comes back in stock
+router.post("/:id/notify-stock", async (req, res) => {
+  try {
+    if (!validObjectId(req.params.id)) {
+      return res.status(400).json({ success: false, message: "Invalid product ID" });
+    }
+
+    const rawPhone = String(req.body.phone || "").trim().replace(/\D/g, "");
+    if (!/^[6-9]\d{9}$/.test(rawPhone)) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a valid 10-digit Indian phone number (e.g. 9876543210)"
+      });
+    }
+
+    const product = await Product.findById(req.params.id);
+    if (!product || !product.isActive) {
+      return res.status(404).json({ success: false, message: "Product not found" });
+    }
+
+    const email = String(req.body.email || "").trim().toLowerCase();
+
+    const record = await StockNotification.findOneAndUpdate(
+      { product: product._id, phone: rawPhone, notified: false },
+      {
+        $set: {
+          product: product._id,
+          productName: product.name,
+          productSku: product.sku || "",
+          phone: rawPhone,
+          email,
+          notified: false
+        }
+      },
+      { upsert: true, returnDocument: "after" }
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: `Aapka alert register ho gaya! "${product.name}" ka stock aate hi aapko WhatsApp / SMS alert bhej diya jayega.`,
+      notificationId: record._id
+    });
+  } catch (error) {
+    return handleError(res, error, "Stock notification failed");
+  }
+});
+
+// GET /api/products/stock-notifications/summary
+// Admin only: view pending restock subscribers count & list
+router.get("/stock-notifications/summary", authMiddleware, requireAdmin, async (req, res) => {
+  try {
+    const list = await StockNotification.find({ notified: false })
+      .populate("product", "name sku stockQuantity imageUrl")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return res.json({
+      success: true,
+      count: list.length,
+      notifications: list
+    });
+  } catch (error) {
+    return handleError(res, error, "Failed to fetch stock notifications");
   }
 });
 

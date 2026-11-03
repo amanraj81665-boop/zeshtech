@@ -222,6 +222,17 @@ const api = {
     });
   },
 
+  notifyStock(productId, data) {
+    return this.request(`/products/${encodeURIComponent(productId)}/notify-stock`, {
+      method: "POST",
+      body: JSON.stringify(data)
+    });
+  },
+
+  getStockNotifications() {
+    return this.request("/products/stock-notifications/summary");
+  },
+
   getBills(params = {}) {
     const query = new URLSearchParams(params);
     const suffix = query.toString() ? `?${query}` : "";
@@ -500,6 +511,13 @@ const customerAPI = {
     return this.request("/auth/forgot-password/reset", {
       method: "POST",
       body: JSON.stringify({ email, otp, newPassword })
+    });
+  },
+
+  notifyStock(productId, data) {
+    return this.request(`/products/${encodeURIComponent(productId)}/notify-stock`, {
+      method: "POST",
+      body: JSON.stringify(data)
     });
   },
 

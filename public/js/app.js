@@ -131,6 +131,150 @@
     wishlist = [];
   }
 
+  // Active Coupon & Discount State (Persistent across sessions)
+  let appliedCoupon = null;
+  try {
+    const savedCoupon = localStorage.getItem("zesh_applied_coupon");
+    if (savedCoupon) appliedCoupon = JSON.parse(savedCoupon);
+  } catch (e) {
+    appliedCoupon = null;
+  }
+
+  const VALID_COUPONS = [
+    { code: "UPI1000", discount: 1000, minOrder: 4000, description: "Flat ₹1,000 Instant UPI & QR Discount" },
+    { code: "BANK1500", discount: 1500, minOrder: 8000, description: "Flat ₹1,500 Bank Cards Instant Discount" },
+    { code: "ZESH500", discount: 500, minOrder: 1500, description: "Flat ₹500 Store Welcome Voucher" },
+    { code: "WELCOME500", discount: 500, minOrder: 1500, description: "Flat ₹500 First Order Discount" },
+    { code: "FESTIVE2000", discount: 2000, minOrder: 20000, description: "Flat ₹2,000 Festive Savings Voucher" }
+  ];
+
+  function getCartSubtotal() {
+    return cart.reduce((acc, it) => acc + (Number(it.price) || 0) * (Number(it.quantity) || 1), 0);
+  }
+
+  function getAppliedDiscount(subtotal = null) {
+    if (!appliedCoupon) return 0;
+    const currentSubtotal = subtotal !== null ? subtotal : getCartSubtotal();
+    if (currentSubtotal <= 0) return 0;
+    if (appliedCoupon.minOrder && currentSubtotal < appliedCoupon.minOrder) return 0;
+    return Math.min(appliedCoupon.discount || 0, currentSubtotal);
+  }
+
+  function applyCoupon(code, explicitDiscount = null, explicitDesc = null) {
+    const cleanCode = String(code || "").trim().toUpperCase();
+    if (!cleanCode) {
+      showToast("Please enter a valid coupon code", "warning");
+      return false;
+    }
+
+    let match = VALID_COUPONS.find(c => c.code === cleanCode);
+    if (!match && explicitDiscount && explicitDiscount > 0) {
+      match = {
+        code: cleanCode,
+        discount: explicitDiscount,
+        minOrder: explicitDiscount * 2,
+        description: explicitDesc || `Flat ₹${explicitDiscount} Instant Discount`
+      };
+    }
+
+    if (!match) {
+      showToast(`Invalid coupon code "${cleanCode}". Try UPI1000 or ZESH500`, "warning");
+      return false;
+    }
+
+    const subtotal = getCartSubtotal();
+    // If cart is empty, allow applying from Product details quick-view modal
+    if (subtotal > 0 && subtotal < match.minOrder) {
+      showToast(`Coupon "${match.code}" requires minimum order of ${money(match.minOrder)} (Current: ${money(subtotal)})`, "warning");
+      return false;
+    }
+
+    appliedCoupon = {
+      code: match.code,
+      discount: match.discount,
+      minOrder: match.minOrder,
+      description: match.description
+    };
+
+    try {
+      localStorage.setItem("zesh_applied_coupon", JSON.stringify(appliedCoupon));
+    } catch (e) {}
+
+    renderCart();
+    updateCheckoutTotals();
+    showToast(`🎉 Coupon "${match.code}" applied! You saved ${money(appliedCoupon.discount)}`, "success");
+    return true;
+  }
+
+  function removeCoupon() {
+    if (!appliedCoupon) return;
+    const oldCode = appliedCoupon.code;
+    appliedCoupon = null;
+    try {
+      localStorage.removeItem("zesh_applied_coupon");
+    } catch (e) {}
+    renderCart();
+    updateCheckoutTotals();
+    showToast(`Coupon "${oldCode}" removed`, "info");
+  }
+
+  function renderCart() {
+    if (typeof updateCartUI === "function") updateCartUI();
+  }
+
+  function updateCheckoutTotals() {
+    const subtotal = getCartSubtotal();
+    const totalQty = cart.reduce((acc, it) => acc + (Number(it.quantity) || 1), 0);
+    const discount = getAppliedDiscount(subtotal);
+    const finalTotal = Math.max(0, subtotal - discount);
+
+    const itemsQtyEl = $("#checkout-items-qty");
+    const subtotalEl = $("#checkout-subtotal-val");
+    const grandTotalEl = $("#checkout-grand-total-val");
+    const discountRow = $("#checkout-discount-row");
+    const couponBadge = $("#checkout-coupon-code-badge");
+    const discountVal = $("#checkout-discount-val");
+
+    if (itemsQtyEl) itemsQtyEl.textContent = totalQty;
+    if (subtotalEl) subtotalEl.textContent = money(subtotal);
+    if (grandTotalEl) grandTotalEl.textContent = money(finalTotal);
+
+    if (discountRow) {
+      if (discount > 0 && appliedCoupon) {
+        discountRow.style.display = "flex";
+        if (couponBadge) couponBadge.textContent = appliedCoupon.code;
+        if (discountVal) discountVal.textContent = `- ${money(discount)}`;
+      } else {
+        discountRow.style.display = "none";
+      }
+    }
+  }
+
+  function openStockNotifyModal(productId, productName) {
+    const modal = $("#stock-notify-modal-backdrop");
+    if (!modal) return;
+    const product = allProducts.find(p => p._id === productId);
+    const name = productName || product?.name || "Product";
+
+    const idInput = $("#notify-product-id");
+    const nameEl = $("#notify-modal-product-name");
+    const phoneInput = $("#notify-phone");
+    const emailInput = $("#notify-email");
+
+    if (idInput) idInput.value = productId;
+    if (nameEl) nameEl.textContent = name;
+
+    const user = (typeof zeshCustomerAPI !== "undefined" && zeshCustomerAPI.user) || {};
+    if (phoneInput && !phoneInput.value) {
+      phoneInput.value = user.phone || "";
+    }
+    if (emailInput && !emailInput.value) {
+      emailInput.value = user.email || "";
+    }
+
+    modal.classList.add("active");
+  }
+
   // Toast Notification
   function showToast(message, type = "info") {
     const container = $("#toast-container");
@@ -601,12 +745,18 @@
 
             <!-- Dual Action Buttons -->
             <div class="product-card-actions">
-              <button class="btn-buy-now direct-buy-btn" data-id="${escapeHTML(product._id)}" ${isOut ? "disabled" : ""}>
-                <span>${isOut ? "Sold Out" : "⚡ Buy Now"}</span>
-              </button>
-              <button class="btn-add-bag add-to-bag-btn" data-id="${escapeHTML(product._id)}" title="Add to Cart Bag" ${isOut ? "disabled" : ""}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-              </button>
+              ${isOut ? `
+                <button type="button" class="btn-buy-now notify-stock-btn" data-id="${escapeHTML(product._id)}" data-name="${escapeHTML(product.name)}" style="background: linear-gradient(135deg, #0284c7, #0369a1); width: 100%; border: none; cursor: pointer;">
+                  <span>🔔 Notify Me</span>
+                </button>
+              ` : `
+                <button type="button" class="btn-buy-now direct-buy-btn" data-id="${escapeHTML(product._id)}">
+                  <span>⚡ Buy Now</span>
+                </button>
+                <button type="button" class="btn-add-bag add-to-bag-btn" data-id="${escapeHTML(product._id)}" title="Add to Cart Bag">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                </button>
+              `}
             </div>
           </div>
         </article>
@@ -1106,12 +1256,21 @@
 
               <!-- Action Buttons Row (Buy Now, Add to Bag, Compare) - Right below price -->
               <div class="fk-actions-bottom-row">
-                <button class="btn btn-primary fk-btn-buy direct-buy-btn" data-id="${escapeHTML(product._id)}" ${isOut ? "disabled" : ""}>
-                  ⚡ Buy Now
-                </button>
-                <button class="btn btn-secondary fk-btn-bag add-to-bag-btn" data-id="${escapeHTML(product._id)}" ${isOut ? "disabled" : ""}>
-                  🛍️ Add to Bag
-                </button>
+                ${isOut ? `
+                  <button type="button" class="btn btn-primary fk-btn-buy notify-stock-btn" data-id="${escapeHTML(product._id)}" data-name="${escapeHTML(product.name)}" style="background: linear-gradient(135deg, #0284c7, #0369a1); border-color: #0284c7; flex: 1.5; cursor: pointer;">
+                    🔔 Notify When In Stock
+                  </button>
+                  <button type="button" class="btn btn-secondary fk-btn-bag" disabled style="opacity: 0.6; cursor: not-allowed;">
+                    Sold Out
+                  </button>
+                ` : `
+                  <button type="button" class="btn btn-primary fk-btn-buy direct-buy-btn" data-id="${escapeHTML(product._id)}">
+                    ⚡ Buy Now
+                  </button>
+                  <button type="button" class="btn btn-secondary fk-btn-bag add-to-bag-btn" data-id="${escapeHTML(product._id)}">
+                    🛍️ Add to Bag
+                  </button>
+                `}
                 ${product.category === "Mobile" ? `
                   <button class="btn btn-dark fk-btn-compare compare-this-btn" data-id="${escapeHTML(product._id)}" type="button">
                     ⚖️ Compare in Budget
@@ -1188,7 +1347,7 @@
                             <div class="fk-bank-sub">GPay / PhonePe / Paytm / QR</div>
                           </div>
                         </div>
-                        <button type="button" class="fk-apply-btn">Apply</button>
+                        <button type="button" class="fk-apply-btn" data-code="UPI1000" data-discount="1000" data-desc="Flat ₹1,000 Instant UPI Discount">Apply</button>
                       </div>
 
                       <!-- HDFC / ICICI / SBI / Axis Cards -->
@@ -1200,7 +1359,7 @@
                             <div class="fk-bank-sub">HDFC / ICICI / SBI / Axis Credit Card</div>
                           </div>
                         </div>
-                        <button type="button" class="fk-apply-btn">Apply</button>
+                        <button type="button" class="fk-apply-btn" data-code="BANK1500" data-discount="1500" data-desc="Flat ₹1,500 Bank Cards Instant Discount">Apply</button>
                       </div>
 
                       <!-- BHIM UPI -->
@@ -1212,7 +1371,7 @@
                             <div class="fk-bank-sub">Direct Bank Account Transfer</div>
                           </div>
                         </div>
-                        <button type="button" class="fk-apply-btn">Apply</button>
+                        <button type="button" class="fk-apply-btn" data-code="UPI1000" data-discount="1000" data-desc="Flat ₹1,000 BHIM UPI Discount">Apply</button>
                       </div>
                     </div>
 
@@ -1699,13 +1858,74 @@
         });
       });
 
-      // Bank Apply Button Click
+      // Real-time Bank Offer & Coupon Apply / Toggle
+      function refreshModalOfferUI() {
+        const actualPriceEl = modalContent.querySelector(".fk-actual-price");
+        const priceBox = modalContent.querySelector(".fk-price-box");
+        let couponBanner = modalContent.querySelector("#fk-modal-coupon-banner");
+
+        const modalApplyBtns = modalContent.querySelectorAll(".fk-apply-btn");
+        const currentCode = appliedCoupon ? appliedCoupon.code : null;
+
+        modalApplyBtns.forEach(btn => {
+          const btnCode = (btn.dataset.code || "UPI1000").toUpperCase();
+          if (currentCode && currentCode === btnCode) {
+            btn.textContent = "Applied ✓ (Remove)";
+            btn.style.color = "#16a34a";
+            btn.style.borderColor = "#16a34a";
+            btn.style.background = "#ecfdf5";
+            btn.style.fontWeight = "800";
+          } else {
+            btn.textContent = "Apply";
+            btn.style.color = "";
+            btn.style.borderColor = "";
+            btn.style.background = "";
+            btn.style.fontWeight = "";
+          }
+        });
+
+        if (appliedCoupon && appliedCoupon.discount > 0) {
+          const discountVal = appliedCoupon.discount;
+          const discountedPrice = Math.max(0, product.sellingPrice - discountVal);
+          if (actualPriceEl) {
+            actualPriceEl.innerHTML = `<span style="text-decoration: line-through; font-size: 16px; color: #94a3b8; margin-right: 6px; font-weight: 600;">${money(product.sellingPrice)}</span><span style="color: #16a34a;">${money(discountedPrice)}</span>`;
+          }
+          if (!couponBanner && priceBox) {
+            couponBanner = document.createElement("div");
+            couponBanner.id = "fk-modal-coupon-banner";
+            couponBanner.style.cssText = "margin-top: 8px; padding: 7px 12px; background: #ecfdf5; border: 1.5px solid #10b981; border-radius: 8px; color: #047857; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: space-between;";
+            priceBox.appendChild(couponBanner);
+          }
+          if (couponBanner) {
+            couponBanner.innerHTML = `
+              <span>🎉 Coupon <b>${appliedCoupon.code}</b> Applied: Saved ${money(discountVal)}!</span>
+              <button type="button" class="fk-modal-remove-coupon" style="background: none; border: none; color: #ef4444; font-weight: 800; cursor: pointer; font-size: 13px; padding: 0 4px;" title="Remove Offer">✕</button>
+            `;
+            couponBanner.querySelector(".fk-modal-remove-coupon")?.addEventListener("click", () => {
+              removeCoupon();
+              refreshModalOfferUI();
+            });
+          }
+        } else {
+          if (actualPriceEl) actualPriceEl.textContent = money(product.sellingPrice);
+          if (couponBanner) couponBanner.remove();
+        }
+      }
+
+      refreshModalOfferUI();
+
       modalContent.querySelectorAll(".fk-apply-btn").forEach(btn => {
         btn.addEventListener("click", () => {
-          btn.textContent = "Applied ✓";
-          btn.style.color = "#16a34a";
-          btn.style.fontWeight = "800";
-          showToast("Offer applied to your cart! 🎉", "success");
+          const code = (btn.dataset.code || "UPI1000").trim().toUpperCase();
+          const discount = Number(btn.dataset.discount) || 1000;
+          const desc = btn.dataset.desc || `${money(discount)} off`;
+
+          if (appliedCoupon && appliedCoupon.code === code) {
+            removeCoupon();
+          } else {
+            applyCoupon(code, discount, desc);
+          }
+          refreshModalOfferUI();
         });
       });
 
@@ -1890,8 +2110,10 @@
   }
 
   function updateCartUI() {
-    const totalCount = cart.reduce((acc, it) => acc + it.quantity, 0);
-    const subtotal = cart.reduce((acc, it) => acc + it.price * it.quantity, 0);
+    const totalCount = cart.reduce((acc, it) => acc + (Number(it.quantity) || 1), 0);
+    const subtotal = getCartSubtotal();
+    const discount = getAppliedDiscount(subtotal);
+    const finalTotal = Math.max(0, subtotal - discount);
 
     // Header badge & Mobile badge
     const headerCount = $("#header-cart-count");
@@ -1907,7 +2129,35 @@
     const subtotalEl = $("#cart-subtotal-val");
     const totalEl = $("#cart-total-val");
     if (subtotalEl) subtotalEl.textContent = money(subtotal);
-    if (totalEl) totalEl.textContent = money(subtotal);
+    if (totalEl) totalEl.textContent = money(finalTotal);
+
+    // Coupon Discount Display in Shopping Bag
+    const discountRow = $("#cart-discount-row");
+    const couponLabel = $("#cart-coupon-label");
+    const discountVal = $("#cart-discount-val");
+    const couponPill = $("#cart-applied-coupon-pill");
+    const couponTagName = $("#cart-coupon-tag-name");
+    const couponTagDiscount = $("#cart-coupon-tag-discount");
+    const couponInput = $("#cart-coupon-input");
+
+    if (discount > 0 && appliedCoupon) {
+      if (discountRow) {
+        discountRow.style.display = "flex";
+        if (couponLabel) couponLabel.textContent = appliedCoupon.code;
+        if (discountVal) discountVal.textContent = `- ${money(discount)}`;
+      }
+      if (couponPill) {
+        couponPill.style.display = "flex";
+        if (couponTagName) couponTagName.textContent = appliedCoupon.code;
+        if (couponTagDiscount) couponTagDiscount.textContent = money(discount);
+      }
+      if (couponInput && !couponInput.value) {
+        couponInput.value = appliedCoupon.code;
+      }
+    } else {
+      if (discountRow) discountRow.style.display = "none";
+      if (couponPill) couponPill.style.display = "none";
+    }
 
     // Free shipping threshold (₹999)
     const trackerText = $("#shipping-tracker-text");
@@ -2004,12 +2254,7 @@
     const modal = $("#checkout-modal-backdrop");
     if (!modal) return;
 
-    const subtotal = cart.reduce((acc, it) => acc + it.price * it.quantity, 0);
-    const totalQty = cart.reduce((acc, it) => acc + it.quantity, 0);
-
-    $("#checkout-items-qty").textContent = totalQty;
-    $("#checkout-subtotal-val").textContent = money(subtotal);
-    $("#checkout-grand-total-val").textContent = money(subtotal);
+    updateCheckoutTotals();
 
     // Pre-fill if customer profile or saved delivery address exists
     const customer = zeshCustomerAPI.user || {};
@@ -2087,10 +2332,14 @@
       submitBtn.textContent = "Processing...";
       if (errorMsg) errorMsg.classList.add("hidden");
 
-      // Build order payload with items, shipping details, and finance selection
+      // Build order payload with items, shipping details, coupon discount, and finance selection
       const selectedMethodEl = document.querySelector('input[name="paymentMethod"]:checked');
       const selectedMethod = selectedMethodEl ? selectedMethodEl.value : "Cash on Delivery";
       const financeProvider = $("#checkout-finance-provider")?.value || "Bajaj Finserv";
+
+      const subtotal = getCartSubtotal();
+      const discount = getAppliedDiscount(subtotal);
+      const finalTotal = Math.max(0, Math.round((subtotal - discount) * 100) / 100);
 
       const orderPayload = {
         items: cart.map(it => ({
@@ -2110,26 +2359,30 @@
           : selectedMethod,
         financeDetails: {
           provider: selectedMethod === "Finance / Loan" ? financeProvider : ""
-        }
+        },
+        discountAmount: discount,
+        coupon: (discount > 0 && appliedCoupon) ? {
+          code: appliedCoupon.code,
+          discount: discount
+        } : undefined
       };
 
       // If user selected PhonePe / Google Pay / UPI:
       if (selectedMethod.includes("UPI") || selectedMethod.includes("PhonePe")) {
         pendingOrderPayload = orderPayload;
         syncCartWithLiveProducts();
-        const total = cart.reduce((acc, it) => acc + (it.price * it.quantity), 0);
         
-        // Populate UPI Modal details
+        // Populate UPI Modal details with discounted final amount
         const modalAmount = $("#upi-modal-amount");
-        if (modalAmount) modalAmount.textContent = money(total);
+        if (modalAmount) modalAmount.textContent = money(finalTotal);
 
         const appsAmountDisplay = $("#upi-apps-amount-display");
-        if (appsAmountDisplay) appsAmountDisplay.textContent = money(total);
+        if (appsAmountDisplay) appsAmountDisplay.textContent = money(finalTotal);
 
         const upiVpa = "9122846271-5@ybl";
         const merchantName = "ZESH TECH";
         const note = "ZeshTech Order";
-        const amountStr = total.toFixed(2);
+        const amountStr = finalTotal.toFixed(2);
 
         // Deep-link intent URLs (Direct App Launchers with exact amount pre-filled)
         const phonePeUrl = `phonepe://pay?pa=${upiVpa}&pn=${encodeURIComponent(merchantName)}&am=${amountStr}&cu=INR&tn=${encodeURIComponent(note)}`;
@@ -2158,18 +2411,20 @@
       // Save address for future 1-click checkout
       try {
         const autoSaveAddr = {
-          name: orderPayload.customerName,
-          phone: orderPayload.customerPhone,
-          street: orderPayload.shippingAddress,
-          city: orderPayload.shippingCity,
-          state: orderPayload.shippingState,
-          pincode: orderPayload.shippingPincode
+          name: orderPayload.shippingAddress.fullName,
+          phone: orderPayload.shippingAddress.phone,
+          street: orderPayload.shippingAddress.addressLine1,
+          city: orderPayload.shippingAddress.city,
+          state: orderPayload.shippingAddress.state,
+          pincode: orderPayload.shippingAddress.pincode
         };
         localStorage.setItem("zesh_saved_address", JSON.stringify(autoSaveAddr));
       } catch (e) {}
 
-      // Clear bag and update UI
+      // Clear bag, coupon and update UI
       cart = [];
+      appliedCoupon = null;
+      try { localStorage.removeItem("zesh_applied_coupon"); } catch (e) {}
       saveCart();
 
       // Close checkout modal
@@ -2230,6 +2485,8 @@
       const createdOrder = res.order;
 
       cart = [];
+      appliedCoupon = null;
+      try { localStorage.removeItem("zesh_applied_coupon"); } catch (e) {}
       saveCart();
 
       $("#upi-payment-modal-backdrop")?.classList.remove("active");
@@ -3089,9 +3346,15 @@
               <div class="curation-price">${money(p.sellingPrice)}</div>
               <small style="font-size: 10px; color: var(--text-muted); text-decoration: line-through;">${money(mrp)} (${discountPct}% off)</small>
             </div>
-            <button class="btn btn-primary btn-small direct-buy-btn" data-id="${p._id}">
-              ⚡ Buy
-            </button>
+            ${(p.stockQuantity || 0) <= 0 ? `
+              <button class="btn btn-primary btn-small notify-stock-btn" data-id="${p._id}" data-name="${escapeHTML(p.name)}" style="background: #0284c7; font-size: 11px;">
+                🔔 Notify Me
+              </button>
+            ` : `
+              <button class="btn btn-primary btn-small direct-buy-btn" data-id="${p._id}">
+                ⚡ Buy
+              </button>
+            `}
           </div>
         </article>
       `;
@@ -3139,9 +3402,15 @@
           <img src="${escapeHTML(wp.imageUrl || imageFallback)}" alt="${escapeHTML(wp.name)}" style="height: 100px; object-fit: contain; margin-bottom: 6px;">
           <div style="font-size: 18px; font-weight: 900; color: var(--primary); font-family: var(--font-heading);">${money(wp.sellingPrice)}</div>
           <div style="font-size: 11px; color: var(--text-muted); text-decoration: line-through; margin-bottom: 8px;">${money(mrp)} (${discountPct}% off)</div>
-          <button class="btn btn-primary btn-small direct-buy-btn" data-id="${wp._id}" style="width: 100%;">
-            ⚡ Buy Winner
-          </button>
+          ${(wp.stockQuantity || 0) <= 0 ? `
+            <button class="btn btn-primary btn-small notify-stock-btn" data-id="${wp._id}" data-name="${escapeHTML(wp.name)}" style="width: 100%; background: #0284c7;">
+              🔔 Notify Me
+            </button>
+          ` : `
+            <button class="btn btn-primary btn-small direct-buy-btn" data-id="${wp._id}" style="width: 100%;">
+              ⚡ Buy Winner
+            </button>
+          `}
         </div>
       `;
     } else {
@@ -3183,9 +3452,15 @@
                   <div style="font-size: 16px; font-weight: 900; color: var(--primary);">${money(p.sellingPrice)}</div>
                   <small style="font-size: 11px; color: var(--text-muted); text-decoration: line-through;">${money(mrp)} (${discountPct}% off)</small>
                   <div style="margin-top: 8px;">
-                    <button class="btn btn-primary btn-small direct-buy-btn" data-id="${p._id}" style="width: 100%; font-size: 11px; padding: 6px 10px;">
-                      ⚡ Buy Now
-                    </button>
+                    ${(p.stockQuantity || 0) <= 0 ? `
+                      <button class="btn btn-primary btn-small notify-stock-btn" data-id="${p._id}" data-name="${escapeHTML(p.name)}" style="width: 100%; font-size: 11px; padding: 6px 10px; background: #0284c7;">
+                        🔔 Notify Me
+                      </button>
+                    ` : `
+                      <button class="btn btn-primary btn-small direct-buy-btn" data-id="${p._id}" style="width: 100%; font-size: 11px; padding: 6px 10px;">
+                        ⚡ Buy Now
+                      </button>
+                    `}
                   </div>
                 </th>
               `;
@@ -3698,6 +3973,76 @@
     $("#close-cart-btn")?.addEventListener("click", closeCartDrawer);
     $("#cart-drawer-overlay")?.addEventListener("click", closeCartDrawer);
     $("#drawer-shop-now-btn")?.addEventListener("click", closeCartDrawer);
+
+    // Cart Coupon Handlers
+    $("#cart-coupon-apply-btn")?.addEventListener("click", () => {
+      const input = $("#cart-coupon-input");
+      if (input) applyCoupon(input.value);
+    });
+
+    $("#cart-coupon-input")?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        applyCoupon(e.target.value);
+      }
+    });
+
+    $("#cart-coupon-remove-btn")?.addEventListener("click", () => {
+      removeCoupon();
+    });
+
+    $("#quick-coupon-hint")?.addEventListener("click", () => {
+      const input = $("#cart-coupon-input");
+      if (input) input.value = "UPI1000";
+      applyCoupon("UPI1000");
+    });
+
+    // Sold Out Stock Notification Modal Trigger (Delegated across entire app)
+    document.addEventListener("click", (e) => {
+      const notifyBtn = e.target.closest(".notify-stock-btn");
+      if (notifyBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        openStockNotifyModal(notifyBtn.dataset.id, notifyBtn.dataset.name);
+      }
+    });
+
+    // Stock Restock Notification Form Submission
+    $("#stock-notify-form")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const pid = $("#notify-product-id")?.value;
+      const phone = ($("#notify-phone")?.value || "").trim().replace(/\D/g, "");
+      const email = ($("#notify-email")?.value || "").trim();
+      const btn = $("#btn-submit-stock-notify");
+
+      if (!pid) {
+        showToast("Product not identified", "error");
+        return;
+      }
+      if (!/^[6-9]\d{9}$/.test(phone)) {
+        showToast("Please enter a valid 10-digit mobile number", "warning");
+        $("#notify-phone")?.focus();
+        return;
+      }
+
+      try {
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = "Registering Alert...";
+        }
+        const res = await zeshCustomerAPI.notifyStock(pid, { phone, email });
+        showToast(res.message || "Alert registered! We'll notify you on stock arrival.", "success");
+        $("#stock-notify-modal-backdrop")?.classList.remove("active");
+        $("#stock-notify-form")?.reset();
+      } catch (err) {
+        showToast(err.message || "Failed to register alert. Please try again.", "error");
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = "🔔 Alert Me on Stock Arrival";
+        }
+      }
+    });
 
     // Cart Line Actions (delegation)
     $("#cart-items-container")?.addEventListener("click", (e) => {

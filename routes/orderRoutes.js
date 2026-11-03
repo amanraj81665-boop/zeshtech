@@ -221,6 +221,27 @@ router.post("/", requireCustomer, async (req, res) => {
 
       subtotal = Math.round(subtotal * 100) / 100;
 
+      // Real coupon / discount support
+      let discount = 0;
+      let couponInfo = null;
+      if (req.body.coupon && typeof req.body.coupon === "object") {
+        const reqDiscount = Number(req.body.coupon.discount || req.body.discountAmount || 0);
+        if (reqDiscount > 0) {
+          discount = Math.min(reqDiscount, subtotal);
+          couponInfo = {
+            code: String(req.body.coupon.code || "OFFER").trim().toUpperCase(),
+            discount
+          };
+        }
+      } else if (req.body.discountAmount) {
+        const rawDisc = Number(req.body.discountAmount);
+        if (rawDisc > 0) {
+          discount = Math.min(rawDisc, subtotal);
+        }
+      }
+
+      const finalTotal = Math.max(0, Math.round((subtotal - discount) * 100) / 100);
+
       const orderNumber =
         "ZT-" + new mongoose.Types.ObjectId().toString().slice(-10).toUpperCase();
 
@@ -230,8 +251,10 @@ router.post("/", requireCustomer, async (req, res) => {
           customer: req.user.userId,
           items: orderItems,
           subtotal,
-          total: subtotal,
-          totalAmount: subtotal,
+          discount,
+          coupon: couponInfo || undefined,
+          total: finalTotal,
+          totalAmount: finalTotal,
           paymentMethod: req.body.paymentMethod || "Cash on Delivery",
           paymentDetails: {
             status: req.body.paymentDetails?.status || (req.body.paymentMethod?.includes("UPI") || req.body.paymentMethod?.includes("PhonePe") ? "Paid" : "Pending"),
