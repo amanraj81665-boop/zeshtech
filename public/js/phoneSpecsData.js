@@ -1415,71 +1415,80 @@ window.ZeshSpecs = (function () {
       }
     }
 
-    // 5. SMARTPHONES & MOBILE PHONES (Dynamic Generator)
-    const is5G = combined.includes("5g") || price >= 18000;
-    const isAMOLED = price >= 23000;
+    // 5. SMARTPHONES & MOBILE PHONES (Verified from actual admin product data)
+    const is5G = combined.includes("5g") || (product.category === "Mobile" && (product.name || "").toLowerCase().includes("5g"));
     const custom = parseCustomSpecs(product.description, product.name);
 
-    const ramRom = custom.ramRom || product.name.match(/\d+GB\/\d+GB/i)?.[0] || "6GB RAM | 128GB Storage";
-    const battery = custom.battery || (price >= 25000 ? "5000 mAh High-Density Battery with 67W Turbo" : "5000 mAh All-Day Battery with Fast Charging");
-    const rearCamera = custom.rearCamera || (price >= 30000 ? "50MP/64MP OIS Main Camera + Ultra Wide" : "50MP AI Dual Camera");
-    const frontCamera = custom.frontCamera || (price >= 30000 ? "32MP HD Selfie Camera" : "16MP AI Selfie");
-    const display = custom.display || (isAMOLED ? '6.67" 120Hz Super AMOLED Full HD+, HDR10+' : '6.56" 90Hz Smooth Display');
-    const refreshRate = custom.refreshRate || (isAMOLED ? "120Hz" : "90Hz");
-    const chipset = custom.chipset || (price >= 50000 ? "Flagship Octa-Core (3nm/4nm)" : price >= 25000 ? "High Performance 5G Octa-Core (6nm)" : "Octa-Core Power Efficient Processor");
-    const os = custom.os || `${brand} Custom OS based on Android 14`;
-    const uiName = custom.uiName || `${brand} UI`;
+    const ramRom = (product.ram && product.storage)
+      ? `${product.ram} RAM | ${product.storage} ROM`
+      : (product.ram ? `${product.ram} RAM` : (product.storage ? `${product.storage} ROM` : (custom.ramRom || "")));
 
-    const posterBadges = [
-      { icon: "🔋", title: battery.split("with")[0].trim(), subtitle: "Long Lasting Battery" },
-      { icon: "📸", title: rearCamera.split("+")[0].split("Camera")[0].trim() || "AI Camera", subtitle: "AI Portrait Camera" },
-      { icon: "📱", title: display.includes('"') ? display.split('"')[0] + '"' : (display.split("(")[0].trim() || "Smooth Screen"), subtitle: `${refreshRate} Display` },
-      { icon: "⚡", title: ramRom.split("|")[0].trim() || "Fast RAM", subtitle: chipset.split("(")[0].trim() || "High Performance" }
-    ];
+    const battery = custom.battery || "";
+    const rearCamera = custom.rearCamera || "";
+    const frontCamera = custom.frontCamera || "";
+    const display = custom.display || "";
+    const refreshRate = custom.refreshRate || "";
+    const chipset = custom.chipset || "";
+    const os = custom.os || "";
+    const uiName = custom.uiName || (brand ? `${brand} UI` : "");
 
-    const highlights = [
-      `${custom.display ? custom.display : (is5G ? "Lightning Fast 5G" : "Reliable 4G Dual SIM")} • ${refreshRate}`,
-      `${rearCamera} with Night Mode & AI Capture`,
-      `${battery}`,
-      `${os} • Official ${brand} Brand Warranty`
-    ];
+    const highlights = [];
+    if (product.ram && product.storage) {
+      highlights.push(`${product.ram} RAM | ${product.storage} High-Speed Storage`);
+    } else if (ramRom) {
+      highlights.push(`${ramRom} Storage`);
+    }
+    if (is5G) {
+      highlights.push("⚡ High-Speed 5G Network Support (Dual 5G SIM)");
+    } else {
+      highlights.push("📶 4G VoLTE Dual SIM Supported");
+    }
+    if (battery) highlights.push(battery);
+    if (rearCamera) highlights.push(rearCamera);
+    if (display) highlights.push(display);
+    if (product.color || custom.color) {
+      highlights.push(`Official Finish: ${product.color || custom.color}`);
+    }
+    highlights.push(`100% Brand Sealed Pack • Official ${brand} Brand Warranty`);
 
     return {
       brand: brand,
       model: product.model || product.name,
       categoryType: "mobile",
       chipset,
-      cpu: "Octa-Core (High Performance Cores)",
-      gpu: "Advanced Mobile Gaming GPU",
+      cpu: chipset ? "High Performance Multi-Core" : "",
+      gpu: "",
       display,
-      resolution: isAMOLED ? "2400 x 1080 Pixels FHD+" : "1600 x 720 Pixels HD+",
+      resolution: "",
       refreshRate,
       rearCamera,
       frontCamera,
-      video: price >= 30000 ? "4K @ 30fps Ultra Steady" : "1080p @ 30fps",
+      video: "",
       battery,
       os,
       uiName,
       ramRom,
-      ram: custom.ram || "",
-      rom: custom.rom || "",
-      color: custom.color || "",
-      build: "Ergonomic Splash Resistant Body with Fingerprint Scanner",
+      ram: product.ram || custom.ram || "",
+      rom: product.storage || custom.rom || "",
+      color: product.color || custom.color || "",
+      build: "Official Brand Sealed Pack",
       sim: is5G ? "Dual 5G SIM" : "Dual 4G VoLTE SIM",
-      weight: "185 g",
-      inBox: "Handset, Fast Charger, Type-C Cable, Protective Case, SIM Tool",
-      zeshScore: Math.min(9.5, Number((7.8 + (price / 30000)).toFixed(1))),
-      categoryTags: [price >= 25000 ? "camera" : "value"],
-      bestForBadge: price >= 30000 ? "⭐ Verified Premium Pick" : "💰 High Value Pick",
-      cameraScore: Math.min(9.5, Number((7.5 + (price / 35000)).toFixed(1))),
-      gamingScore: Math.min(9.5, Number((7.5 + (price / 35000)).toFixed(1))),
+      weight: "",
+      dimensions: null,
+      inBox: "Handset, Standard In-Box Accessories, User Guide & Warranty Card",
+      zeshScore: 9.0,
+      categoryTags: ["value"],
+      bestForBadge: is5G ? "⚡ 5G Device" : "📱 Official Smartphone",
+      cameraScore: 8.5,
+      gamingScore: 8.5,
       uiScore: 8.8,
-      batteryScore: 9.2,
+      batteryScore: 8.8,
       highlights,
-      customBadges: posterBadges,
-      pros: ["Excellent value for price", "Sturdy build quality", "Official brand warranty"],
+      customBadges: [],
+      pros: ["100% genuine sealed pack", "Official brand warranty", "Store pickup and fast delivery"],
       cons: ["Fast selling stock"],
-      originalProduct: product
+      originalProduct: product,
+      isSynthetic: true
     };
   }
 

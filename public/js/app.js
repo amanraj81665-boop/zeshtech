@@ -16,29 +16,32 @@
     }).format(Number(val) || 0);
 
   const imageFallback = "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=600&q=80";
-  const ASSET_CACHE_VERSION = "v=7.1";
+  const ASSET_CACHE_VERSION = "v=7.6";
 
   function resolveProductImageUrl(url, width = 600) {
     if (!url || typeof url !== "string") return imageFallback;
     const trimmed = url.trim();
     if (!trimmed || trimmed.startsWith("data:") || trimmed.startsWith("blob:")) return imageFallback;
 
+    // Guard against index (0, 1, 2) passed when called directly inside .map(resolveProductImageUrl)
+    const targetWidth = (typeof width === "number" && width >= 40) ? Math.round(width) : 600;
+
     // 1. Cloudinary optimization: convert to auto-format (WebP/AVIF), auto-quality, responsive width
     if (trimmed.includes("res.cloudinary.com") && trimmed.includes("/upload/")) {
       if (!trimmed.includes("/upload/f_auto") && !trimmed.includes("/upload/w_")) {
-        return trimmed.replace("/upload/", `/upload/f_auto,q_auto:good,w_${width}/`);
+        return trimmed.replace("/upload/", `/upload/f_auto,q_auto:good,w_${targetWidth}/`);
       }
       return trimmed;
     }
 
     // 2. Apple CDN optimization
     if (trimmed.includes("store.storeimages.cdn-apple.com")) {
-      return trimmed.replace(/wid=\d+/, `wid=${width}`).replace(/hei=\d+/, `hei=${width}`);
+      return trimmed.replace(/wid=\d+/, `wid=${targetWidth}`).replace(/hei=\d+/, `hei=${targetWidth}`);
     }
 
     // 3. Flipkart CDN optimization
     if (trimmed.includes("rukmini1.flixcart.com/image/")) {
-      return trimmed.replace(/\/image\/\d+\/\d+\//, `/image/${width}/${width}/`);
+      return trimmed.replace(/\/image\/\d+\/\d+\//, `/image/${targetWidth}/${targetWidth}/`);
     }
 
     // 4. Local path with versioning
@@ -717,8 +720,8 @@
         product.imageUrl,
         ...(Array.isArray(product.images) ? product.images : [])
       ].filter(Boolean);
-      const productImages = Array.from(new Set(rawImages)).map(resolveProductImageUrl);
-      const img = productImages[0] || resolveProductImageUrl(product.imageUrl) || imageFallback;
+      const productImages = Array.from(new Set(rawImages)).map(u => resolveProductImageUrl(u, 600));
+      const img = productImages[0] || resolveProductImageUrl(product.imageUrl, 600) || imageFallback;
       const hasMultiImages = productImages.length > 1;
       const specs = extractProductSpecs(product);
       const { mrp, discountPct } = calculateDiscount(product.sellingPrice);
@@ -887,8 +890,8 @@
     const seenColors = new Set();
     const productKey = getCanonicalModelKey(product);
 
-    // 1. Current color from specs, description or title
-    let currentColorName = specs?.color || "";
+    // 1. Current color from product field, specs, description or title
+    let currentColorName = product.color || specs?.color || "";
     if (!currentColorName) {
       const colorInDesc = (product.description || "").match(/(?:Colour|Color)\s*[:\t\-]?\s*([^\n\r,]+)/i);
       if (colorInDesc && colorInDesc[1]) currentColorName = colorInDesc[1].trim();
@@ -917,8 +920,11 @@
     });
 
     siblings.forEach(p => {
-      const cMatch = p.name.match(/-\s*([A-Za-z\s]+?)(?:\(|$)/i);
-      let cName = cMatch ? cMatch[1].trim() : "";
+      let cName = p.color || "";
+      if (!cName) {
+        const cMatch = p.name.match(/-\s*([A-Za-z\s]+?)(?:\(|$)/i);
+        cName = cMatch ? cMatch[1].trim() : "";
+      }
       if (!cName && p.description) {
         const dMatch = p.description.match(/(?:Colour|Color)\s*[:\t\-]?\s*([^\n\r,]+)/i);
         if (dMatch && dMatch[1]) cName = dMatch[1].trim();
@@ -1085,8 +1091,8 @@
         product.imageUrl,
         ...(Array.isArray(product.images) ? product.images : [])
       ].filter(Boolean);
-      const allProductImages = Array.from(new Set(rawAllImages)).map(resolveProductImageUrl);
-      const img = allProductImages[0] || resolveProductImageUrl(product.imageUrl) || imageFallback;
+      const allProductImages = Array.from(new Set(rawAllImages)).map(u => resolveProductImageUrl(u, 800));
+      const img = allProductImages[0] || resolveProductImageUrl(product.imageUrl, 800) || imageFallback;
       const { mrp, discountPct } = calculateDiscount(product.sellingPrice);
       const ratingInfo = getProductRating(product);
       const { rating, ratingsFormatted, reviewsFormatted } = ratingInfo;
@@ -1102,30 +1108,8 @@
       // Variant extraction
       const ramRomText = (product.ram && product.storage)
         ? `${product.ram} RAM | ${product.storage} ROM`
-        : (product.ram ? `${product.ram} RAM` : (product.storage ? `${product.storage} ROM` : (specs?.ramRom || "8 GB RAM | 128 GB ROM")));
+        : (product.ram ? `${product.ram} RAM` : (product.storage ? `${product.storage} ROM` : (specs?.ramRom || "")));
       const variantsList = getProductVariants(product, allProducts, specs);
-
-      // Category Badges (accurate for phones, TVs, washing machines, audio)
-      const isTV = (product.category || "").toLowerCase() === "television" || (product.name || "").toLowerCase().includes("tv");
-      const isAppliance = (product.category || "").toLowerCase() === "appliances" || (product.name || "").toLowerCase().includes("washing");
-      const posterBadges = specs?.customBadges || (
-        isTV ? [
-          { icon: "📺", title: "4K Ultra HD", subtitle: "Vivid Picture Engine" },
-          { icon: "🔊", title: "24W Dolby Audio", subtitle: "Cinema Surround Sound" },
-          { icon: "🎬", title: "Smart TV OS", subtitle: "Netflix, YouTube, Apps" },
-          { icon: "🔌", title: "3 HDMI + 2 USB", subtitle: "Full Connectivity" }
-        ] : isAppliance ? [
-          { icon: "🧺", title: "Family Capacity", subtitle: "Dual Storm Pulsator" },
-          { icon: "⚡", title: "1350 RPM Speed", subtitle: "Super Air Turbo Dry" },
-          { icon: "⭐", title: "5 Star Rating", subtitle: "Lowest Power & Water" },
-          { icon: "🛡️", title: "10 Yr Warranty", subtitle: "Long Life Motor" }
-        ] : [
-          { icon: "🔋", title: specs?.battery?.split("with")[0]?.trim() || "5000 mAh", subtitle: "Long Lasting Battery" },
-          { icon: "📸", title: specs?.rearCamera?.split("+")[0]?.trim() || "50MP AI", subtitle: "AI Portrait Camera" },
-          { icon: "📱", title: specs?.display?.split(",")[0]?.trim() || "6.79 inch", subtitle: `${specs?.refreshRate || "120Hz"} Display` },
-          { icon: "⚡", title: specs?.antutuScore || "5,47,000+*", subtitle: "Leading AnTuTu Score" }
-        ]
-      );
 
       const has360View = product.category === "Mobile" || product.category === "Television";
 
@@ -1213,21 +1197,6 @@
                   </button>
                   <button type="button" class="fk-360-angle-btn" id="fk-exit-360-btn" style="color:#ef4444; border-color:#fca5a5;">✕ Normal View</button>
                 </div>
-
-                <!-- Zesh Tech Specs Poster Graphic Badge Overlay -->
-                ${specs ? `
-                  <div class="fk-specs-poster-overlay">
-                    ${posterBadges.map(b => `
-                      <div class="fk-poster-badge">
-                        <span class="fk-poster-icon">${escapeHTML(b.icon)}</span>
-                        <div>
-                          <strong>${escapeHTML(b.title)}</strong>
-                          <small>${escapeHTML(b.subtitle)}</small>
-                        </div>
-                      </div>
-                    `).join("")}
-                  </div>
-                ` : ""}
               </div>
             </div>
 
@@ -1509,6 +1478,37 @@
 
                   <!-- Tab 1: Specifications (Default Active) -->
                   <div class="fk-tab-pane active" id="fk-tab-specs">
+                    <!-- General Details (From Admin Input) -->
+                    <div class="fk-specs-group">
+                      <h3 class="fk-group-title">General Information</h3>
+                      <div class="fk-spec-item-line">
+                        <span class="fk-spec-name">Brand</span>
+                        <strong class="fk-spec-val">${escapeHTML(product.brand || "Zesh Verified")}</strong>
+                      </div>
+                      <div class="fk-spec-item-line">
+                        <span class="fk-spec-name">Model Name</span>
+                        <strong class="fk-spec-val">${escapeHTML(product.model || product.name)}</strong>
+                      </div>
+                      ${(product.ram || specs?.ram) ? `
+                        <div class="fk-spec-item-line">
+                          <span class="fk-spec-name">RAM</span>
+                          <strong class="fk-spec-val">${escapeHTML(product.ram || specs.ram)}</strong>
+                        </div>
+                      ` : ""}
+                      ${(product.storage || specs?.rom || specs?.storage) ? `
+                        <div class="fk-spec-item-line">
+                          <span class="fk-spec-name">Internal Storage (ROM)</span>
+                          <strong class="fk-spec-val">${escapeHTML(product.storage || specs.rom || specs.storage)}</strong>
+                        </div>
+                      ` : ""}
+                      ${(product.color || specs?.color) ? `
+                        <div class="fk-spec-item-line">
+                          <span class="fk-spec-name">Color / Finish</span>
+                          <strong class="fk-spec-val">${escapeHTML(product.color || specs.color)}</strong>
+                        </div>
+                      ` : ""}
+                    </div>
+
                     <!-- Network & Connectivity (5G / 4G) -->
                     ${product.category === "Mobile" ? `
                       <div class="fk-specs-group">
@@ -1523,68 +1523,78 @@
                           <span class="fk-spec-name">SIM Slot</span>
                           <strong class="fk-spec-val">${escapeHTML(specs?.sim || (net === '5G' ? 'Dual 5G Nano SIM' : 'Dual 4G Nano SIM'))}</strong>
                         </div>
-                        <div class="fk-spec-item-line">
-                          <span class="fk-spec-name">5G Frequency Bands</span>
-                          <strong class="fk-spec-val">${net === '5G' ? 'n1 / n3 / n5 / n8 / n28 / n40 / n77 / n78 (All Indian 5G Bands)' : 'N/A (Standard 4G LTE Bands)'}</strong>
-                        </div>
-                        <div class="fk-spec-item-line">
-                          <span class="fk-spec-name">Wireless Connectivity</span>
-                          <strong class="fk-spec-val">Dual Band Wi-Fi (2.4GHz + 5GHz), Bluetooth 5.3</strong>
+                        ${net === '5G' ? `
+                          <div class="fk-spec-item-line">
+                            <span class="fk-spec-name">5G Frequency Bands</span>
+                            <strong class="fk-spec-val">n1 / n3 / n5 / n8 / n28 / n40 / n77 / n78 (All Indian 5G Bands)</strong>
+                          </div>
+                        ` : ''}
+                      </div>
+                    ` : ""}
+
+                    <!-- Power & Performance (Only if present!) -->
+                    ${(specs?.chipset || specs?.battery) ? `
+                      <div class="fk-specs-group">
+                        <h3 class="fk-group-title">Performance &amp; Power</h3>
+                        ${specs.chipset ? `
+                          <div class="fk-spec-item-line">
+                            <span class="fk-spec-name">Processor / Engine</span>
+                            <strong class="fk-spec-val">${escapeHTML(specs.chipset)}</strong>
+                          </div>
+                        ` : ""}
+                        ${specs.battery ? `
+                          <div class="fk-spec-item-line">
+                            <span class="fk-spec-name">Power / Battery</span>
+                            <strong class="fk-spec-val">${escapeHTML(specs.battery)}</strong>
+                          </div>
+                        ` : ""}
+                      </div>
+                    ` : ""}
+
+                    <!-- Dimensions (Only if verified dimensions exist!) -->
+                    ${(specs?.dimensions && specs.dimensions.width) ? `
+                      <div class="fk-specs-group">
+                        <h3 class="fk-group-title">Dimensions</h3>
+                        <div class="fk-dimensions-2col-grid">
+                          <div class="fk-dim-box">
+                            <span class="fk-dim-name">Width</span>
+                            <strong class="fk-dim-val">${escapeHTML(specs.dimensions.width)}</strong>
+                          </div>
+                          <div class="fk-dim-box">
+                            <span class="fk-dim-name">Depth</span>
+                            <strong class="fk-dim-val">${escapeHTML(specs.dimensions.depth)}</strong>
+                          </div>
+                          <div class="fk-dim-box">
+                            <span class="fk-dim-name">Height</span>
+                            <strong class="fk-dim-val">${escapeHTML(specs.dimensions.height)}</strong>
+                          </div>
+                          <div class="fk-dim-box">
+                            <span class="fk-dim-name">Weight</span>
+                            <strong class="fk-dim-val">${escapeHTML(specs.weight || "N/A")}</strong>
+                          </div>
                         </div>
                       </div>
                     ` : ""}
 
-                    <!-- Power & Performance -->
-                    <div class="fk-specs-group">
-                      <h3 class="fk-group-title">Performance &amp; Power</h3>
-                      <div class="fk-spec-item-line">
-                        <span class="fk-spec-name">Processor / Engine</span>
-                        <strong class="fk-spec-val">${escapeHTML(specs.chipset || "Flagship Octa-Core")}</strong>
-                      </div>
-                      <div class="fk-spec-item-line">
-                        <span class="fk-spec-name">Power / Battery</span>
-                        <strong class="fk-spec-val">${escapeHTML(specs.battery || "5000 mAh")}</strong>
-                      </div>
-                    </div>
-
-                    <!-- Dimensions -->
-                    <div class="fk-specs-group">
-                      <h3 class="fk-group-title">Dimensions</h3>
-                      <div class="fk-dimensions-2col-grid">
-                        <div class="fk-dim-box">
-                          <span class="fk-dim-name">Width</span>
-                          <strong class="fk-dim-val">${escapeHTML(specs.dimensions?.width || "77.71 mm")}</strong>
+                    <!-- Display Features (Only if present!) -->
+                    ${specs?.display ? `
+                      <div class="fk-specs-group">
+                        <h3 class="fk-group-title">Display &amp; Audio</h3>
+                        <div class="fk-spec-item-line">
+                          <span class="fk-spec-name">Display</span>
+                          <strong class="fk-spec-val">${escapeHTML(specs.display)}</strong>
                         </div>
-                        <div class="fk-dim-box">
-                          <span class="fk-dim-name">Depth</span>
-                          <strong class="fk-dim-val">${escapeHTML(specs.dimensions?.depth || "8.5 mm")}</strong>
-                        </div>
-                        <div class="fk-dim-box">
-                          <span class="fk-dim-name">Height</span>
-                          <strong class="fk-dim-val">${escapeHTML(specs.dimensions?.height || "170 mm")}</strong>
-                        </div>
-                        <div class="fk-dim-box">
-                          <span class="fk-dim-name">Weight</span>
-                          <strong class="fk-dim-val">${escapeHTML(specs.weight || "185 g")}</strong>
-                        </div>
+                        ${specs.resolution ? `
+                          <div class="fk-spec-item-line">
+                            <span class="fk-spec-name">Resolution / Audio</span>
+                            <strong class="fk-spec-val">${escapeHTML(specs.resolution)}</strong>
+                          </div>
+                        ` : ""}
                       </div>
-                    </div>
-
-                    <!-- Display Features -->
-                    <div class="fk-specs-group">
-                      <h3 class="fk-group-title">Display &amp; Audio</h3>
-                      <div class="fk-spec-item-line">
-                        <span class="fk-spec-name">Display</span>
-                        <strong class="fk-spec-val">${escapeHTML(specs.display || "Full HD+")}</strong>
-                      </div>
-                      <div class="fk-spec-item-line">
-                        <span class="fk-spec-name">Resolution / Audio</span>
-                        <strong class="fk-spec-val">${escapeHTML(specs.resolution || "HD")}</strong>
-                      </div>
-                    </div>
+                    ` : ""}
 
                     <!-- TV Specific Features -->
-                    ${specs.categoryType === "tv" ? `
+                    ${specs?.categoryType === "tv" ? `
                       <div class="fk-specs-group">
                         <h3 class="fk-group-title">Smart TV OS &amp; Connectivity</h3>
                         <div class="fk-spec-item-line">
@@ -1603,7 +1613,7 @@
                     ` : ""}
 
                     <!-- Appliance Specific Features -->
-                    ${specs.categoryType === "appliance" ? `
+                    ${specs?.categoryType === "appliance" ? `
                       <div class="fk-specs-group">
                         <h3 class="fk-group-title">Washing &amp; Motor Performance</h3>
                         <div class="fk-spec-item-line">
@@ -1622,22 +1632,24 @@
                     ` : ""}
 
                     <!-- Mobile Camera & Video Features -->
-                    ${specs.categoryType === "mobile" && specs.rearCamera && !specs.rearCamera.startsWith("N/A") ? `
+                    ${specs?.categoryType === "mobile" && specs.rearCamera && !specs.rearCamera.startsWith("N/A") ? `
                       <div class="fk-specs-group">
                         <h3 class="fk-group-title">Camera &amp; Video</h3>
                         <div class="fk-spec-item-line">
                           <span class="fk-spec-name">Primary Camera</span>
                           <strong class="fk-spec-val">${escapeHTML(specs.rearCamera)}</strong>
                         </div>
-                        <div class="fk-spec-item-line">
-                          <span class="fk-spec-name">Selfie Camera</span>
-                          <strong class="fk-spec-val">${escapeHTML(specs.frontCamera)}</strong>
-                        </div>
+                        ${specs.frontCamera ? `
+                          <div class="fk-spec-item-line">
+                            <span class="fk-spec-name">Selfie Camera</span>
+                            <strong class="fk-spec-val">${escapeHTML(specs.frontCamera)}</strong>
+                          </div>
+                        ` : ""}
                       </div>
                     ` : ""}
 
                     <!-- In-Box Accessories & Package Contents -->
-                    ${specs.inBox ? `
+                    ${specs?.inBox ? `
                       <div class="fk-specs-group">
                         <h3 class="fk-group-title">What's In The Box (Accessories)</h3>
                         <div class="fk-spec-item-line">
@@ -1653,15 +1665,17 @@
                     <div style="text-align:center; padding: 20px;">
                       <img src="${escapeHTML(img)}" style="max-height:240px; object-fit:contain; margin-bottom:12px;">
                       <h3 style="font-size:16px; font-weight:800; color:#0f172a;">${escapeHTML(product.name)}</h3>
-                      <p style="font-size:13px; color:#64748b; max-width:600px; margin:0 auto; line-height:1.6;">${escapeHTML(product.description || "Engineered for high performance, battery endurance, and crystal clear quality with 100% brand warranty.")}</p>
+                      <p style="font-size:13px; color:#64748b; max-width:600px; margin:0 auto; line-height:1.6;">${escapeHTML(product.description || "100% Brand Sealed Pack with Official Manufacturer Warranty.")}</p>
                     </div>
                   </div>
 
                   <!-- Tab 3: Description -->
                   <div class="fk-tab-pane" id="fk-tab-desc" style="display:none; padding:16px 0;">
-                    <div style="font-size:13px; line-height:1.7; color:#334155;">
-                      <p><b>Product Overview:</b> ${escapeHTML(product.name)} delivers exceptional reliability and power in its class. Manufactured under strict quality benchmarks with official brand sealing.</p>
-                      <p><b>Performance &amp; Quality:</b> Designed for endurance, low energy consumption, and maximum daily productivity.</p>
+                    <div style="font-size:13px; line-height:1.7; color:#334155; white-space:pre-line;">
+                      ${product.description ? escapeHTML(product.description) : `
+                        <p><b>Product Overview:</b> ${escapeHTML(product.name)} delivers exceptional reliability and power in its class. Manufactured under strict quality benchmarks with 100% official brand sealing.</p>
+                        <p><b>Performance &amp; Quality:</b> Inspected, brand authorized, and verified at Zesh Tech Counter, Station Road, Barh (Patna).</p>
+                      `}
                     </div>
                   </div>
 

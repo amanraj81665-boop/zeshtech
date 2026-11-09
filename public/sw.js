@@ -1,14 +1,14 @@
 // ZESH-TECH Progressive Web App Service Worker
-const CACHE_NAME = 'zeshtech-v7.5';
+const CACHE_NAME = 'zeshtech-v7.6';
 const STATIC_ASSETS = [
   "/",
   "/index.html",
   "/admin.html",
-  "/css/style.css?v=7.2",
-  "/js/phoneSpecsData.js?v=7.2",
-  "/js/app.js?v=7.2",
-  "/js/admin.js?v=7.2",
-  "/js/api.js?v=7.2",
+  "/css/style.css?v=7.6",
+  "/js/phoneSpecsData.js?v=7.6",
+  "/js/app.js?v=7.6",
+  "/js/admin.js?v=7.6",
+  "/js/api.js?v=7.6",
   "/images/logo.png",
   "/images/screenshots/desktop.png",
   "/images/screenshots/mobile.png",
@@ -58,21 +58,22 @@ self.addEventListener("fetch", (event) => {
   if (isImageOrStatic) {
     event.respondWith(
       caches.match(event.request).then((cachedResponse) => {
-        // Background fetch to update cache for next load
+        // Fetch from network with cache update
         const networkFetch = fetch(event.request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
+          if (networkResponse && (networkResponse.status === 200 || networkResponse.type === "opaque")) {
             const clone = networkResponse.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
           }
           return networkResponse;
-        }).catch(() => null);
+        });
 
-        // If in cache, return immediately (0ms delay!)
+        // If in cache, return immediately (0ms delay!) and revalidate in background
         if (cachedResponse) {
+          networkFetch.catch(() => {});
           return cachedResponse;
         }
 
-        // Otherwise wait for network fetch
+        // Otherwise return network fetch directly
         return networkFetch;
       })
     );
