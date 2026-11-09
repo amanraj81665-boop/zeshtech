@@ -48,6 +48,14 @@ const productSchema = new mongoose.Schema(
       maxlength: [30, "IMEI 2 cannot exceed 30 characters"]
     },
 
+    // Normalized IMEI values indexed uniquely across different products.
+    // Populated only by trusted server-side inventory routes.
+    imeiKeys: {
+      type: [String],
+      default: [],
+      select: false
+    },
+
     imeiRecords: [
       {
         imei1: { type: String, trim: true, default: "", maxlength: 30 },
@@ -223,6 +231,11 @@ productSchema.index({ isActive: 1, brand: 1 });
 productSchema.index({ name: "text", brand: "text", model: "text", category: "text" });
 productSchema.index({ "imeiRecords.imei1": 1 });
 productSchema.index({ "imeiRecords.imei2": 1 });
+// MongoDB enforces that one IMEI cannot belong to two different products.
+productSchema.index(
+  { imeiKeys: 1 },
+  { unique: true, sparse: true, name: "unique_product_imei_keys" }
+);
 
 productSchema.pre("save", function () {
   if (Array.isArray(this.imeiRecords) && this.imeiRecords.length > 0) {

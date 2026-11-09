@@ -467,6 +467,8 @@ router.post("/", authMiddleware, requireAdmin, async (req, res) => {
       });
     }
 
+    data.imeiKeys = collectImeis(data);
+
     const product = await Product.create(data);
 
     return res.status(201).json({
@@ -509,6 +511,35 @@ router.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
         success: false,
         message: "No editable product fields supplied"
       });
+    }
+
+    const imeiFieldsChanged = ["imei1", "imei2", "imeiRecords"].some(field =>
+      Object.prototype.hasOwnProperty.call(updates, field)
+    );
+
+    if (imeiFieldsChanged) {
+      const current = await Product.findById(req.params.id)
+        .select("+imeiKeys")
+        .lean();
+      if (!current || !current.isActive) {
+        return res.status(404).json({ success: false, message: "Product not found" });
+      }
+
+      const mergedImeiData = {
+        imei1: Object.prototype.hasOwnProperty.call(updates, "imei1") ? updates.imei1 : current.imei1,
+        imei2: Object.prototype.hasOwnProperty.call(updates, "imei2") ? updates.imei2 : current.imei2,
+        imeiRecords: Object.prototype.hasOwnProperty.call(updates, "imeiRecords") ? updates.imeiRecords : current.imeiRecords
+      };
+      // If a per-unit list exists, it is the source of truth for the indexed keys.
+      updates.imeiKeys = collectImeis(mergedImeiData);
+      const mergedConflict = await findImeiConflict(mergedImeiData, req.params.id);
+      if (mergedConflict) {
+        return res.status(409).json({
+          success: false,
+          message: `IMEI ${mergedConflict.imei} is already assigned to another product.`,
+          conflict: mergedConflict
+        });
+      }
     }
 
     const imeiConflict = await findImeiConflict(updates, req.params.id);
