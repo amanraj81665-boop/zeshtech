@@ -285,6 +285,10 @@ const api = {
     });
   },
 
+  verifyOrderPayment(id) {
+    return this.request(`/orders/${encodeURIComponent(id)}/payment/verify`, { method: "PATCH" });
+  },
+
   getOrderById(id) {
     return this.request(`/orders/${encodeURIComponent(id)}`);
   },

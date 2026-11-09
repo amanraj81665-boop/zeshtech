@@ -60,29 +60,22 @@ const authLimiter = rateLimit({
 });
 app.use("/api/auth", authLimiter);
 
-// NoSQL Injection Sanitizer
+// Parse request bodies before sanitizing user-supplied JSON.
+app.use(express.json({ limit: "20kb" }));
+app.use(express.urlencoded({ extended: false, limit: "20kb" }));
+
+// NoSQL injection protection for parsed request bodies.
 app.use((req, res, next) => {
-  const sanitize = (obj) => {
-    if (!obj || typeof obj !== "object") return;
-    for (const key of Object.keys(obj)) {
-      if (key.startsWith("$") || key.includes(".")) {
-        delete obj[key];
-      } else if (typeof obj[key] === "object") {
-        sanitize(obj[key]);
-      }
+  const sanitize = (value) => {
+    if (!value || typeof value !== "object") return;
+    for (const key of Object.keys(value)) {
+      if (key.startsWith("$") || key.includes(".")) delete value[key];
+      else sanitize(value[key]);
     }
   };
-  if (req.body) sanitize(req.body);
-  if (req.query) sanitize(req.query);
-  if (req.params) sanitize(req.params);
+  if (req.body && typeof req.body === "object") sanitize(req.body);
   next();
 });
-
-// Parse JSON request bodies
-app.use(express.json({ limit: "20kb" }));
-
-// Parse URL-encoded form bodies
-app.use(express.urlencoded({ extended: false, limit: "20kb" }));
 
 // Health check
 app.get("/api/health", (req, res) => {

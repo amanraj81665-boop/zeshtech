@@ -3444,7 +3444,9 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
               <div style="font-size: 10.5px; color: ${o.paymentMethod?.includes('UPI') || o.paymentMethod?.includes('PhonePe') ? '#4ade80' : '#94a3b8'}; font-weight: 600;">
                 ${escapeHTML(o.paymentMethod || 'Cash on Delivery')}
               </div>
+              <div style="font-size:10px;margin-top:3px;color:${o.paymentDetails?.status === "Verified" ? "#4ade80" : "#fbbf24"};">Payment: ${escapeHTML(o.paymentDetails?.status || "Pending")}</div>
               ${o.paymentDetails?.transactionId ? `<div style="font-family: var(--font-mono); font-size: 9.5px; color: #38bdf8; margin-top: 2px;">UTR: ${escapeHTML(o.paymentDetails.transactionId)}</div>` : ''}
+              ${o.paymentDetails?.transactionId && o.paymentDetails?.status !== "Verified" ? `<button class="btn btn-primary btn-small order-payment-verify-btn" data-id="${o._id}" style="margin-top:5px;">Verify UTR</button>` : ''}
             </td>
             <td style="padding: 12px 10px;"><span class="badge ${badgeClass}">${escapeHTML(o.status)}</span></td>
             <td style="padding: 12px 10px;">
@@ -4077,11 +4079,23 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
       }
     });
 
-    $("#orders-tbody")?.addEventListener("click", (e) => {
-      const slipBtn = e.target.closest(".order-packing-slip-btn");
-      if (slipBtn) {
-        openPackingSlipModal(slipBtn.dataset.id);
+    $("#orders-tbody")?.addEventListener("click", async (e) => {
+      const verifyBtn = e.target.closest(".order-payment-verify-btn");
+      if (verifyBtn) {
+        if (!confirm("Confirm this UTR is credited in the bank/UPI statement and the amount matches?")) return;
+        verifyBtn.disabled = true;
+        try {
+          await zeshAPI.verifyOrderPayment(verifyBtn.dataset.id);
+          showToast("UPI payment verified", "success");
+          await loadOrdersView();
+        } catch (err) {
+          showToast(err.message || "Payment verification failed", "error");
+          verifyBtn.disabled = false;
+        }
+        return;
       }
+      const slipBtn = e.target.closest(".order-packing-slip-btn");
+      if (slipBtn) openPackingSlipModal(slipBtn.dataset.id);
     });
 
     $("#close-packing-slip-btn")?.addEventListener("click", () => {

@@ -2629,7 +2629,7 @@
       if (errorMsg) errorMsg.classList.add("hidden");
 
       pendingOrderPayload.paymentDetails = {
-        status: "Paid",
+        status: "Pending",
         transactionId: utr,
         upiId: "9122846271-5@ybl"
       };
@@ -2644,7 +2644,7 @@
 
       $("#upi-payment-modal-backdrop")?.classList.remove("active");
       showOrderConfirmation(createdOrder, res.whatsAppAlertUrl);
-      showToast("Payment verified! Order placed successfully.", "success");
+      showToast("UTR submitted. Payment is pending admin verification.", "success");
     } catch (err) {
       console.error("UPI order creation error:", err);
       if (errorMsg) {
@@ -2654,7 +2654,7 @@
     } finally {
       confirmBtn.disabled = false;
       confirmBtn.innerHTML = `
-        <span>✓ I Have Paid — Confirm Order</span>
+        <span>✓ I Have Paid — Submit UTR</span>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
       `;
     }

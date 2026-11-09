@@ -78,6 +78,25 @@ router.get("/", requireAdmin, async (req, res) => {
   }
 });
 
+// Admin-only manual UPI payment verification. Admin must confirm the credit in the bank statement.
+router.patch("/:id/payment/verify", requireAdmin, async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ success: false, message: "Invalid order ID" });
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ success: false, message: "Order not found" });
+    if (!order.paymentDetails?.transactionId) return res.status(400).json({ success: false, message: "No UTR/reference number submitted" });
+    if (order.paymentDetails.status === "Verified") return res.json({ success: true, message: "Payment is already verified", order });
+    if (!/UPI|PhonePe|Google Pay/i.test(order.paymentMethod || "")) return res.status(400).json({ success: false, message: "Only manual UPI orders can be verified here" });
+    order.paymentDetails.status = "Verified";
+    order.paymentDetails.paidAt = new Date();
+    await order.save();
+    return res.json({ success: true, message: "UPI payment marked as verified", order });
+  } catch (error) {
+    console.error("Manual UPI verification error:", error.message);
+    return res.status(500).json({ success: false, message: "Could not verify payment" });
+  }
+});
+
 // PATCH /api/orders/:id/status - Admin only: update order status
 router.patch("/:id/status", requireAdmin, async (req, res) => {
   try {
@@ -221,23 +240,23 @@ router.post("/", requireCustomer, async (req, res) => {
 
       subtotal = Math.round(subtotal * 100) / 100;
 
-      // Real coupon / discount support
+      // Server-authoritative coupon validation; ignore all client-supplied discount amounts.
+      const validCoupons = {
+        UPI1000: { discount: 1000, minOrder: 4000 },
+        BANK1500: { discount: 1500, minOrder: 8000 },
+        ZESH500: { discount: 500, minOrder: 1500 },
+        WELCOME500: { discount: 500, minOrder: 1500 },
+        FESTIVE2000: { discount: 2000, minOrder: 20000 }
+      };
       let discount = 0;
       let couponInfo = null;
-      if (req.body.coupon && typeof req.body.coupon === "object") {
-        const reqDiscount = Number(req.body.coupon.discount || req.body.discountAmount || 0);
-        if (reqDiscount > 0) {
-          discount = Math.min(reqDiscount, subtotal);
-          couponInfo = {
-            code: String(req.body.coupon.code || "OFFER").trim().toUpperCase(),
-            discount
-          };
-        }
-      } else if (req.body.discountAmount) {
-        const rawDisc = Number(req.body.discountAmount);
-        if (rawDisc > 0) {
-          discount = Math.min(rawDisc, subtotal);
-        }
+      const submittedCode = String(req.body.coupon?.code || "").trim().toUpperCase();
+      if (submittedCode) {
+        const coupon = validCoupons[submittedCode];
+        if (!coupon) throw new Error("Invalid or expired coupon code");
+        if (subtotal < coupon.minOrder) throw new Error(`Coupon ${submittedCode} requires a minimum order of ₹${coupon.minOrder}`);
+        discount = Math.min(coupon.discount, subtotal);
+        couponInfo = { code: submittedCode, discount };
       }
 
       const finalTotal = Math.max(0, Math.round((subtotal - discount) * 100) / 100);
@@ -257,10 +276,10 @@ router.post("/", requireCustomer, async (req, res) => {
           totalAmount: finalTotal,
           paymentMethod: req.body.paymentMethod || "Cash on Delivery",
           paymentDetails: {
-            status: req.body.paymentDetails?.status || (req.body.paymentMethod?.includes("UPI") || req.body.paymentMethod?.includes("PhonePe") ? "Paid" : "Pending"),
-            transactionId: req.body.paymentDetails?.transactionId || req.body.transactionId || "",
-            upiId: "9122846271-5@ybl",
-            paidAt: (req.body.paymentDetails?.transactionId || req.body.transactionId) ? new Date() : undefined
+            // Never trust payment status supplied by the browser.
+            status: "Pending",
+            transactionId: String(req.body.paymentDetails?.transactionId || req.body.transactionId || "").trim().slice(0, 100),
+            upiId: "9122846271-5@ybl"
           },
           shippingAddress: {
             fullName: req.body.shippingAddress?.fullName || "",
