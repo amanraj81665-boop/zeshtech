@@ -140,7 +140,7 @@ async function findImeiConflict(data, excludeProductId = null) {
   }
 
   const patterns = imeis.map(value =>
-    new RegExp("^\\\\s*" + value.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\function pickFields(body, fields) {") + "\\\\s*$", "i")
+    new RegExp("^\\s*" + escapeRegex(value) + "\\s*$", "i")
   );
   const filter = {
     $or: [
