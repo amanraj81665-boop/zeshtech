@@ -186,6 +186,98 @@ function pickFields(body, fields) {
   return result;
 }
 
+// POST /api/products/admin/migrate-imei-index
+// One-time admin migration: backfill normalized IMEI keys and enforce uniqueness.
+router.post("/admin/migrate-imei-index", authMiddleware, requireAdmin, async (req, res) => {
+  try {
+    const products = await Product.find({})
+      .select("+imeiKeys name sku imei1 imei2 imeiRecords")
+      .lean();
+
+    const owners = new Map();
+    const conflicts = [];
+
+    for (const product of products) {
+      const keys = collectImeis(product);
+      const localSeen = new Set();
+
+      for (const key of keys) {
+        if (localSeen.has(key)) {
+          conflicts.push({
+            imei: key,
+            productName: product.name,
+            sku: product.sku,
+            reason: "Duplicate within the same product"
+          });
+          continue;
+        }
+        localSeen.add(key);
+
+        const previous = owners.get(key);
+        if (previous && String(previous._id) !== String(product._id)) {
+          conflicts.push({
+            imei: key,
+            productName: product.name,
+            sku: product.sku,
+            duplicateOf: previous.name,
+            duplicateSku: previous.sku,
+            reason: "IMEI exists in multiple products"
+          });
+        } else {
+          owners.set(key, product);
+        }
+      }
+    }
+
+    if (conflicts.length) {
+      return res.status(409).json({
+        success: false,
+        migrated: false,
+        message: "Existing duplicate IMEIs must be resolved before the unique index can be enabled.",
+        conflictCount: conflicts.length,
+        conflicts: conflicts.slice(0, 100)
+      });
+    }
+
+    const operations = products.map(product => ({
+      updateOne: {
+        filter: { _id: product._id },
+        update: { $set: { imeiKeys: collectImeis(product) } }
+      }
+    }));
+
+    if (operations.length) {
+      await Product.bulkWrite(operations, { ordered: true });
+    }
+
+    await Product.collection.createIndex(
+      { imeiKeys: 1 },
+      {
+        unique: true,
+        partialFilterExpression: { imeiKeys: { $type: "string" } },
+        name: "unique_product_imei_keys"
+      }
+    );
+
+    return res.json({
+      success: true,
+      migrated: true,
+      productsScanned: products.length,
+      uniqueImeisIndexed: owners.size,
+      message: "IMEI backfill and unique database index completed successfully."
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        migrated: false,
+        message: "MongoDB found an IMEI uniqueness conflict during index creation. Review inventory and retry."
+      });
+    }
+    return handleError(res, error, "IMEI migration failed");
+  }
+});
+
 // GET /api/products
 // Public product listing. Never expose purchase prices or internal codes.
 router.get("/", async (req, res) => {
