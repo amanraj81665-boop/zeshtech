@@ -525,13 +525,31 @@ router.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
         return res.status(404).json({ success: false, message: "Product not found" });
       }
 
+      let mergedRecords = Array.isArray(current.imeiRecords)
+        ? current.imeiRecords.map(record => ({ ...record }))
+        : [];
+
+      if (Object.prototype.hasOwnProperty.call(updates, "imeiRecords")) {
+        mergedRecords = updates.imeiRecords || [];
+      } else if (mergedRecords.length) {
+        // Keep legacy top-level edits synchronized with the first unit record.
+        if (Object.prototype.hasOwnProperty.call(updates, "imei1")) {
+          mergedRecords[0].imei1 = updates.imei1 || "";
+        }
+        if (Object.prototype.hasOwnProperty.call(updates, "imei2")) {
+          mergedRecords[0].imei2 = updates.imei2 || "";
+        }
+      }
+
       const mergedImeiData = {
         imei1: Object.prototype.hasOwnProperty.call(updates, "imei1") ? updates.imei1 : current.imei1,
         imei2: Object.prototype.hasOwnProperty.call(updates, "imei2") ? updates.imei2 : current.imei2,
-        imeiRecords: Object.prototype.hasOwnProperty.call(updates, "imeiRecords") ? updates.imeiRecords : current.imeiRecords
+        imeiRecords: mergedRecords
       };
-      // If a per-unit list exists, it is the source of truth for the indexed keys.
+
+      if (mergedRecords.length) updates.imeiRecords = mergedRecords;
       updates.imeiKeys = collectImeis(mergedImeiData);
+
       const mergedConflict = await findImeiConflict(mergedImeiData, req.params.id);
       if (mergedConflict) {
         return res.status(409).json({
@@ -542,14 +560,6 @@ router.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
       }
     }
 
-    const imeiConflict = await findImeiConflict(updates, req.params.id);
-    if (imeiConflict) {
-      return res.status(409).json({
-        success: false,
-        message: `IMEI ${imeiConflict.imei} is already assigned to another product or repeated in this product.`,
-        conflict: imeiConflict
-      });
-    }
 
     const product = await Product.findOneAndUpdate(
       { _id: req.params.id, isActive: true },
