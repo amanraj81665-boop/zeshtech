@@ -102,6 +102,75 @@ const editableFields = [
   "isActive"
 ];
 
+
+// Collect every IMEI submitted through the admin product form.
+function collectImeis(data) {
+  const values = [];
+  const add = value => {
+    const normalized = String(value || "").trim().toUpperCase();
+    if (normalized) values.push(normalized);
+  };
+
+  add(data.imei1);
+  add(data.imei2);
+  if (Array.isArray(data.imeiRecords)) {
+    for (const record of data.imeiRecords) {
+      add(record?.imei1);
+      add(record?.imei2);
+    }
+  }
+  return values;
+}
+
+// Reject duplicate IMEIs within this payload and against every other product.
+// The database query checks legacy top-level fields and per-unit IMEI records.
+async function findImeiConflict(data, excludeProductId = null) {
+  const imeis = collectImeis(data);
+  if (!imeis.length) return null;
+
+  const seen = new Set();
+  const duplicateInPayload = imeis.find(value => {
+    if (seen.has(value)) return true;
+    seen.add(value);
+    return false;
+  });
+
+  if (duplicateInPayload) {
+    return { imei: duplicateInPayload, reason: "repeated in this product" };
+  }
+
+  const patterns = imeis.map(value =>
+    new RegExp("^\\\\s*" + value.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\function pickFields(body, fields) {") + "\\\\s*$", "i")
+  );
+  const filter = {
+    $or: [
+      { imei1: { $in: patterns } },
+      { imei2: { $in: patterns } },
+      { "imeiRecords.imei1": { $in: patterns } },
+      { "imeiRecords.imei2": { $in: patterns } }
+    ]
+  };
+  if (excludeProductId) filter._id = { $ne: excludeProductId };
+
+  const conflict = await Product.findOne(filter)
+    .select("name sku imei1 imei2 imeiRecords.imei1 imeiRecords.imei2")
+    .lean();
+
+  if (!conflict) return null;
+
+  const allExisting = [
+    conflict.imei1,
+    conflict.imei2,
+    ...(conflict.imeiRecords || []).flatMap(record => [record.imei1, record.imei2])
+  ].map(value => String(value || "").trim().toUpperCase());
+
+  return {
+    imei: imeis.find(value => allExisting.includes(value)) || imeis[0],
+    productName: conflict.name,
+    sku: conflict.sku
+  };
+}
+
 function pickFields(body, fields) {
   const result = {};
 
@@ -386,6 +455,15 @@ router.post("/", authMiddleware, requireAdmin, async (req, res) => {
       });
     }
 
+    const imeiConflict = await findImeiConflict(data);
+    if (imeiConflict) {
+      return res.status(409).json({
+        success: false,
+        message: `IMEI ${imeiConflict.imei} is already assigned to another product or repeated in this product.`,
+        conflict: imeiConflict
+      });
+    }
+
     const product = await Product.create(data);
 
     return res.status(201).json({
@@ -427,6 +505,15 @@ router.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "No editable product fields supplied"
+      });
+    }
+
+    const imeiConflict = await findImeiConflict(updates, req.params.id);
+    if (imeiConflict) {
+      return res.status(409).json({
+        success: false,
+        message: `IMEI ${imeiConflict.imei} is already assigned to another product or repeated in this product.`,
+        conflict: imeiConflict
       });
     }
 
