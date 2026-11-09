@@ -143,6 +143,33 @@ async function createBill(req, res) {
     const grandTotal = Math.max(0, Math.round((calculatedSubtotal + totalCgst + totalSgst - cleanDiscount - cleanExchangeVal) * 100) / 100);
     const totalProfit = Math.round((calculatedSubtotal - cleanDiscount - totalCost) * 100) / 100;
 
+    // Validate handset identity before changing inventory. Never silently substitute
+    // another in-stock handset when the cashier-selected IMEI does not match.
+    const cleanImei1 = String(imei1 || "").trim();
+    const cleanImei2 = String(imei2 || "").trim();
+    if (cleanImei1 || cleanImei2) {
+      let matchedHandset = false;
+      for (const line of processedItems.filter(it => it.productId)) {
+        const product = await Product.findById(line.productId).select("imeiRecords");
+        const records = product?.imeiRecords || [];
+        const match = records.find(record =>
+          record.status === "In Stock" &&
+          ((cleanImei1 && record.imei1 === cleanImei1) ||
+           (cleanImei2 && record.imei2 === cleanImei2))
+        );
+        if (match) {
+          if (line.quantity !== 1) {
+            return res.status(400).json({ success: false, message: "IMEI-tracked handset billing must be quantity 1 per selected handset." });
+          }
+          matchedHandset = true;
+          break;
+        }
+      }
+      if (!matchedHandset) {
+        return res.status(409).json({ success: false, message: "Selected IMEI is not available in stock for the billed product. Refresh POS and select the correct handset." });
+      }
+    }
+
     // Deduct stock atomically
     const deductedProducts = [];
     try {
@@ -205,18 +232,16 @@ async function createBill(req, res) {
     });
 
     // Automatically mark the billed handset IMEI as "Sold" in product imeiRecords
-    const cleanImei1 = (imei1 || "").trim();
-    const cleanImei2 = (imei2 || "").trim();
     if (bill && (cleanImei1 || cleanImei2)) {
       for (const it of processedItems) {
         if (it.productId) {
           try {
             const pDoc = await Product.findById(it.productId);
             if (pDoc && Array.isArray(pDoc.imeiRecords) && pDoc.imeiRecords.length > 0) {
-              const record = pDoc.imeiRecords.find(r => 
-                (cleanImei1 && r.imei1 === cleanImei1) || 
-                (cleanImei2 && r.imei2 === cleanImei2) ||
-                (r.status === "In Stock")
+              const record = pDoc.imeiRecords.find(r =>
+                r.status === "In Stock" &&
+                ((cleanImei1 && r.imei1 === cleanImei1) ||
+                 (cleanImei2 && r.imei2 === cleanImei2))
               );
               if (record) {
                 record.status = "Sold";

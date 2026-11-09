@@ -177,7 +177,7 @@ router.get("/", async (req, res) => {
 
     const [products, total] = await Promise.all([
       Product.find(filter)
-        .select("-purchasePrice -sku -barcode")
+        .select("-purchasePrice -sku -barcode -imei1 -imei2 -imeiRecords -serialNumber")
         .sort(sort)
         .skip(skip)
         .limit(limit)
@@ -352,7 +352,7 @@ router.get("/:id", async (req, res) => {
       _id: req.params.id,
       isActive: true
     })
-      .select("-purchasePrice -sku -barcode")
+      .select("-purchasePrice -sku -barcode -imei1 -imei2 -imeiRecords -serialNumber")
       .lean();
 
     if (!product) {
