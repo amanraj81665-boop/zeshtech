@@ -111,13 +111,16 @@ function collectImeis(data) {
     if (normalized) values.push(normalized);
   };
 
-  add(data.imei1);
-  add(data.imei2);
-  if (Array.isArray(data.imeiRecords)) {
+  // imei1/imei2 mirror the first imeiRecords entry, so prefer the
+  // per-unit array when present to avoid treating that mirror as a duplicate.
+  if (Array.isArray(data.imeiRecords) && data.imeiRecords.length > 0) {
     for (const record of data.imeiRecords) {
       add(record?.imei1);
       add(record?.imei2);
     }
+  } else {
+    add(data.imei1);
+    add(data.imei2);
   }
   return values;
 }
