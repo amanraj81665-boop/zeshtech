@@ -74,7 +74,7 @@ async function main() {
 
   await Product.collection.createIndex(
     { imeiKeys: 1 },
-    { unique: true, sparse: true, name: "unique_product_imei_keys" }
+    { unique: true, partialFilterExpression: { imeiKeys: { $type: "string" } }, name: "unique_product_imei_keys" }
   );
 
   console.log(`IMEI migration complete. Indexed ${owners.size} unique IMEI values across ${products.length} products.`);

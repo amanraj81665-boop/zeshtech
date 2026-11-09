@@ -234,7 +234,7 @@ productSchema.index({ "imeiRecords.imei2": 1 });
 // MongoDB enforces that one IMEI cannot belong to two different products.
 productSchema.index(
   { imeiKeys: 1 },
-  { unique: true, sparse: true, name: "unique_product_imei_keys" }
+  { unique: true, partialFilterExpression: { imeiKeys: { $type: "string" } }, name: "unique_product_imei_keys" }
 );
 
 productSchema.pre("save", function () {
