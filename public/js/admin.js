@@ -1141,30 +1141,28 @@
       }
       if (typeof window.html2pdf !== "function") throw new Error("PDF generator unavailable.");
 
-      const clone = area.cloneNode(true);
-      clone.style.width = printFormat === "thermal" ? "72mm" : "190mm";
-      clone.style.maxWidth = "none";
-      clone.style.padding = "6mm";
-      clone.style.background = "#fff";
-      clone.style.color = "#000";
-      const host = document.createElement("div");
-      host.style.cssText = "position:fixed;left:0;top:0;width:" + (printFormat === "thermal" ? "80mm" : "210mm") + ";min-height:100vh;background:#fff;z-index:2147483647;opacity:1;pointer-events:none;";
-      host.appendChild(clone);
-      document.body.appendChild(host);
-
+      // Capture the real visible invoice preview; detached clones can lose inherited modal styles.
+      const originalStyles = { width: area.style.width, maxWidth: area.style.maxWidth, background: area.style.background, color: area.style.color };
+      area.style.width = printFormat === "thermal" ? "72mm" : "190mm";
+      area.style.maxWidth = "none";
+      area.style.background = "#ffffff";
+      area.style.color = "#000000";
       let blob;
       try {
         const worker = window.html2pdf().set({
           margin: printFormat === "thermal" ? 3 : 8,
-          image: { type: "jpeg", quality: 0.96 },
-          html2canvas: { scale: 1.5, useCORS: true, backgroundColor: "#ffffff", logging: false },
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false, scrollX: 0, scrollY: 0 },
           jsPDF: { unit: "mm", format: printFormat === "thermal" ? [80, 297] : "a4", orientation: "portrait" },
           pagebreak: { mode: ["css", "legacy"] }
-        }).from(clone);
+        }).from(area);
         const pdf = await worker.toPdf().get("pdf");
         blob = pdf.output("blob");
       } finally {
-        host.remove();
+        area.style.width = originalStyles.width;
+        area.style.maxWidth = originalStyles.maxWidth;
+        area.style.background = originalStyles.background;
+        area.style.color = originalStyles.color;
       }
       if (!(blob instanceof Blob) || blob.size < 500) throw new Error("PDF file create nahi hui. Please try again.");
 
@@ -1192,11 +1190,10 @@
     const message = "ZESH TECH invoice #" + (bill.invoiceNumber || "") +
       " | Total: ₹" + Number(bill.grandTotal || 0).toLocaleString("en-IN") +
       " | Thank you for shopping with us. Please find your invoice PDF attached.";
-    const waParams = new URLSearchParams({ phone: pendingInvoicePhone, text: message });
-    const waUrl = "https://web.whatsapp.com/send/?" + waParams.toString();
+    const waUrl = "https://wa.me/" + pendingInvoicePhone + "?text=" + encodeURIComponent(message);
 
     // This runs directly from the user's click, so the browser is more likely to allow the WhatsApp tab.
-    const waWindow = window.open(waUrl, "_blank");
+    window.open(waUrl, "_blank");
     const downloadUrl = URL.createObjectURL(pendingInvoicePdf);
     const link = document.createElement("a");
     link.href = downloadUrl;
@@ -1208,9 +1205,7 @@
 
     const status = $("#invoice-whatsapp-status");
     if (status) {
-      status.textContent = waWindow
-        ? "PDF download ho rahi hai. WhatsApp Web chat mein paperclip se PDF attach karke Send karein."
-        : "PDF download ho rahi hai. Popup block hua—WhatsApp Web ko allow karein ya web.whatsapp.com kholkar customer number search karein.";
+      status.textContent = "PDF download ho rahi hai. WhatsApp click-to-chat link khul raha hai for +" + pendingInvoicePhone + ". Chat mein paperclip se PDF attach karke Send karein. Agar number WhatsApp par registered nahi hai to chat nahi khulegi.";
     }
   }
 
