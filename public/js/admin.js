@@ -1071,11 +1071,18 @@
       return;
     }
 
+    // Open a tab synchronously in the original click before any prompt.
+    const waWindow = window.open("about:blank", "_blank");
+    if (!waWindow) {
+      showToast("Your browser blocked the WhatsApp tab. Allow pop-ups for zeshtech.in.", "error");
+      return;
+    }
+
     const bill = activeBillForPrint;
     let phone = String(bill.customerPhone || "").replace(/\D/g, "");
     if (!phone || phone.length < 10) {
       const entered = window.prompt("Enter customer's 10-digit WhatsApp number:", "");
-      if (!entered) return;
+      if (!entered) { waWindow.close(); return; }
       phone = entered.replace(/\D/g, "");
     }
 
@@ -1106,12 +1113,6 @@
       "📞 *Store Support:* +91 7903746116 / 9122846271\n" +
       "🙏 *Thank you for shopping at Zesh Tech!*";
 
-    // Open the blank tab in the direct click gesture before asking for a number.
-    const waWindow = window.open("about:blank", "_blank");
-    if (!waWindow) {
-      showToast("Your browser blocked the WhatsApp tab. Allow pop-ups for zeshtech.in.", "error");
-      return;
-    }
     const waUrl = "https://wa.me/" + phone + "?text=" + encodeURIComponent(msg);
     waWindow.location.href = waUrl;
     showToast("WhatsApp opened. Review the invoice and press Send.", "success");
