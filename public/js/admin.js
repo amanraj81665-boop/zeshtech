@@ -1065,16 +1065,9 @@
     $("#invoice-print-modal")?.classList.add("active");
   }
 
-  function handleSendWhatsAppInvoice() {
+  async function handleSendWhatsAppInvoice() {
     if (!activeBillForPrint) {
-      showToast("No active bill selected", "warning");
-      return;
-    }
-
-    // Open a tab synchronously in the original click before any prompt.
-    const waWindow = window.open("about:blank", "_blank");
-    if (!waWindow) {
-      showToast("Your browser blocked the WhatsApp tab. Allow pop-ups for zeshtech.in.", "error");
+      showToast("No active bill selected.", "warning");
       return;
     }
 
@@ -1082,40 +1075,103 @@
     let phone = String(bill.customerPhone || "").replace(/\D/g, "");
     if (!phone || phone.length < 10) {
       const entered = window.prompt("Enter customer's 10-digit WhatsApp number:", "");
-      if (!entered) { waWindow.close(); return; }
+      if (!entered) return;
       phone = entered.replace(/\D/g, "");
     }
-
     if (phone.length === 10) phone = "91" + phone;
     if (phone.length !== 12 || !phone.startsWith("91")) {
-      showToast("Please enter a valid Indian 10-digit WhatsApp number.", "error");
+      showToast("Please enter a valid Indian 10-digit mobile number.", "error");
       return;
     }
 
-    const dateStr = new Date(bill.createdAt || Date.now()).toLocaleDateString("en-IN", {
-      day: "2-digit", month: "short", year: "numeric"
-    });
-    const itemsText = (bill.items || []).map((it, idx) => {
-      const total = Number(it.total || (Number(it.price) * Number(it.quantity)) || 0).toLocaleString("en-IN");
-      return "  " + (idx + 1) + ". *" + it.name + "* (x" + it.quantity + ") — ₹" + total;
-    }).join("\n");
-    const msg = "🧾 *TAX INVOICE — ZESH TECH RETAIL*\n" +
-      "━━━━━━━━━━━━━━━━━━━━\n" +
-      "📄 *Invoice No:* #" + (bill.invoiceNumber || "") + "\n" +
-      "📅 *Date:* " + dateStr + "\n" +
-      "👤 *Customer:* " + (bill.customerName || "Valued Customer") + "\n" +
-      "💳 *Payment Mode:* " + (bill.paymentMode || "Cash") + "\n" +
-      "━━━━━━━━━━━━━━━━━━━━\n" +
-      "🛍️ *Purchased Items:*\n" + itemsText + "\n" +
-      "━━━━━━━━━━━━━━━━━━━━\n" +
-      "💰 *Grand Total:* ₹" + Number(bill.grandTotal || 0).toLocaleString("en-IN") + "\n" +
-      "📍 *Store:* ZESH TECH, Station Road, Barh (Patna), Bihar - 803213\n" +
-      "📞 *Store Support:* +91 7903746116 / 9122846271\n" +
-      "🙏 *Thank you for shopping at Zesh Tech!*";
+    const button = $("#send-whatsapp-invoice-btn");
+    if (button) { button.disabled = true; button.dataset.originalText = button.innerHTML; button.innerHTML = "Generating PDF…"; }
 
-    const waUrl = "https://wa.me/" + phone + "?text=" + encodeURIComponent(msg);
-    waWindow.location.href = waUrl;
-    showToast("WhatsApp opened. Review the invoice and press Send.", "success");
+    try {
+      const area = $("#invoice-print-area");
+      if (!area || !area.innerHTML.trim()) throw new Error("Invoice preview is empty. Reopen the bill and try again.");
+
+      // Load the PDF renderer only when the feature is used.
+      if (typeof window.html2pdf !== "function") {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+          script.onload = resolve;
+          script.onerror = () => reject(new Error("PDF library could not load. Check your internet connection and retry."));
+          document.head.appendChild(script);
+        });
+      }
+      if (typeof window.html2pdf !== "function") throw new Error("PDF generator is unavailable. Please retry.");
+
+      const invoiceClone = area.cloneNode(true);
+      invoiceClone.style.width = printFormat === "thermal" ? "72mm" : "190mm";
+      invoiceClone.style.maxWidth = "none";
+      invoiceClone.style.padding = "8mm";
+      invoiceClone.style.margin = "0";
+      invoiceClone.style.background = "#ffffff";
+      invoiceClone.style.color = "#000000";
+      invoiceClone.style.fontFamily = "Arial, Helvetica, sans-serif";
+
+      const wrapper = document.createElement("div");
+      wrapper.style.position = "fixed";
+      wrapper.style.left = "-10000px";
+      wrapper.style.top = "0";
+      wrapper.style.width = printFormat === "thermal" ? "80mm" : "210mm";
+      wrapper.style.background = "#ffffff";
+      wrapper.appendChild(invoiceClone);
+      document.body.appendChild(wrapper);
+
+      let pdfBlob;
+      try {
+        pdfBlob = await window.html2pdf().set({
+          margin: printFormat === "thermal" ? 3 : 8,
+          filename: "ZESH-TECH-Invoice-" + String(bill.invoiceNumber || "bill") + ".pdf",
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false },
+          jsPDF: { unit: "mm", format: printFormat === "thermal" ? [80, 297] : "a4", orientation: "portrait" },
+          pagebreak: { mode: ["css", "legacy"] }
+        }).from(invoiceClone).outputPdf("blob");
+      } finally {
+        wrapper.remove();
+      }
+
+      if (!(pdfBlob instanceof Blob) || pdfBlob.size < 500) throw new Error("PDF could not be generated. Please try again.");
+
+      const fileName = "ZESH-TECH-Invoice-" + String(bill.invoiceNumber || "bill").replace(/[^a-z0-9_-]/gi, "") + ".pdf";
+      const pdfFile = new File([pdfBlob], fileName, { type: "application/pdf" });
+      const message = "ZESH TECH invoice #" + (bill.invoiceNumber || "") +
+        " | Total: ₹" + Number(bill.grandTotal || 0).toLocaleString("en-IN") +
+        " | Thank you for shopping with us.";
+
+      // Mobile: invoke the native share sheet with the actual PDF file.
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+        await navigator.share({ files: [pdfFile], title: "ZESH TECH Invoice", text: message });
+        showToast("Share sheet opened. Choose WhatsApp and the customer's chat to send the PDF.", "success");
+      } else {
+        // Desktop / unsupported browser: save the PDF and open the chosen WhatsApp chat.
+        const objectUrl = URL.createObjectURL(pdfBlob);
+        const downloadLink = document.createElement("a");
+        downloadLink.href = objectUrl;
+        downloadLink.download = fileName;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        downloadLink.remove();
+        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+
+        const waUrl = "https://wa.me/" + phone + "?text=" + encodeURIComponent(message + "\nPDF invoice downloaded. Please attach the downloaded PDF before sending.");
+        window.open(waUrl, "_blank", "noopener");
+        showToast("PDF downloaded. Attach it in the WhatsApp chat before sending.", "success");
+      }
+    } catch (error) {
+      if (error && error.name === "AbortError") {
+        showToast("Sharing cancelled. Your invoice is still available to print.", "info");
+      } else {
+        console.error("WhatsApp PDF share failed:", error);
+        showToast(error.message || "Could not create or share invoice PDF.", "error");
+      }
+    } finally {
+      if (button) { button.disabled = false; button.innerHTML = button.dataset.originalText || "📲 Send Bill on WhatsApp"; }
+    }
   }
 
   function renderPrintContent() {
