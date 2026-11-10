@@ -3,6 +3,7 @@
 const mongoose = require("mongoose");
 const Bill = require("../models/Bill");
 const Product = require("../models/Product");
+const User = require("../models/User");
 
 // Generate unique invoice number
 function generateInvoiceNumber() {
@@ -80,9 +81,7 @@ async function createBill(req, res) {
           });
         }
 
-        const unitPrice = typeof item.price === "number" && item.price >= 0
-          ? item.price
-          : productDoc.sellingPrice;
+        const unitPrice = Number(productDoc.sellingPrice) || 0;
 
         const lineTaxable = Math.round(unitPrice * quantity * 100) / 100;
         const cgst = taxRate > 0 ? Math.round(lineTaxable * (taxRate / 2) / 100 * 100) / 100 : 0;
@@ -742,6 +741,17 @@ async function getWarrantyLocker(req, res) {
     }
 
     const phone = rawPhone.slice(-10);
+    if (!req.user?.userId) {
+      return res.status(401).json({ success: false, message: "Please sign in to view your warranty records." });
+    }
+    const account = await User.findById(req.user.userId).select("phone role").lean();
+    if (!account) return res.status(401).json({ success: false, message: "Account not found." });
+    if (account.role !== "admin") {
+      const accountPhone = String(account.phone || "").replace(/\\D/g, "").slice(-10);
+      if (!accountPhone || accountPhone !== phone) {
+        return res.status(403).json({ success: false, message: "You can only view warranty records linked to your verified account phone number." });
+      }
+    }
 
     const bills = await Bill.find({
       status: "completed",

@@ -15,8 +15,8 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-// Customer Digital Warranty & Bill Locker (Public lookup by customer phone)
-router.get("/warranty-locker", billController.getWarrantyLocker);
+// Customer Digital Warranty & Bill Locker (authenticated; account phone is verified server-side)
+router.get("/warranty-locker", authMiddleware, billController.getWarrantyLocker);
 
 // All subsequent bill routes require authentication and admin permission
 router.use(authMiddleware, requireAdmin);
