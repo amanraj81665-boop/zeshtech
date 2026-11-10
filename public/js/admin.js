@@ -1118,6 +1118,11 @@
       return;
     }
 
+    if (!/^[6-9]\d{9}$/.test(phone)) {
+      if (status) status.textContent = "Indian mobile number 6, 7, 8 ya 9 se start hona chahiye.";
+      phoneInput?.focus();
+      return;
+    }
     pendingInvoicePhone = "91" + phone;
     generate.disabled = true;
     generate.textContent = "Generating…";
@@ -1143,7 +1148,7 @@
       clone.style.background = "#fff";
       clone.style.color = "#000";
       const host = document.createElement("div");
-      host.style.cssText = "position:fixed;left:0;top:0;width:" + (printFormat === "thermal" ? "80mm" : "210mm") + ";background:#fff;z-index:-1;opacity:0.01;pointer-events:none;";
+      host.style.cssText = "position:fixed;left:0;top:0;width:" + (printFormat === "thermal" ? "80mm" : "210mm") + ";min-height:100vh;background:#fff;z-index:2147483647;opacity:1;pointer-events:none;";
       host.appendChild(clone);
       document.body.appendChild(host);
 
@@ -1187,8 +1192,8 @@
     const message = "ZESH TECH invoice #" + (bill.invoiceNumber || "") +
       " | Total: ₹" + Number(bill.grandTotal || 0).toLocaleString("en-IN") +
       " | Thank you for shopping with us. Please find your invoice PDF attached.";
-    const waUrl = "https://web.whatsapp.com/send?phone=" + pendingInvoicePhone +
-      "&text=" + encodeURIComponent(message);
+    const waParams = new URLSearchParams({ phone: pendingInvoicePhone, text: message });
+    const waUrl = "https://web.whatsapp.com/send/?" + waParams.toString();
 
     // This runs directly from the user's click, so the browser is more likely to allow the WhatsApp tab.
     const waWindow = window.open(waUrl, "_blank");
