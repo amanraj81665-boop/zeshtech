@@ -1141,28 +1141,38 @@
       }
       if (typeof window.html2pdf !== "function") throw new Error("PDF generator unavailable.");
 
-      // Capture the real visible invoice preview; detached clones can lose inherited modal styles.
-      const originalStyles = { width: area.style.width, maxWidth: area.style.maxWidth, background: area.style.background, color: area.style.color };
-      area.style.width = printFormat === "thermal" ? "72mm" : "190mm";
-      area.style.maxWidth = "none";
-      area.style.background = "#ffffff";
-      area.style.color = "#000000";
+      // Render a standalone invoice element instead of the scrollable modal viewport.
+      const invoiceNode = area.querySelector(".official-tax-invoice") || area.querySelector(".thermal-receipt") || area.firstElementChild;
+      if (!invoiceNode) throw new Error("Invoice content could not be found.");
+      const clone = invoiceNode.cloneNode(true);
+      clone.style.width = printFormat === "thermal" ? "72mm" : "190mm";
+      clone.style.maxWidth = "none";
+      clone.style.height = "auto";
+      clone.style.maxHeight = "none";
+      clone.style.overflow = "visible";
+      clone.style.margin = "0 auto";
+      clone.style.background = "#ffffff";
+      clone.style.color = "#000000";
+      clone.style.transform = "none";
+      clone.style.opacity = "1";
+      const host = document.createElement("div");
+      host.style.cssText = "position:fixed;left:0;top:0;width:" + (printFormat === "thermal" ? "80mm" : "210mm") + ";height:auto;max-height:none;overflow:visible;background:#fff;z-index:2147483647;opacity:1;pointer-events:none;";
+      host.appendChild(clone);
+      document.body.appendChild(host);
       let blob;
       try {
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
         const worker = window.html2pdf().set({
           margin: printFormat === "thermal" ? 3 : 8,
           image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false, scrollX: 0, scrollY: 0 },
+          html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false, scrollX: 0, scrollY: 0, windowWidth: clone.scrollWidth, windowHeight: clone.scrollHeight },
           jsPDF: { unit: "mm", format: printFormat === "thermal" ? [80, 297] : "a4", orientation: "portrait" },
           pagebreak: { mode: ["css", "legacy"] }
-        }).from(area);
+        }).from(clone);
         const pdf = await worker.toPdf().get("pdf");
         blob = pdf.output("blob");
       } finally {
-        area.style.width = originalStyles.width;
-        area.style.maxWidth = originalStyles.maxWidth;
-        area.style.background = originalStyles.background;
-        area.style.color = originalStyles.color;
+        host.remove();
       }
       if (!(blob instanceof Blob) || blob.size < 500) throw new Error("PDF file create nahi hui. Please try again.");
 
@@ -1190,10 +1200,15 @@
     const message = "ZESH TECH invoice #" + (bill.invoiceNumber || "") +
       " | Total: ₹" + Number(bill.grandTotal || 0).toLocaleString("en-IN") +
       " | Thank you for shopping with us. Please find your invoice PDF attached.";
-    const waUrl = "https://wa.me/" + pendingInvoicePhone + "?text=" + encodeURIComponent(message);
-
-    // This runs directly from the user's click, so the browser is more likely to allow the WhatsApp tab.
-    window.open(waUrl, "_blank");
+    const waUrl = "https://api.whatsapp.com/send?phone=" + pendingInvoicePhone + "&text=" + encodeURIComponent(message);
+    const waLink = document.createElement("a");
+    waLink.href = waUrl;
+    waLink.target = "_blank";
+    waLink.rel = "noopener noreferrer";
+    waLink.style.display = "none";
+    document.body.appendChild(waLink);
+    waLink.click();
+    waLink.remove();
     const downloadUrl = URL.createObjectURL(pendingInvoicePdf);
     const link = document.createElement("a");
     link.href = downloadUrl;
