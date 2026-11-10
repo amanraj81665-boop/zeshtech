@@ -118,6 +118,28 @@ const api = {
   },
 
   // Products & Inventory
+  getAdminInventory(params = {}) {
+    const query = new URLSearchParams(params);
+    const suffix = query.toString() ? `?${query}` : "";
+    return this.request(`/products/admin/inventory${suffix}`);
+  },
+
+  async getAllAdminInventory() {
+    const pageSize = 100;
+    const first = await this.getAdminInventory({ page: 1, limit: pageSize });
+    const products = [...(first.products || [])];
+    const totalPages = Number(first.pagination?.totalPages) || 1;
+    for (let page = 2; page <= totalPages; page += 1) {
+      const result = await this.getAdminInventory({ page, limit: pageSize });
+      products.push(...(result.products || []));
+    }
+    return { success: true, products, pagination: first.pagination || { total: products.length, totalPages: 1 } };
+  },
+
+  getOrderStats() {
+    return this.request("/orders/admin/stats");
+  },
+
   getProducts(params = {}) {
     const query = new URLSearchParams(params);
     const suffix = query.toString() ? `?${query}` : "";

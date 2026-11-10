@@ -278,6 +278,39 @@ router.post("/admin/migrate-imei-index", authMiddleware, requireAdmin, async (re
   }
 });
 
+// GET /api/products/admin/inventory
+// Admin-only inventory feed. Internal pricing, SKU, barcode and IMEI data never
+// pass through the public catalogue endpoint.
+router.get("/admin/inventory", authMiddleware, requireAdmin, async (req, res) => {
+  try {
+    const page = Number(req.query.page || 1);
+    const limit = Number(req.query.limit || 100);
+    if (!Number.isSafeInteger(page) || page < 1 ||
+        !Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
+      return res.status(400).json({ success: false, message: "page must be >= 1 and limit must be between 1 and 100" });
+    }
+    const filter = { isActive: true };
+    if (req.query.category && req.query.category !== "All") filter.category = String(req.query.category);
+    if (req.query.search !== undefined) {
+      const search = String(req.query.search).trim();
+      if (!search || search.length > 100) return res.status(400).json({ success: false, message: "Search query must be between 1 and 100 characters" });
+      const pattern = new RegExp(escapeRegex(search), "i");
+      filter.$or = [
+        { name: pattern }, { sku: pattern }, { barcode: pattern }, { brand: pattern },
+        { model: pattern }, { ram: pattern }, { storage: pattern }, { color: pattern }
+      ];
+    }
+    const skip = (page - 1) * limit;
+    const [products, total] = await Promise.all([
+      Product.find(filter).select("+imeiKeys").sort({ createdAt: -1, _id: -1 }).skip(skip).limit(limit).lean(),
+      Product.countDocuments(filter)
+    ]);
+    return res.json({ success: true, products, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } });
+  } catch (error) {
+    return handleError(res, error, "Admin inventory listing failed");
+  }
+});
+
 // GET /api/products
 // Public product listing. Never expose purchase prices or internal codes.
 router.get("/", async (req, res) => {

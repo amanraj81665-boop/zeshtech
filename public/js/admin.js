@@ -363,16 +363,18 @@
   async function loadOverview() {
     try {
       // Parallel loading of bill stats, inventory valuation stats, low-stock, and orders
-      const [statsRes, invStatsRes, lowStockRes, ordersRes] = await Promise.all([
+      const [statsRes, invStatsRes, lowStockRes, orderStatsRes, ordersRes] = await Promise.all([
         zeshAPI.getBillStats().catch(() => ({ stats: {} })),
         zeshAPI.getInventoryStats().catch(() => ({ stats: {} })),
         zeshAPI.getLowStock().catch(() => ({ products: [] })),
+        zeshAPI.getOrderStats().catch(() => ({ stats: {} })),
         zeshAPI.getOrders({ limit: 6 }).catch(() => ({ orders: [] }))
       ]);
 
       const stats = statsRes.stats || {};
       const invStats = invStatsRes.stats || {};
       const lowStock = lowStockRes.products || [];
+      const orderStats = orderStatsRes.stats || {};
       const orders = ordersRes.orders || [];
 
       // Update 4 Executive KPI Cards
@@ -387,8 +389,8 @@
       $("#kpi-total-profit").textContent = money(stats.totalProfit || 0);
       $("#kpi-margin-percent").textContent = `${stats.grossMarginPercent || 0}%`;
 
-      $("#kpi-orders-count").textContent = orders.length;
-      const pendingOrders = orders.filter(o => o.status === "Placed" || o.status === "Processing").length;
+      $("#kpi-orders-count").textContent = Number(orderStats.totalOrders) || 0;
+      const pendingOrders = Number(orderStats.pendingOrders) || 0;
       $("#kpi-pending-orders").textContent = pendingOrders;
 
       const sidebarBadge = $("#sidebar-pending-orders-badge");
@@ -549,7 +551,7 @@
     grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 24px; color:var(--dark-text-muted);">Loading retail catalogue...</div>`;
 
     try {
-      const res = await zeshAPI.getProducts({ limit: 100 });
+      const res = await zeshAPI.getAllAdminInventory();
       posProducts = res.products || [];
       renderPosProducts();
       renderPosBill();
@@ -1590,8 +1592,8 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
 
     try {
       const [res, statsRes] = await Promise.all([
-        zeshAPI.getProducts({ limit: 100 }),
-        zeshAPI.getInventoryStats().catch(() => ({ stats: {} }))
+        zeshAPI.getAllAdminInventory(),
+        zeshAPI.getInventoryStats()
       ]);
 
       inventoryList = res.products || [];

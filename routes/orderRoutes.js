@@ -78,6 +78,20 @@ router.get("/", requireAdmin, async (req, res) => {
   }
 });
 
+// GET /api/orders/admin/stats - Accurate dashboard counts across all orders.
+router.get("/admin/stats", requireAdmin, async (req, res) => {
+  try {
+    const [totalOrders, pendingOrders] = await Promise.all([
+      Order.countDocuments({}),
+      Order.countDocuments({ status: { $in: ["Placed", "Processing"] } })
+    ]);
+    return res.json({ success: true, stats: { totalOrders, pendingOrders } });
+  } catch (error) {
+    console.error("Admin order statistics error:", error.message);
+    return res.status(500).json({ success: false, message: "Could not load order statistics" });
+  }
+});
+
 // Admin-only manual UPI payment verification. Admin must confirm the credit in the bank statement.
 router.patch("/:id/payment/verify", requireAdmin, async (req, res) => {
   try {
