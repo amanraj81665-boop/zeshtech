@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..800;1,9..40,400..800&family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="/css/style.css?v=7.7">
+  <link rel="stylesheet" href="/css/style.css?v=7.8">
 </head>
 <body class="admin-body">
 
@@ -1442,6 +1442,30 @@
     </div>
   </div>
 
+  <!-- WhatsApp invoice share modal -->
+  <div class="modal-backdrop" id="invoice-whatsapp-modal" role="dialog" aria-modal="true" aria-labelledby="invoice-whatsapp-title">
+    <div class="modal-dialog" style="max-width:440px;background:#fff;color:#0f172a;border-radius:18px;overflow:hidden;">
+      <div style="padding:22px 24px;background:linear-gradient(135deg,#052e24,#166534);color:#fff;">
+        <div style="font-size:12px;letter-spacing:1.5px;font-weight:800;opacity:.8;">ZESH TECH · POS</div>
+        <div id="invoice-whatsapp-title" style="font-size:22px;font-weight:800;margin-top:6px;">Send invoice on WhatsApp</div>
+        <div style="font-size:13px;opacity:.85;margin-top:5px;">Customer ko invoice PDF share karein</div>
+      </div>
+      <div style="padding:22px 24px;">
+        <label for="invoice-whatsapp-phone" style="display:block;font-size:13px;font-weight:700;margin-bottom:8px;">Customer WhatsApp number</label>
+        <div style="display:flex;align-items:center;border:1px solid #cbd5e1;border-radius:10px;overflow:hidden;">
+          <span style="padding:12px 13px;background:#f1f5f9;border-right:1px solid #cbd5e1;font-weight:700;">+91</span>
+          <input id="invoice-whatsapp-phone" type="tel" inputmode="numeric" maxlength="10" placeholder="10-digit mobile number" style="border:0;outline:0;flex:1;min-width:0;padding:12px;font-size:16px;color:#0f172a;">
+        </div>
+        <div id="invoice-whatsapp-status" style="font-size:12px;color:#64748b;margin-top:10px;min-height:18px;">PDF generate hoga, phir share karne ka option milega.</div>
+        <div style="display:flex;gap:10px;margin-top:20px;">
+          <button type="button" class="btn btn-secondary" id="invoice-whatsapp-cancel" style="flex:1;">Cancel</button>
+          <button type="button" class="btn btn-primary" id="invoice-whatsapp-generate" style="flex:1;background:#15803d;border-color:#15803d;">Generate PDF</button>
+        </div>
+        <button type="button" id="invoice-whatsapp-share" style="display:none;width:100%;margin-top:12px;padding:13px;border:0;border-radius:10px;background:#16a34a;color:#fff;font-weight:800;font-size:14px;">Share PDF on WhatsApp</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Dispatch / Packing Slip Modal for Online Orders -->
   <div class="modal-backdrop" id="packing-slip-modal">
     <div class="modal-dialog modal-dialog-large" style="background: white; color: black; max-width: 760px;">
@@ -1657,6 +1681,6 @@
   <script src="/js/quagga.min.js?v=7.2"></script>
   <script src="/js/html5-qrcode.min.js?v=7.2"></script>
   <script src="/js/api.js?v=7.7"></script>
-  <script src="/js/admin.js?v=7.9"></script>
+  <script src="/js/admin.js?v=8.0"></script>
 </body>
 </html>

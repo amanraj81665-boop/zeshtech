@@ -7691,3 +7691,12 @@ body.modal-open .floating-whatsapp-btn {
     justify-content: center;
     box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
   }
+
+/* WhatsApp invoice modal polish */
+#invoice-whatsapp-modal { z-index: 10050; }
+#invoice-whatsapp-modal .modal-dialog { box-shadow: 0 24px 70px rgba(15,23,42,.28); }
+#invoice-whatsapp-modal input { background:#fff; }
+#invoice-whatsapp-modal button:disabled { opacity:.6; cursor:wait; }
+@media (max-width: 520px) {
+  #invoice-whatsapp-modal .modal-dialog { width:calc(100% - 28px); margin:14px; }
+}

@@ -1065,114 +1065,146 @@
     $("#invoice-print-modal")?.classList.add("active");
   }
 
-  async function handleSendWhatsAppInvoice() {
+  let pendingInvoicePdf = null;
+  let pendingInvoicePhone = "";
+
+  function openInvoiceWhatsAppModal() {
     if (!activeBillForPrint) {
       showToast("No active bill selected.", "warning");
       return;
     }
-
-    const bill = activeBillForPrint;
-    let phone = String(bill.customerPhone || "").replace(/\D/g, "");
-    if (!phone || phone.length < 10) {
-      const entered = window.prompt("Enter customer's 10-digit WhatsApp number:", "");
-      if (!entered) return;
-      phone = entered.replace(/\D/g, "");
+    pendingInvoicePdf = null;
+    pendingInvoicePhone = "";
+    const modal = $("#invoice-whatsapp-modal");
+    const phone = $("#invoice-whatsapp-phone");
+    const status = $("#invoice-whatsapp-status");
+    const generate = $("#invoice-whatsapp-generate");
+    const share = $("#invoice-whatsapp-share");
+    if (!modal || !phone || !status || !generate || !share) {
+      showToast("WhatsApp share form could not load. Refresh the admin page.", "error");
+      return;
     }
-    if (phone.length === 10) phone = "91" + phone;
-    if (phone.length !== 12 || !phone.startsWith("91")) {
-      showToast("Please enter a valid Indian 10-digit mobile number.", "error");
+    phone.value = String(activeBillForPrint.customerPhone || "").replace(/\D/g, "").replace(/^91/, "").slice(-10);
+    status.textContent = "PDF generate hoga, phir share karne ka option milega.";
+    generate.style.display = "block";
+    generate.disabled = false;
+    generate.textContent = "Generate PDF";
+    share.style.display = "none";
+    modal.classList.add("active");
+    phone.focus();
+  }
+
+  async function generateInvoicePdfForWhatsApp() {
+    const phoneInput = $("#invoice-whatsapp-phone");
+    const status = $("#invoice-whatsapp-status");
+    const generate = $("#invoice-whatsapp-generate");
+    const share = $("#invoice-whatsapp-share");
+    const area = $("#invoice-print-area");
+    const phone = String(phoneInput?.value || "").replace(/\D/g, "");
+    if (!/^\d{10}$/.test(phone)) {
+      if (status) status.textContent = "Please enter a valid 10-digit Indian mobile number.";
+      phoneInput?.focus();
+      return;
+    }
+    if (!activeBillForPrint || !area || !area.innerHTML.trim()) {
+      if (status) status.textContent = "Invoice preview is empty. Reopen the bill and try again.";
       return;
     }
 
-    const button = $("#send-whatsapp-invoice-btn");
-    if (button) { button.disabled = true; button.dataset.originalText = button.innerHTML; button.innerHTML = "Generating PDF…"; }
+    pendingInvoicePhone = "91" + phone;
+    generate.disabled = true;
+    generate.textContent = "Generating…";
+    status.textContent = "Invoice PDF ban raha hai. Please wait…";
+    share.style.display = "none";
 
     try {
-      const area = $("#invoice-print-area");
-      if (!area || !area.innerHTML.trim()) throw new Error("Invoice preview is empty. Reopen the bill and try again.");
-
-      // Load the PDF renderer only when the feature is used.
       if (typeof window.html2pdf !== "function") {
         await new Promise((resolve, reject) => {
           const script = document.createElement("script");
           script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
           script.onload = resolve;
-          script.onerror = () => reject(new Error("PDF library could not load. Check your internet connection and retry."));
+          script.onerror = () => reject(new Error("PDF library load nahi hui. Internet connection check karein."));
           document.head.appendChild(script);
         });
       }
-      if (typeof window.html2pdf !== "function") throw new Error("PDF generator is unavailable. Please retry.");
+      if (typeof window.html2pdf !== "function") throw new Error("PDF generator unavailable.");
 
-      const invoiceClone = area.cloneNode(true);
-      invoiceClone.style.width = printFormat === "thermal" ? "72mm" : "190mm";
-      invoiceClone.style.maxWidth = "none";
-      invoiceClone.style.padding = "8mm";
-      invoiceClone.style.margin = "0";
-      invoiceClone.style.background = "#ffffff";
-      invoiceClone.style.color = "#000000";
-      invoiceClone.style.fontFamily = "Arial, Helvetica, sans-serif";
+      const clone = area.cloneNode(true);
+      clone.style.width = printFormat === "thermal" ? "72mm" : "190mm";
+      clone.style.maxWidth = "none";
+      clone.style.padding = "6mm";
+      clone.style.background = "#fff";
+      clone.style.color = "#000";
+      const host = document.createElement("div");
+      host.style.cssText = "position:fixed;left:-12000px;top:0;width:" + (printFormat === "thermal" ? "80mm" : "210mm") + ";background:#fff;z-index:-1;";
+      host.appendChild(clone);
+      document.body.appendChild(host);
 
-      const wrapper = document.createElement("div");
-      wrapper.style.position = "fixed";
-      wrapper.style.left = "-10000px";
-      wrapper.style.top = "0";
-      wrapper.style.width = printFormat === "thermal" ? "80mm" : "210mm";
-      wrapper.style.background = "#ffffff";
-      wrapper.appendChild(invoiceClone);
-      document.body.appendChild(wrapper);
-
-      let pdfBlob;
+      let blob;
       try {
-        pdfBlob = await window.html2pdf().set({
+        const worker = window.html2pdf().set({
           margin: printFormat === "thermal" ? 3 : 8,
-          filename: "ZESH-TECH-Invoice-" + String(bill.invoiceNumber || "bill") + ".pdf",
-          image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false },
+          image: { type: "jpeg", quality: 0.96 },
+          html2canvas: { scale: 1.5, useCORS: true, backgroundColor: "#ffffff", logging: false },
           jsPDF: { unit: "mm", format: printFormat === "thermal" ? [80, 297] : "a4", orientation: "portrait" },
           pagebreak: { mode: ["css", "legacy"] }
-        }).from(invoiceClone).outputPdf("blob");
+        }).from(clone);
+        const pdf = await worker.toPdf().get("pdf");
+        blob = pdf.output("blob");
       } finally {
-        wrapper.remove();
+        host.remove();
       }
+      if (!(blob instanceof Blob) || blob.size < 500) throw new Error("PDF file create nahi hui. Please try again.");
 
-      if (!(pdfBlob instanceof Blob) || pdfBlob.size < 500) throw new Error("PDF could not be generated. Please try again.");
-
-      const fileName = "ZESH-TECH-Invoice-" + String(bill.invoiceNumber || "bill").replace(/[^a-z0-9_-]/gi, "") + ".pdf";
-      const pdfFile = new File([pdfBlob], fileName, { type: "application/pdf" });
-      const message = "ZESH TECH invoice #" + (bill.invoiceNumber || "") +
-        " | Total: ₹" + Number(bill.grandTotal || 0).toLocaleString("en-IN") +
-        " | Thank you for shopping with us.";
-
-      // Mobile: invoke the native share sheet with the actual PDF file.
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
-        await navigator.share({ files: [pdfFile], title: "ZESH TECH Invoice", text: message });
-        showToast("Share sheet opened. Choose WhatsApp and the customer's chat to send the PDF.", "success");
-      } else {
-        // Desktop / unsupported browser: save the PDF and open the chosen WhatsApp chat.
-        const objectUrl = URL.createObjectURL(pdfBlob);
-        const downloadLink = document.createElement("a");
-        downloadLink.href = objectUrl;
-        downloadLink.download = fileName;
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        downloadLink.remove();
-        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
-
-        const waUrl = "https://wa.me/" + phone + "?text=" + encodeURIComponent(message + "\nPDF invoice downloaded. Please attach the downloaded PDF before sending.");
-        window.open(waUrl, "_blank", "noopener");
-        showToast("PDF downloaded. Attach it in the WhatsApp chat before sending.", "success");
-      }
+      const invoiceNo = String(activeBillForPrint.invoiceNumber || "invoice").replace(/[^a-z0-9_-]/gi, "");
+      pendingInvoicePdf = new File([blob], "ZESH-TECH-" + invoiceNo + ".pdf", { type: "application/pdf" });
+      status.textContent = "PDF ready hai. Ab Share PDF button dabayein aur WhatsApp select karein.";
+      generate.style.display = "none";
+      share.style.display = "block";
+      share.disabled = false;
+      share.textContent = "Share PDF on WhatsApp";
     } catch (error) {
-      if (error && error.name === "AbortError") {
-        showToast("Sharing cancelled. Your invoice is still available to print.", "info");
-      } else {
-        console.error("WhatsApp PDF share failed:", error);
-        showToast(error.message || "Could not create or share invoice PDF.", "error");
-      }
-    } finally {
-      if (button) { button.disabled = false; button.innerHTML = button.dataset.originalText || "📲 Send Bill on WhatsApp"; }
+      console.error("Invoice PDF generation failed:", error);
+      status.textContent = error.message || "PDF generate nahi hui. Please retry.";
+      generate.disabled = false;
+      generate.textContent = "Try Again";
     }
   }
+
+  async function shareInvoicePdfOnWhatsApp() {
+    if (!pendingInvoicePdf || !pendingInvoicePhone) {
+      showToast("Pehle invoice PDF generate karein.", "warning");
+      return;
+    }
+    const bill = activeBillForPrint;
+    const message = "ZESH TECH invoice #" + (bill.invoiceNumber || "") +
+      " | Total: ₹" + Number(bill.grandTotal || 0).toLocaleString("en-IN") +
+      " | Thank you for shopping with us.";
+    try {
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [pendingInvoicePdf] })) {
+        await navigator.share({ files: [pendingInvoicePdf], title: "ZESH TECH Invoice", text: message });
+        $("#invoice-whatsapp-status").textContent = "Share sheet open hui. WhatsApp select karke customer chat mein Send karein.";
+      } else {
+        const url = URL.createObjectURL(pendingInvoicePdf);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = pendingInvoicePdf.name;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        const waUrl = "https://wa.me/" + pendingInvoicePhone + "?text=" + encodeURIComponent(message + " Please find the invoice PDF attached.");
+        window.open(waUrl, "_blank");
+        $("#invoice-whatsapp-status").textContent = "PDF download ho gayi. WhatsApp chat mein attach karke Send karein.";
+      }
+    } catch (error) {
+      if (error.name !== "AbortError") {
+        console.error("Invoice PDF share failed:", error);
+        $("#invoice-whatsapp-status").textContent = error.message || "Share nahi ho paya. PDF download karke manually attach karein.";
+      }
+    }
+  }
+
 
   function renderPrintContent() {
     const printArea = $("#invoice-print-area");
@@ -4228,7 +4260,13 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
       window.setTimeout(cleanup, 60000);
     });
 
-    $("#send-whatsapp-invoice-btn")?.addEventListener("click", handleSendWhatsAppInvoice);
+    $("#send-whatsapp-invoice-btn")?.addEventListener("click", openInvoiceWhatsAppModal);
+    $("#invoice-whatsapp-cancel")?.addEventListener("click", () => $("#invoice-whatsapp-modal")?.classList.remove("active"));
+    $("#invoice-whatsapp-generate")?.addEventListener("click", generateInvoicePdfForWhatsApp);
+    $("#invoice-whatsapp-share")?.addEventListener("click", shareInvoicePdfOnWhatsApp);
+    $("#invoice-whatsapp-phone")?.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") generateInvoicePdfForWhatsApp();
+    });
 
     $("#close-invoice-modal-btn")?.addEventListener("click", () => {
       $("#invoice-print-modal")?.classList.remove("active");
