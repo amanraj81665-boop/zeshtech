@@ -1085,6 +1085,12 @@
       return;
     }
     phone.value = String(activeBillForPrint.customerPhone || "").replace(/\D/g, "").replace(/^91/, "").slice(-10);
+    phone.setAttribute("inputmode", "numeric");
+    phone.setAttribute("autocomplete", "tel-national");
+    phone.setAttribute("maxlength", "10");
+    phone.style.setProperty("color", "#0f172a", "important");
+    phone.style.setProperty("-webkit-text-fill-color", "#0f172a", "important");
+    phone.style.setProperty("background", "#ffffff", "important");
     status.textContent = "PDF generate hoga, phir share karne ka option milega.";
     generate.style.display = "block";
     generate.disabled = false;
@@ -1136,7 +1142,7 @@
       clone.style.background = "#fff";
       clone.style.color = "#000";
       const host = document.createElement("div");
-      host.style.cssText = "position:fixed;left:-12000px;top:0;width:" + (printFormat === "thermal" ? "80mm" : "210mm") + ";background:#fff;z-index:-1;";
+      host.style.cssText = "position:fixed;left:0;top:0;width:" + (printFormat === "thermal" ? "80mm" : "210mm") + ";background:#fff;z-index:-1;opacity:0.01;pointer-events:none;";
       host.appendChild(clone);
       document.body.appendChild(host);
 
@@ -4264,6 +4270,11 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
     $("#invoice-whatsapp-cancel")?.addEventListener("click", () => $("#invoice-whatsapp-modal")?.classList.remove("active"));
     $("#invoice-whatsapp-generate")?.addEventListener("click", generateInvoicePdfForWhatsApp);
     $("#invoice-whatsapp-share")?.addEventListener("click", shareInvoicePdfOnWhatsApp);
+    $("#invoice-whatsapp-phone")?.addEventListener("input", (event) => {
+      const input = event.currentTarget;
+      const digits = input.value.replace(/\D/g, "").slice(0, 10);
+      if (input.value !== digits) input.value = digits;
+    });
     $("#invoice-whatsapp-phone")?.addEventListener("keydown", (event) => {
       if (event.key === "Enter") generateInvoicePdfForWhatsApp();
     });
