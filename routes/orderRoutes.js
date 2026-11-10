@@ -118,33 +118,61 @@ router.patch("/:id/status", requireAdmin, async (req, res) => {
       });
     }
 
-    const order = await Order.findById(id);
-    if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: "Order not found"
-      });
-    }
+    const allowedNext = {
+      Placed: ["Processing", "Cancelled"],
+      Processing: ["Shipped", "Cancelled"],
+      Shipped: ["Delivered"],
+      Delivered: [],
+      Cancelled: []
+    };
 
-    const previousStatus = order.status;
-    order.status = status;
-    await order.save();
-
-    // If order was cancelled from another status, restore product stock
-    if (status === "Cancelled" && previousStatus !== "Cancelled") {
-      for (const item of order.items) {
-        if (item.product) {
-          await Product.findByIdAndUpdate(item.product, {
-            $inc: { stockQuantity: item.quantity }
-          }).catch(err => console.error("Error restoring stock on cancellation:", err.message));
+    const session = await mongoose.startSession();
+    let updatedOrder;
+    try {
+      await session.withTransaction(async () => {
+        const current = await Order.findById(id).session(session);
+        if (!current) throw new Error("ORDER_NOT_FOUND");
+        if (current.status === status) {
+          updatedOrder = current;
+          return;
         }
-      }
+        if (!(allowedNext[current.status] || []).includes(status)) {
+          throw new Error("INVALID_STATUS_TRANSITION");
+        }
+
+        updatedOrder = await Order.findOneAndUpdate(
+          { _id: id, status: current.status },
+          { $set: { status } },
+          { new: true, session }
+        );
+        if (!updatedOrder) throw new Error("ORDER_STATUS_CONFLICT");
+
+        if (status === "Cancelled") {
+          const quantities = new Map();
+          for (const item of updatedOrder.items || []) {
+            if (!item.product) continue;
+            const key = String(item.product);
+            quantities.set(key, (quantities.get(key) || 0) + item.quantity);
+          }
+          for (const [productId, quantity] of quantities) {
+            const restored = await Product.updateOne(
+              { _id: productId },
+              { $inc: { stockQuantity: quantity } },
+              { session }
+            );
+            if (!restored.matchedCount) throw new Error("PRODUCT_RESTORE_FAILED");
+          }
+        }
+      });
+    } finally {
+      await session.endSession();
     }
 
+    if (!updatedOrder) return res.status(409).json({ success: false, message: "Order status could not be updated. Please refresh and try again." });
     return res.json({
       success: true,
       message: `Order status updated to ${status}`,
-      order
+      order: updatedOrder
     });
   } catch (error) {
     console.error("Order status update error:", error.message);
