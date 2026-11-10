@@ -1123,8 +1123,11 @@ _(Inclusive of GST & Official Brand Pack Sealing)_
 🙏 *Thank you for shopping at Zesh Tech!*`;
 
     const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
-    window.open(waUrl, "_blank");
-    showToast(`WhatsApp Invoice opened for ${bill.customerName || "customer"}!`, "success");
+
+    // A prompt() may consume the browser's popup activation. Navigate directly
+    // so WhatsApp opens reliably instead of being silently blocked by Safari/Chrome.
+    showToast("Opening WhatsApp invoice…", "info");
+    window.location.assign(waUrl);
   }
 
   function renderPrintContent() {

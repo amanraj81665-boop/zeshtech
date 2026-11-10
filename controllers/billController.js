@@ -172,39 +172,31 @@ async function createBill(req, res) {
             throw new Error("Select exactly one product unit for IMEI-tracked billing.");
           }
           const productId = matchingLines[0].productId;
-          const imeiMatch = {
-            _id: productId,
-            imeiRecords: {
-              $elemMatch: {
-                status: "In Stock",
-                $or: [
-                  ...(cleanImei1 ? [{ imei1: cleanImei1 }] : []),
-                  ...(cleanImei2 ? [{ imei2: cleanImei2 }] : [])
-                ]
-              }
-            }
-          };
-          const marked = await Product.updateOne(
-            imeiMatch,
-            {
-              $set: {
-                "imeiRecords.$[unit].status": "Sold",
-                "imeiRecords.$[unit].soldBillNumber": invoiceNumber,
-                "imeiRecords.$[unit].soldDate": new Date()
-              }
-            },
-            {
-              arrayFilters: [{
-                "unit.status": "In Stock",
-                $or: [
-                  ...(cleanImei1 ? [{ "unit.imei1": cleanImei1 }] : []),
-                  ...(cleanImei2 ? [{ "unit.imei2": cleanImei2 }] : [])
-                ]
-              }],
-              session
-            }
+          const product = await Product.findById(productId).session(session);
+          if (!product || !Array.isArray(product.imeiRecords)) {
+            throw new Error("IMEI records were not found for the selected product.");
+          }
+
+          // Match all supplied identifiers against the same available handset unit.
+          const unit = product.imeiRecords.find(record =>
+            record.status === "In Stock" &&
+            (!cleanImei1 || record.imei1 === cleanImei1) &&
+            (!cleanImei2 || record.imei2 === cleanImei2)
           );
-          if (!marked.modifiedCount) throw new Error("Selected IMEI is no longer available. Refresh POS and select another handset.");
+          if (!unit) {
+            throw new Error("Selected IMEI is no longer available or does not match the same handset. Refresh POS and try again.");
+          }
+
+          unit.status = "Sold";
+          unit.soldBillNumber = invoiceNumber;
+          unit.soldDate = new Date();
+
+          // Keep the legacy product-level fields aligned with the next available unit.
+          const nextAvailable = product.imeiRecords.find(record => record.status === "In Stock");
+          product.imei1 = nextAvailable?.imei1 || "";
+          product.imei2 = nextAvailable?.imei2 || "";
+          product.serialNumber = nextAvailable?.serialNumber || "";
+          await product.save({ session });
         }
 
         bill = (await Bill.create([{
