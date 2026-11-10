@@ -656,6 +656,8 @@
   }
 
   function addProductToPosBill(productId) {
+    // Preserve the current mobile POS viewport when bill/IMEI details expand.
+    const posScrollTop = window.scrollY || document.documentElement.scrollTop || 0;
     const product = posProducts.find(p => p._id === productId);
     if (!product) return;
 
@@ -746,6 +748,12 @@
     }
 
     renderPosBill();
+
+    // Restore after browser layout and scroll anchoring have completed.
+    requestAnimationFrame(() => {
+      window.scrollTo(0, posScrollTop);
+      requestAnimationFrame(() => window.scrollTo(0, posScrollTop));
+    });
   }
 
   function updatePosCartQuantity(productId, delta) {
