@@ -142,128 +142,115 @@ async function createBill(req, res) {
     const grandTotal = Math.max(0, Math.round((calculatedSubtotal + totalCgst + totalSgst - cleanDiscount - cleanExchangeVal) * 100) / 100);
     const totalProfit = Math.round((calculatedSubtotal - cleanDiscount - totalCost) * 100) / 100;
 
-    // Validate handset identity before changing inventory. Never silently substitute
-    // another in-stock handset when the cashier-selected IMEI does not match.
-    const cleanImei1 = String(imei1 || "").trim();
-    const cleanImei2 = String(imei2 || "").trim();
-    if (cleanImei1 || cleanImei2) {
-      let matchedHandset = false;
-      for (const line of processedItems.filter(it => it.productId)) {
-        const product = await Product.findById(line.productId).select("imeiRecords");
-        const records = product?.imeiRecords || [];
-        const match = records.find(record =>
-          record.status === "In Stock" &&
-          ((cleanImei1 && record.imei1 === cleanImei1) ||
-           (cleanImei2 && record.imei2 === cleanImei2))
-        );
-        if (match) {
-          if (line.quantity !== 1) {
-            return res.status(400).json({ success: false, message: "IMEI-tracked handset billing must be quantity 1 per selected handset." });
-          }
-          matchedHandset = true;
-          break;
-        }
-      }
-      if (!matchedHandset) {
-        return res.status(409).json({ success: false, message: "Selected IMEI is not available in stock for the billed product. Refresh POS and select the correct handset." });
-      }
-    }
-
-    // Deduct stock atomically
-    const deductedProducts = [];
+    // Reserve stock, mark the exact handset, and create the bill in one transaction.
+    const session = await mongoose.startSession();
+    let bill;
     try {
-      for (const it of processedItems) {
-        if (it.productId) {
-          const updated = await Product.findOneAndUpdate(
-            { _id: it.productId, stockQuantity: { $gte: it.quantity } },
-            { $inc: { stockQuantity: -it.quantity } },
-            { returnDocument: "after" }
-          );
-
-          if (!updated) {
-            throw new Error(`Failed to deduct stock for ${it.name}. Stock may have changed.`);
-          }
-          deductedProducts.push({ id: it.productId, qty: it.quantity });
+      await session.withTransaction(async () => {
+        const quantities = new Map();
+        for (const line of processedItems) {
+          if (!line.productId) continue;
+          const key = String(line.productId);
+          quantities.set(key, (quantities.get(key) || 0) + line.quantity);
         }
-      }
-    } catch (stockErr) {
-      // Rollback any deducted stock
-      for (const roll of deductedProducts) {
-        await Product.findByIdAndUpdate(roll.id, { $inc: { stockQuantity: roll.qty } }).catch(() => {});
-      }
-      return res.status(409).json({
-        success: false,
-        message: stockErr.message || "Failed to reserve inventory for billing"
-      });
-    }
 
-    const bill = await Bill.create({
-      invoiceNumber: generateInvoiceNumber(),
-      customerName: cleanCustomer,
-      customerPhone: cleanPhone,
-      customerAddress: cleanAddress,
-      items: processedItems,
-      paymentMode: cleanMode,
-      financier: (financier || "").trim(),
-      loanReference: (loanReference || "").trim(),
-      imei1: (imei1 || "").trim(),
-      imei2: (imei2 || "").trim(),
-      modelNumber: (modelNumber || "").trim(),
-      serialNumber: (serialNumber || "").trim(),
-      bankName: (bankName || "").trim(),
-      cardRefNo: (cardRefNo || "").trim(),
-      transactionId: (transactionId || "").trim(),
-      taxableValue: Math.round(calculatedSubtotal * 100) / 100,
-      cgst: Math.round(totalCgst * 100) / 100,
-      sgst: Math.round(totalSgst * 100) / 100,
-      discount: Math.round(cleanDiscount * 100) / 100,
-      exchangePhone: cleanExchangeVal > 0 ? {
-        model: (exchangePhone.model || "").trim(),
-        imei: (exchangePhone.imei || "").trim(),
-        serialNumber: (exchangePhone.serialNumber || "").trim(),
-        valuation: cleanExchangeVal
-      } : { model: "", imei: "", serialNumber: "", valuation: 0 },
-      grandTotal,
-      totalCost: Math.round(totalCost * 100) / 100,
-      totalProfit,
-      status: "completed",
-      createdBy: req.user?.userId || null
-    });
+        for (const [productId, quantity] of quantities) {
+          const updated = await Product.findOneAndUpdate(
+            { _id: productId, isActive: true, stockQuantity: { $gte: quantity } },
+            { $inc: { stockQuantity: -quantity } },
+            { new: true, session }
+          );
+          if (!updated) throw new Error("Insufficient stock or product unavailable. Refresh POS and try again.");
+        }
 
-    // Automatically mark the billed handset IMEI as "Sold" in product imeiRecords
-    if (bill && (cleanImei1 || cleanImei2)) {
-      for (const it of processedItems) {
-        if (it.productId) {
-          try {
-            const pDoc = await Product.findById(it.productId);
-            if (pDoc && Array.isArray(pDoc.imeiRecords) && pDoc.imeiRecords.length > 0) {
-              const record = pDoc.imeiRecords.find(r =>
-                r.status === "In Stock" &&
-                ((cleanImei1 && r.imei1 === cleanImei1) ||
-                 (cleanImei2 && r.imei2 === cleanImei2))
-              );
-              if (record) {
-                record.status = "Sold";
-                record.soldBillNumber = bill.invoiceNumber;
-                record.soldDate = new Date();
-                
-                const nextAvail = pDoc.imeiRecords.find(r => r.status === "In Stock");
-                if (nextAvail) {
-                  pDoc.imei1 = nextAvail.imei1 || "";
-                  pDoc.imei2 = nextAvail.imei2 || "";
-                  pDoc.serialNumber = nextAvail.serialNumber || "";
-                } else {
-                  pDoc.imei1 = "";
-                  pDoc.imei2 = "";
-                }
-                await pDoc.save();
+        const cleanImei1 = String(imei1 || "").trim();
+        const cleanImei2 = String(imei2 || "").trim();
+        if (cleanImei1 || cleanImei2) {
+          const matchingLines = processedItems.filter(line => line.productId);
+          if (matchingLines.length !== 1 || matchingLines[0].quantity !== 1) {
+            throw new Error("Select exactly one product unit for IMEI-tracked billing.");
+          }
+          const productId = matchingLines[0].productId;
+          const imeiMatch = {
+            _id: productId,
+            imeiRecords: {
+              $elemMatch: {
+                status: "In Stock",
+                $or: [
+                  ...(cleanImei1 ? [{ imei1: cleanImei1 }] : []),
+                  ...(cleanImei2 ? [{ imei2: cleanImei2 }] : [])
+                ]
               }
             }
-          } catch (imeiErr) {
-            console.warn("IMEI status update warning:", imeiErr);
-          }
+          };
+          const marked = await Product.updateOne(
+            imeiMatch,
+            {
+              $set: {
+                "imeiRecords.$[unit].status": "Sold",
+                "imeiRecords.$[unit].soldBillNumber": generateInvoiceNumber(),
+                "imeiRecords.$[unit].soldDate": new Date()
+              }
+            },
+            {
+              arrayFilters: [{
+                "unit.status": "In Stock",
+                $or: [
+                  ...(cleanImei1 ? [{ "unit.imei1": cleanImei1 }] : []),
+                  ...(cleanImei2 ? [{ "unit.imei2": cleanImei2 }] : [])
+                ]
+              }],
+              session
+            }
+          );
+          if (!marked.modifiedCount) throw new Error("Selected IMEI is no longer available. Refresh POS and select another handset.");
         }
-      }
+
+        const invoiceNumber = generateInvoiceNumber();
+        // Keep the IMEI record and invoice linked to the same invoice number.
+        if (cleanImei1 || cleanImei2) {
+          await Product.updateOne(
+            { "imeiRecords.status": "Sold", "imeiRecords.imei1": cleanImei1 || undefined, "imeiRecords.imei2": cleanImei2 || undefined },
+            { $set: { "imeiRecords.$[unit].soldBillNumber": invoiceNumber } },
+            { arrayFilters: [{ "unit.status": "Sold", ...(cleanImei1 ? { "unit.imei1": cleanImei1 } : {}), ...(cleanImei2 ? { "unit.imei2": cleanImei2 } : {}) }], session }
+          );
+        }
+
+        bill = (await Bill.create([{
+          invoiceNumber,
+          customerName: cleanCustomer,
+          customerPhone: cleanPhone,
+          customerAddress: cleanAddress,
+          items: processedItems,
+          paymentMode: cleanMode,
+          financier: (financier || "").trim(),
+          loanReference: (loanReference || "").trim(),
+          imei1: cleanImei1,
+          imei2: cleanImei2,
+          modelNumber: (modelNumber || "").trim(),
+          serialNumber: (serialNumber || "").trim(),
+          bankName: (bankName || "").trim(),
+          cardRefNo: (cardRefNo || "").trim(),
+          transactionId: (transactionId || "").trim(),
+          taxableValue: Math.round(calculatedSubtotal * 100) / 100,
+          cgst: Math.round(totalCgst * 100) / 100,
+          sgst: Math.round(totalSgst * 100) / 100,
+          discount: Math.round(cleanDiscount * 100) / 100,
+          exchangePhone: cleanExchangeVal > 0 ? {
+            model: (exchangePhone.model || "").trim(),
+            imei: (exchangePhone.imei || "").trim(),
+            serialNumber: (exchangePhone.serialNumber || "").trim(),
+            valuation: cleanExchangeVal
+          } : { model: "", imei: "", serialNumber: "", valuation: 0 },
+          grandTotal,
+          totalCost: Math.round(totalCost * 100) / 100,
+          totalProfit,
+          status: "completed",
+          createdBy: req.user?.userId || null
+        }], { session }))[0];
+      });
+    } finally {
+      await session.endSession();
     }
 
     return res.status(201).json({
@@ -567,76 +554,64 @@ async function getBillById(req, res) {
 
 // PATCH /api/bills/:id/cancel - Cancel bill and restore stock
 async function cancelBill(req, res) {
+  const session = await mongoose.startSession();
   try {
     const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) return res.status(400).json({ success: false, message: "Invalid bill ID" });
 
-    if (!mongoose.isValidObjectId(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid bill ID"
-      });
-    }
+    let bill;
+    await session.withTransaction(async () => {
+      bill = await Bill.findOneAndUpdate(
+        { _id: id, status: "completed" },
+        { $set: { status: "cancelled" } },
+        { new: true, session }
+      );
+      if (!bill) {
+        const existing = await Bill.findById(id).session(session);
+        if (!existing) throw new Error("BILL_NOT_FOUND");
+        throw new Error("BILL_ALREADY_CANCELLED");
+      }
 
-    const bill = await Bill.findById(id);
-    if (!bill) {
-      return res.status(404).json({
-        success: false,
-        message: "Bill not found"
-      });
-    }
+      const quantities = new Map();
+      for (const item of bill.items || []) {
+        if (!item.productId) continue;
+        const key = String(item.productId);
+        quantities.set(key, (quantities.get(key) || 0) + item.quantity);
+      }
+      for (const [productId, quantity] of quantities) {
+        await Product.updateOne({ _id: productId }, { $inc: { stockQuantity: quantity } }, { session });
+      }
 
-    if (bill.status === "cancelled") {
-      return res.status(400).json({
-        success: false,
-        message: "Bill is already cancelled"
-      });
-    }
-
-    // Restore stock and IMEI status
-    for (const it of bill.items) {
-      if (it.productId) {
-        await Product.findByIdAndUpdate(it.productId, {
-          $inc: { stockQuantity: it.quantity }
-        }).catch(err => console.error("Error restoring stock on bill cancel:", err.message));
-
-        try {
-          const pDoc = await Product.findById(it.productId);
-          if (pDoc && Array.isArray(pDoc.imeiRecords) && pDoc.imeiRecords.length > 0) {
-            const soldRec = pDoc.imeiRecords.find(r => 
-              r.soldBillNumber === bill.invoiceNumber ||
-              (bill.imei1 && r.imei1 === bill.imei1)
-            );
-            if (soldRec) {
-              soldRec.status = "In Stock";
-              soldRec.soldBillNumber = null;
-              soldRec.soldDate = null;
-              if (!pDoc.imei1) {
-                pDoc.imei1 = soldRec.imei1 || "";
-                pDoc.imei2 = soldRec.imei2 || "";
-              }
-              await pDoc.save();
-            }
+      for (const productId of quantities.keys()) {
+        const product = await Product.findById(productId).session(session);
+        if (!product || !Array.isArray(product.imeiRecords)) continue;
+        let changed = false;
+        for (const record of product.imeiRecords) {
+          if (record.status === "Sold" && record.soldBillNumber === bill.invoiceNumber) {
+            record.status = "In Stock";
+            record.soldBillNumber = null;
+            record.soldDate = null;
+            changed = true;
           }
-        } catch (restErr) {
-          console.warn("Error restoring IMEI status on bill cancel:", restErr.message);
+        }
+        if (changed) {
+          const nextAvailable = product.imeiRecords.find(record => record.status === "In Stock");
+          product.imei1 = nextAvailable?.imei1 || "";
+          product.imei2 = nextAvailable?.imei2 || "";
+          product.serialNumber = nextAvailable?.serialNumber || "";
+          await product.save({ session });
         }
       }
-    }
-
-    bill.status = "cancelled";
-    await bill.save();
-
-    return res.json({
-      success: true,
-      message: "Bill cancelled and inventory restored",
-      bill
     });
+
+    return res.json({ success: true, message: "Bill cancelled and inventory restored", bill });
   } catch (error) {
-    console.error("Cancel bill error:", error.message);
-    return res.status(500).json({
-      success: false,
-      message: "Could not cancel bill"
-    });
+    if (error.message === "BILL_NOT_FOUND") return res.status(404).json({ success: false, message: "Bill not found" });
+    if (error.message === "BILL_ALREADY_CANCELLED") return res.status(409).json({ success: false, message: "Bill is already cancelled" });
+    console.error("Cancel bill transaction error:", error.message);
+    return res.status(500).json({ success: false, message: "Could not cancel bill. No inventory changes were committed." });
+  } finally {
+    await session.endSession();
   }
 }
 
