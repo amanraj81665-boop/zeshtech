@@ -1085,6 +1085,7 @@
       return;
     }
     phone.value = String(activeBillForPrint.customerPhone || "").replace(/\D/g, "").replace(/^91/, "").slice(-10);
+    phone.setAttribute("type", "text");
     phone.setAttribute("inputmode", "numeric");
     phone.setAttribute("autocomplete", "tel-national");
     phone.setAttribute("maxlength", "10");
@@ -1164,11 +1165,11 @@
 
       const invoiceNo = String(activeBillForPrint.invoiceNumber || "invoice").replace(/[^a-z0-9_-]/gi, "");
       pendingInvoicePdf = new File([blob], "ZESH-TECH-" + invoiceNo + ".pdf", { type: "application/pdf" });
-      status.textContent = "PDF ready hai. Ab Share PDF button dabayein aur WhatsApp select karein.";
+      status.textContent = "PDF ready hai. Neeche button dabayein—PDF download hogi aur WhatsApp Web mein customer chat khul jayegi.";
       generate.style.display = "none";
       share.style.display = "block";
       share.disabled = false;
-      share.textContent = "Share PDF on WhatsApp";
+      share.textContent = "Open WhatsApp Web + Download PDF";
     } catch (error) {
       console.error("Invoice PDF generation failed:", error);
       status.textContent = error.message || "PDF generate nahi hui. Please retry.";
@@ -1177,7 +1178,7 @@
     }
   }
 
-  async function shareInvoicePdfOnWhatsApp() {
+  function shareInvoicePdfOnWhatsApp() {
     if (!pendingInvoicePdf || !pendingInvoicePhone) {
       showToast("Pehle invoice PDF generate karein.", "warning");
       return;
@@ -1185,29 +1186,26 @@
     const bill = activeBillForPrint;
     const message = "ZESH TECH invoice #" + (bill.invoiceNumber || "") +
       " | Total: ₹" + Number(bill.grandTotal || 0).toLocaleString("en-IN") +
-      " | Thank you for shopping with us.";
-    try {
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [pendingInvoicePdf] })) {
-        await navigator.share({ files: [pendingInvoicePdf], title: "ZESH TECH Invoice", text: message });
-        $("#invoice-whatsapp-status").textContent = "Share sheet open hui. WhatsApp select karke customer chat mein Send karein.";
-      } else {
-        const url = URL.createObjectURL(pendingInvoicePdf);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = pendingInvoicePdf.name;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        URL.revokeObjectURL(url);
-        const waUrl = "https://wa.me/" + pendingInvoicePhone + "?text=" + encodeURIComponent(message + " Please find the invoice PDF attached.");
-        window.open(waUrl, "_blank");
-        $("#invoice-whatsapp-status").textContent = "PDF download ho gayi. WhatsApp chat mein attach karke Send karein.";
-      }
-    } catch (error) {
-      if (error.name !== "AbortError") {
-        console.error("Invoice PDF share failed:", error);
-        $("#invoice-whatsapp-status").textContent = error.message || "Share nahi ho paya. PDF download karke manually attach karein.";
-      }
+      " | Thank you for shopping with us. Please find your invoice PDF attached.";
+    const waUrl = "https://web.whatsapp.com/send?phone=" + pendingInvoicePhone +
+      "&text=" + encodeURIComponent(message);
+
+    // This runs directly from the user's click, so the browser is more likely to allow the WhatsApp tab.
+    const waWindow = window.open(waUrl, "_blank");
+    const downloadUrl = URL.createObjectURL(pendingInvoicePdf);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = pendingInvoicePdf.name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 60000);
+
+    const status = $("#invoice-whatsapp-status");
+    if (status) {
+      status.textContent = waWindow
+        ? "PDF download ho rahi hai. WhatsApp Web chat mein paperclip se PDF attach karke Send karein."
+        : "PDF download ho rahi hai. Popup block hua—WhatsApp Web ko allow karein ya web.whatsapp.com kholkar customer number search karein.";
     }
   }
 

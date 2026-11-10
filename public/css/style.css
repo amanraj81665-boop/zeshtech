@@ -7727,3 +7727,18 @@ body.modal-open .floating-whatsapp-btn {
 @media (max-width: 520px) {
   #invoice-whatsapp-modal .modal-dialog { width:calc(100% - 28px); margin:14px; }
 }
+
+/* Strong input text visibility for WhatsApp invoice phone field */
+#invoice-whatsapp-modal input#invoice-whatsapp-phone,
+#invoice-whatsapp-modal input#invoice-whatsapp-phone:focus {
+  color:#111827 !important;
+  -webkit-text-fill-color:#111827 !important;
+  caret-color:#111827 !important;
+  background-color:#ffffff !important;
+  font-family:Arial,sans-serif !important;
+  font-size:18px !important;
+  font-weight:700 !important;
+  opacity:1 !important;
+  filter:none !important;
+  mix-blend-mode:normal !important;
+}
