@@ -165,6 +165,7 @@ async function createBill(req, res) {
 
         const cleanImei1 = String(imei1 || "").trim();
         const cleanImei2 = String(imei2 || "").trim();
+        const invoiceNumber = generateInvoiceNumber();
         if (cleanImei1 || cleanImei2) {
           const matchingLines = processedItems.filter(line => line.productId);
           if (matchingLines.length !== 1 || matchingLines[0].quantity !== 1) {
@@ -188,7 +189,7 @@ async function createBill(req, res) {
             {
               $set: {
                 "imeiRecords.$[unit].status": "Sold",
-                "imeiRecords.$[unit].soldBillNumber": generateInvoiceNumber(),
+                "imeiRecords.$[unit].soldBillNumber": invoiceNumber,
                 "imeiRecords.$[unit].soldDate": new Date()
               }
             },
@@ -204,16 +205,6 @@ async function createBill(req, res) {
             }
           );
           if (!marked.modifiedCount) throw new Error("Selected IMEI is no longer available. Refresh POS and select another handset.");
-        }
-
-        const invoiceNumber = generateInvoiceNumber();
-        // Keep the IMEI record and invoice linked to the same invoice number.
-        if (cleanImei1 || cleanImei2) {
-          await Product.updateOne(
-            { "imeiRecords.status": "Sold", "imeiRecords.imei1": cleanImei1 || undefined, "imeiRecords.imei2": cleanImei2 || undefined },
-            { $set: { "imeiRecords.$[unit].soldBillNumber": invoiceNumber } },
-            { arrayFilters: [{ "unit.status": "Sold", ...(cleanImei1 ? { "unit.imei1": cleanImei1 } : {}), ...(cleanImei2 ? { "unit.imei2": cleanImei2 } : {}) }], session }
-          );
         }
 
         bill = (await Bill.create([{
