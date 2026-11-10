@@ -1071,63 +1071,52 @@
       return;
     }
 
-    const bill = activeBillForPrint;
-    let phone = (bill.customerPhone || "").trim().replace(/\D/g, "");
-
-    if (!phone || phone.length < 10) {
-      const input = prompt("Please enter customer's 10-digit WhatsApp number:", phone || "");
-      if (!input) return;
-      phone = input.trim().replace(/\D/g, "");
+    // Reserve the tab during the original click to avoid popup blockers after prompt().
+    const waWindow = window.open("about:blank", "_blank");
+    if (!waWindow) {
+      showToast("Allow pop-ups for zeshtech.in, then try WhatsApp again.", "error");
+      return;
     }
 
-    if (phone.length === 10) {
-      phone = "91" + phone;
-    } else if (phone.length === 12 && phone.startsWith("91")) {
-      // Valid international Indian format
-    } else {
-      showToast("Please enter a valid 10-digit mobile number", "error");
+    const bill = activeBillForPrint;
+    let phone = String(bill.customerPhone || "").replace(/\D/g, "");
+    if (!phone || phone.length < 10) {
+      const entered = window.prompt("Enter customer's WhatsApp number (10 digits):", "");
+      if (!entered) { waWindow.close(); return; }
+      phone = entered.replace(/\D/g, "");
+    }
+    if (phone.length === 10) phone = "91" + phone;
+    if (phone.length !== 12 || !phone.startsWith("91")) {
+      waWindow.close();
+      showToast("Enter a valid Indian WhatsApp number (10 digits).", "error");
       return;
     }
 
     const dateStr = new Date(bill.createdAt || Date.now()).toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric"
+      day: "2-digit", month: "short", year: "numeric"
     });
-
     const itemsText = (bill.items || []).map((it, idx) => {
-      const total = (it.total || it.price * it.quantity || 0).toLocaleString("en-IN");
-      return `  ${idx + 1}. *${it.name}* (x${it.quantity}) — ₹${total}`;
+      const total = Number(it.total || (Number(it.price) * Number(it.quantity)) || 0).toLocaleString("en-IN");
+      return "  " + (idx + 1) + ". *" + it.name + "* (x" + it.quantity + ") — ₹" + total;
     }).join("\n");
+    const grandTotal = Number(bill.grandTotal || 0).toLocaleString("en-IN");
+    const msg = "🧾 *TAX INVOICE — ZESH TECH RETAIL*\n" +
+      "━━━━━━━━━━━━━━━━━━━━\n" +
+      "📄 *Invoice No:* #" + (bill.invoiceNumber || "") + "\n" +
+      "📅 *Date:* " + dateStr + "\n" +
+      "👤 *Customer:* " + (bill.customerName || "Valued Customer") + "\n" +
+      "💳 *Payment Mode:* " + (bill.paymentMode || "Cash") + "\n" +
+      "━━━━━━━━━━━━━━━━━━━━\n" +
+      "🛍️ *Purchased Items:*\n" + itemsText + "\n" +
+      "━━━━━━━━━━━━━━━━━━━━\n" +
+      "💰 *Grand Total:* ₹" + grandTotal + "\n" +
+      "📍 *Store:* ZESH TECH, Station Road, Barh (Patna), Bihar - 803213\n" +
+      "📞 *Store Support:* +91 7903746116 / 9122846271\n" +
+      "🙏 *Thank you for shopping at Zesh Tech!*";
 
-    const grandTotal = (bill.grandTotal || 0).toLocaleString("en-IN");
-    const mode = bill.paymentMode || "Cash";
-
-    const msg =
-`🧾 *TAX INVOICE — ZESH TECH RETAIL*
-━━━━━━━━━━━━━━━━━━━━
-📄 *Invoice No:* #${bill.invoiceNumber}
-📅 *Date:* ${dateStr}
-👤 *Customer:* ${bill.customerName || "Valued Customer"}
-💳 *Payment Mode:* ${mode}
-━━━━━━━━━━━━━━━━━━━━
-🛍️ *Purchased Items:*
-${itemsText}
-━━━━━━━━━━━━━━━━━━━━
-💰 *Grand Total:* ₹${grandTotal}
-_(Inclusive of GST & Official Brand Pack Sealing)_
-━━━━━━━━━━━━━━━━━━━━
-📍 *Store:* ZESH TECH, Station Road, Barh (Patna), Bihar - 803213
-📞 *Store Support:* +91 7903746116 / 9122846271
-✅ *100% Genuine Sealed Stock & Warranty Support*
-🙏 *Thank you for shopping at Zesh Tech!*`;
-
-    const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
-
-    // A prompt() may consume the browser's popup activation. Navigate directly
-    // so WhatsApp opens reliably instead of being silently blocked by Safari/Chrome.
-    showToast("Opening WhatsApp invoice…", "info");
-    window.location.assign(waUrl);
+    const waUrl = "https://api.whatsapp.com/send?phone=" + phone + "&text=" + encodeURIComponent(msg);
+    waWindow.location.replace(waUrl);
+    showToast("WhatsApp chat opened. Review the message and tap Send.", "success");
   }
 
   function renderPrintContent() {
@@ -4170,7 +4159,56 @@ _Automated Galla Report from ZeshTech Retail POS Engine_`;
     });
 
     $("#trigger-browser-print-btn")?.addEventListener("click", () => {
-      window.print();
+      const source = $("#invoice-print-area");
+      if (!source || !source.innerHTML.trim()) {
+        showToast("Invoice preview is empty. Reopen the bill and try again.", "error");
+        return;
+      }
+
+      // Print a standalone copy; admin modal visibility rules cannot blank it.
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) {
+        showToast("Allow pop-ups for zeshtech.in to print the invoice.", "error");
+        return;
+      }
+
+      const thermal = printFormat === "thermal";
+      const invoiceNo = String(activeBillForPrint?.invoiceNumber || "").replace(/[&<>"']/g, "");
+      const printCss = "@page{size:" + (thermal ? "80mm auto" : "A4 portrait") + ";margin:" + (thermal ? "4mm" : "8mm") + ";}" +
+        "*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#000;font-family:Arial,Helvetica,sans-serif}" +
+        "body{-webkit-print-color-adjust:exact;print-color-adjust:exact}" +
+        "#invoice-print-area{width:100%;margin:0 auto;padding:0;background:#fff;color:#000}" +
+        ".official-tax-invoice{width:100%!important;max-width:100%!important}" +
+        ".thermal-receipt{width:72mm!important;max-width:72mm!important;margin:0 auto;font-size:10px}" +
+        "table{page-break-inside:auto}tr,img{page-break-inside:avoid}" +
+        "@media screen{body{padding:12px}#invoice-print-area{max-width:" + (thermal ? "80mm" : "190mm") + "}}";
+
+      printWindow.document.open();
+      printWindow.document.write("<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>ZESH TECH Invoice " +
+        invoiceNo + "</title><style>" + printCss + "</style></head><body><main id='invoice-print-area'>" +
+        source.innerHTML + "</main></body></html>");
+      printWindow.document.close();
+
+      const runPrint = () => {
+        try { printWindow.focus(); printWindow.print(); }
+        catch (error) {
+          console.error("Invoice print failed:", error);
+          showToast("Could not open print dialog. Please try again.", "error");
+        }
+      };
+      const images = Array.from(printWindow.document.images);
+      const pending = images.filter(img => !img.complete);
+      if (!pending.length) {
+        printWindow.setTimeout(runPrint, 350);
+      } else {
+        let remaining = pending.length;
+        const done = () => { remaining -= 1; if (remaining <= 0) printWindow.setTimeout(runPrint, 250); };
+        pending.forEach(img => {
+          img.addEventListener("load", done, { once: true });
+          img.addEventListener("error", done, { once: true });
+        });
+        printWindow.setTimeout(runPrint, 2500);
+      }
     });
 
     $("#send-whatsapp-invoice-btn")?.addEventListener("click", handleSendWhatsAppInvoice);
