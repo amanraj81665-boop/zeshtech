@@ -14,7 +14,8 @@
     "mongoose": "^9.11.3",
     "multer": "^2.5.0",
     "nodemailer": "^10.2.1",
-    "@capacitor/core": "^7.4.3"
+    "@capacitor/core": "^7.4.3",
+    "google-auth-library": "^10.3.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.14",

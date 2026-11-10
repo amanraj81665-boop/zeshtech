@@ -2,6 +2,8 @@
 const express = require("express");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
+const { OAuth2Client } = require("google-auth-library");
 
 const User = require("../models/User");
 const authMiddleware = require("../middleware/authMiddleware");
@@ -48,7 +50,7 @@ function createToken(user) {
     },
     process.env.JWT_SECRET,
     {
-      expiresIn: "30d",
+      expiresIn: "7d",
       issuer: "zesh-tech",
       audience: "zesh-tech-users"
     }
@@ -283,84 +285,8 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// POST /api/auth/social - Unified Social Sign-In (Google, Facebook, WhatsApp, Apple)
-router.post("/social", async (req, res) => {
-  try {
-    const { provider, name, email, phone, avatar } = req.body || {};
-
-    const validProviders = ["google", "facebook", "whatsapp", "apple"];
-    const authProvider = validProviders.includes(provider) ? provider : "google";
-
-    // Normalize email or fallback if phone-based
-    let userEmail = (email || "").trim().toLowerCase();
-    if (!userEmail && phone) {
-      userEmail = `${phone.replace(/\D/g, "")}@phone.zeshtech.com`;
-    }
-
-    if (!userEmail) {
-      return res.status(400).json({
-        success: false,
-        message: "Email or phone number is required for social authentication."
-      });
-    }
-
-    const userName = (name || "").trim() || (authProvider.toUpperCase() + " User");
-
-    const cleanSocialPhone = (phone || "").replace(/\D/g, "").slice(-10);
-    let user = await User.findOne({
-      $or: [
-        ...(cleanSocialPhone ? [{ phone: cleanSocialPhone }] : []),
-        { email: userEmail }
-      ]
-    });
-    if (!user) {
-      user = await User.create({
-        name: userName,
-        email: userEmail,
-        phone: (phone || "").trim(),
-        authProvider,
-        avatar: avatar || "",
-        role: "customer"
-      });
-    } else {
-      if (!user.avatar && avatar) user.avatar = avatar;
-      if (!user.phone && phone) user.phone = phone;
-      if (user.authProvider === "local") user.authProvider = authProvider;
-      await user.save();
-    }
-
-    const token = createToken(user);
-
-    return res.status(200).json({
-      success: true,
-      message: `Signed in with ${authProvider.toUpperCase()}`,
-      token,
-      tokenType: "Bearer",
-      expiresIn: 3600 * 24 * 7,
-      user: {
-        id: user._id.toString(),
-        name: user.name,
-        email: user.email,
-        phone: user.phone || "",
-        avatar: user.avatar || "",
-        authProvider: user.authProvider,
-        role: user.role
-      }
-    });
-  } catch (error) {
-    console.error("Social login error:", error.message);
-    if (error.message && error.message.includes("buffering timed out")) {
-      return res.status(503).json({
-        success: false,
-        message: "Database connection timeout. Please add your IP (or 0.0.0.0/0) in MongoDB Atlas Network Access."
-      });
-    }
-    return res.status(500).json({
-      success: false,
-      message: "Could not complete social sign-in. Please try again."
-    });
-  }
-});
+// Social sign-in is disabled until provider tokens are verified server-side.
+router.post("/social", (req, res) => res.status(501).json({ success: false, message: "This sign-in method is temporarily unavailable. Use email/password or verified Google sign-in." }));
 
 // In-memory WhatsApp OTP store: phone -> { otp, name, expiresAt }
 const whatsappOtpStore = new Map();
@@ -375,54 +301,8 @@ setInterval(() => {
   }
 }, 60000);
 
-// POST /api/auth/whatsapp/send-otp - Generate and dispatch 6-digit WhatsApp OTP
-router.post("/whatsapp/send-otp", (req, res) => {
-  try {
-    const { phone, name } = req.body || {};
-    const cleanPhone = (phone || "").replace(/\D/g, "");
-
-    if (cleanPhone.length < 10) {
-      return res.status(400).json({
-        success: false,
-        message: "Please enter a valid 10-digit WhatsApp mobile number."
-      });
-    }
-
-    const standardPhone = cleanPhone.slice(-10);
-    // Generate secure 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
-
-    whatsappOtpStore.set(standardPhone, {
-      otp,
-      name: (name || "").trim() || `WhatsApp Customer`,
-      expiresAt
-    });
-
-    console.log(`[WhatsApp OTP] Generated for +91${standardPhone}: ${otp}`);
-
-    // Pre-filled WhatsApp message for one-tap delivery
-    const waText = encodeURIComponent(
-      `🔐 *ZESH-TECH Login Verification*\n\nYour 6-Digit OTP is: *${otp}*\n\n(Valid for 5 minutes). Use this code to sign in to ZESH-TECH.`
-    );
-    const whatsappLink = `https://wa.me/91${standardPhone}?text=${waText}`;
-
-    return res.status(200).json({
-      success: true,
-      message: `OTP generated for +91 ${standardPhone}`,
-      phone: standardPhone,
-      otp,
-      whatsappLink,
-      expiresInSeconds: 300
-    });
-  } catch (error) {
-    console.error("Error generating WhatsApp OTP:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to generate WhatsApp OTP. Please try again."
-    });
-  }
-});
+// WhatsApp OTP delivery is not configured with a trusted Business API.
+router.post("/whatsapp/send-otp", (req, res) => res.status(503).json({ success: false, message: "WhatsApp verification is temporarily unavailable. Please use email/password or Google sign-in." }));
 
 // POST /api/auth/whatsapp/verify-otp - Verify 6-digit OTP & Sign In / Register
 router.post("/whatsapp/verify-otp", async (req, res) => {
@@ -517,83 +397,25 @@ router.post("/whatsapp/verify-otp", async (req, res) => {
   }
 });
 
-// POST /api/auth/google/verify - Official Google Identity Services GIS credential verification
+// Verify Google-signed ID tokens on the server; never decode untrusted JWT payloads.
 router.post("/google/verify", async (req, res) => {
   try {
-    const { credential, userInfo } = req.body || {};
-
-    let email = "";
-    let name = "";
-    let picture = "";
-
-    if (credential) {
-      try {
-        const parts = credential.split(".");
-        if (parts.length === 3) {
-          const payloadJson = Buffer.from(parts[1], "base64").toString("utf8");
-          const payload = JSON.parse(payloadJson);
-          email = (payload.email || "").toLowerCase().trim();
-          name = payload.name || payload.given_name || "Google User";
-          picture = payload.picture || "";
-        }
-      } catch (e) {
-        console.warn("Could not decode Google credential JWT:", e.message);
-      }
-    }
-
-    if (!email && userInfo) {
-      email = (userInfo.email || "").toLowerCase().trim();
-      name = userInfo.name || "Google User";
-      picture = userInfo.picture || "";
-    }
-
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: "Valid Google email address is required."
-      });
-    }
-
+    const { credential } = req.body || {};
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (!clientId || typeof credential !== "string" || !credential) return res.status(503).json({ success: false, message: "Google sign-in is not configured." });
+    const client = new OAuth2Client(clientId);
+    const ticket = await client.verifyIdToken({ idToken: credential, audience: clientId });
+    const payload = ticket.getPayload();
+    if (!payload?.email || payload.email_verified !== true) return res.status(401).json({ success: false, message: "Google account email is not verified." });
+    const email = payload.email.toLowerCase().trim();
     let user = await User.findOne({ email });
-    if (!user) {
-      user = await User.create({
-        name,
-        email,
-        avatar: picture,
-        authProvider: "google",
-        role: "customer"
-      });
-    } else {
-      if (picture && !user.avatar) user.avatar = picture;
-      if (name && (!user.name || user.name.includes("User"))) user.name = name;
-      user.authProvider = "google";
-      await user.save();
-    }
-
+    if (!user) user = await User.create({ name: payload.name || payload.given_name || "Google User", email, avatar: payload.picture || "", authProvider: "google", role: "customer" });
+    else { if (payload.picture && !user.avatar) user.avatar = payload.picture; if (user.authProvider === "local") user.authProvider = "google"; await user.save(); }
     const token = createToken(user);
-
-    return res.status(200).json({
-      success: true,
-      message: "Signed in with Google successfully",
-      token,
-      tokenType: "Bearer",
-      expiresIn: 3600 * 24 * 7,
-      user: {
-        id: user._id.toString(),
-        name: user.name,
-        email: user.email,
-        phone: user.phone || "",
-        avatar: user.avatar || "",
-        authProvider: "google",
-        role: user.role
-      }
-    });
+    return res.status(200).json({ success: true, message: "Signed in with Google successfully", token, tokenType: "Bearer", expiresIn: 7 * 24 * 60 * 60, user: publicUser(user) });
   } catch (error) {
-    console.error("Google verify error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to sign in with Google."
-    });
+    console.error("Google verify error:", error.message);
+    return res.status(401).json({ success: false, message: "Google sign-in verification failed." });
   }
 });
 
@@ -631,11 +453,11 @@ router.post("/forgot-password/send-otp", async (req, res) => {
     }
 
     // Generate secure 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = crypto.randomInt(100000, 1000000).toString();
     const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
 
     forgotPasswordOtpStore.set(cleanEmail, { otp, expiresAt });
-    console.log(`[Forgot Password OTP] Generated for ${cleanEmail}: ${otp}`);
+    // Never log OTP values or return them to the browser.
 
     // Dispatch real email to user's inbox
     const mailResult = await sendPasswordResetEmail({
@@ -644,26 +466,11 @@ router.post("/forgot-password/send-otp", async (req, res) => {
       userName: user.name
     });
 
-    // WhatsApp alert message as secondary option
-    const targetPhone = (user.phone || "").replace(/\D/g, "").slice(-10) || "7903746116";
-    const waText = encodeURIComponent(
-      `🔐 *ZESH-TECH Password Reset*\n\nAccount: *${cleanEmail}*\nYour 6-Digit Password Reset OTP is: *${otp}*\n\n(Valid for 10 minutes). Do not share this OTP with anyone.`
-    );
-    const whatsappLink = `https://wa.me/91${targetPhone}?text=${waText}`;
-
-    return res.status(200).json({
-      success: true,
-      message: mailResult.emailSent
-        ? `A 6-digit OTP has been sent directly to your email inbox (${cleanEmail}). Please check your Inbox and Spam folder.`
-        : `Password reset OTP generated. ${mailResult.notice || ""}`,
-      email: cleanEmail,
-      emailSent: mailResult.emailSent,
-      // Provide OTP in response only if email transport is unconfigured to prevent lockout during setup
-      otp: mailResult.emailSent ? undefined : otp,
-      targetPhone: targetPhone ? `+91 ${targetPhone.slice(0, 2)}••••${targetPhone.slice(-4)}` : "",
-      whatsappLink,
-      expiresInSeconds: 600
-    });
+    if (!mailResult.emailSent) {
+      forgotPasswordOtpStore.delete(cleanEmail);
+      return res.status(503).json({ success: false, message: "Password reset email could not be sent. Please try again later." });
+    }
+    return res.status(200).json({ success: true, message: "A password reset code has been sent to your registered email address.", email: cleanEmail, emailSent: true, expiresInSeconds: 600 });
   } catch (error) {
     console.error("Forgot password send-otp error:", error);
     return res.status(500).json({
