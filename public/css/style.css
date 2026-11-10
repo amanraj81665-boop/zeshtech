@@ -2344,39 +2344,79 @@ body.modal-open .floating-whatsapp-btn {
    ========================================================================== */
 
 @media print {
-  body * {
-    visibility: hidden !important;
+  @page { size: auto; margin: 8mm; }
+
+  html, body {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
   }
 
-  #invoice-print-area, #invoice-print-area * {
+  body.invoice-print-active > * {
+    display: none !important;
+  }
+
+  body.invoice-print-active #invoice-print-modal,
+  body.invoice-print-active #invoice-print-modal .modal-dialog,
+  body.invoice-print-active #invoice-print-area {
+    display: block !important;
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    color: #000 !important;
     visibility: visible !important;
   }
 
-  #invoice-print-area {
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 10mm 15mm !important;
-    background: white !important;
-    color: black !important;
-    box-shadow: none !important;
+  body.invoice-print-active #invoice-print-modal .modal-dialog > *,
+  body.invoice-print-active #invoice-print-area,
+  body.invoice-print-active #invoice-print-area * {
+    visibility: visible !important;
   }
 
-  .print-thermal-mode #invoice-print-area {
-    width: 80mm !important;
-    padding: 4mm !important;
+  body.invoice-print-active #invoice-print-modal .no-print {
+    display: none !important;
+  }
+
+  body.invoice-print-active #invoice-print-area {
+    padding: 0 !important;
+  }
+
+  body.invoice-print-active .official-tax-invoice {
+    width: 100% !important;
+    max-width: 100% !important;
+    break-inside: auto;
+  }
+
+  body.invoice-print-active.print-thermal-mode #invoice-print-area {
+    width: 72mm !important;
+    max-width: 72mm !important;
     margin: 0 auto !important;
   }
 
-  @page {
-    size: auto;
-    margin: 0;
+  body.invoice-print-active.print-thermal-mode .thermal-receipt {
+    width: 72mm !important;
+    max-width: 72mm !important;
+    margin: 0 auto !important;
   }
 
-  .no-print {
-    display: none !important;
+  body.invoice-print-active #invoice-print-area tr,
+  body.invoice-print-active #invoice-print-area img {
+    break-inside: avoid;
   }
 }
 
