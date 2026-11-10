@@ -747,7 +747,7 @@ async function getWarrantyLocker(req, res) {
     const account = await User.findById(req.user.userId).select("phone role").lean();
     if (!account) return res.status(401).json({ success: false, message: "Account not found." });
     if (account.role !== "admin") {
-      const accountPhone = String(account.phone || "").replace(/\\D/g, "").slice(-10);
+      const accountPhone = String(account.phone || "").replace(/\D/g, "").slice(-10);
       if (!accountPhone || accountPhone !== phone) {
         return res.status(403).json({ success: false, message: "You can only view warranty records linked to your verified account phone number." });
       }

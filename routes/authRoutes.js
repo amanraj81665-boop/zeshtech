@@ -265,7 +265,7 @@ router.post("/login", async (req, res) => {
       message: "Login successful",
       token,
       tokenType: "Bearer",
-      expiresIn: 3600,
+      expiresIn: 7 * 24 * 60 * 60,
       user: publicUser(user)
     });
   } catch (error) {
