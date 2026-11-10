@@ -802,6 +802,53 @@ async function getWarrantyLocker(req, res) {
   }
 }
 
+
+// GET /api/bills/public/:invoiceNumber - privacy-safe public invoice summary
+async function getPublicInvoice(req, res) {
+  try {
+    const invoiceNumber = String(req.params.invoiceNumber || "").trim();
+    if (!/^[A-Za-z0-9-]{6,40}$/.test(invoiceNumber)) {
+      return res.status(400).json({ success: false, message: "Invalid invoice number" });
+    }
+
+    const bill = await Bill.findOne({ invoiceNumber, status: "completed" })
+      .select("invoiceNumber createdAt items taxableValue cgst sgst discount grandTotal")
+      .lean();
+
+    if (!bill) {
+      return res.status(404).json({ success: false, message: "Invoice not found" });
+    }
+
+    const items = (bill.items || []).map((item) => ({
+      name: item.name,
+      hsn: item.hsn || "",
+      quantity: item.quantity,
+      price: item.price,
+      taxableValue: item.taxableValue,
+      cgst: item.cgst || 0,
+      sgst: item.sgst || 0,
+      total: item.total
+    }));
+
+    return res.json({
+      success: true,
+      invoice: {
+        invoiceNumber: bill.invoiceNumber,
+        date: bill.createdAt,
+        items,
+        taxableValue: bill.taxableValue || 0,
+        cgst: bill.cgst || 0,
+        sgst: bill.sgst || 0,
+        discount: bill.discount || 0,
+        grandTotal: bill.grandTotal || 0
+      }
+    });
+  } catch (error) {
+    console.error("Public invoice lookup error:", error);
+    return res.status(500).json({ success: false, message: "Unable to load invoice" });
+  }
+}
+
 module.exports = {
   createBill,
   getBills,
@@ -810,5 +857,6 @@ module.exports = {
   cancelBill,
   getRecentCustomers,
   getDailyRegister,
-  getWarrantyLocker
+  getWarrantyLocker,
+  getPublicInvoice
 };

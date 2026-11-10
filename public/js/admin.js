@@ -1209,7 +1209,7 @@ _(Inclusive of GST & Official Brand Pack Sealing)_
           <div style="text-align: center; margin-top: 10px; font-size: 10px;">
             <div>Thank You For Shopping!</div>
             <div>Goods covered under manufacturer warranty.</div>
-            <div>www.zeshtech.com</div>
+            <div>www.zeshtech.in</div>
           </div>
         </div>
       `;
@@ -1294,7 +1294,7 @@ _(Inclusive of GST & Official Brand Pack Sealing)_
                 </table>
 
                 <div style="text-align: center;">
-                  <img src="https://api.qrserver.com/v1/create-qr-code/?size=85x85&data=${encodeURIComponent('https://zeshtech.com/invoice/' + bill.invoiceNumber)}" alt="QR Code" style="width: 76px; height: 76px; border: 1px solid #000; padding: 2px;">
+                  <img src="https://api.qrserver.com/v1/create-qr-code/?size=85x85&data=${encodeURIComponent('https://www.zeshtech.in/invoice/' + encodeURIComponent(bill.invoiceNumber))}" alt="QR Code" style="width: 76px; height: 76px; border: 1px solid #000; padding: 2px;">
                   <div style="font-size: 8px; line-height: 1.2; margin-top: 2px;">Scan this QR code<br>to view invoice details</div>
                 </div>
               </div>

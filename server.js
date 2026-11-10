@@ -87,6 +87,11 @@ app.get("/api/health", (req, res) => {
 });
 
 // Register API routes BEFORE the 404 handlers
+// Public invoice landing page opened by the QR code on printed POS bills.
+app.get("/invoice/:invoiceNumber", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "invoice.html"));
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/uploads", uploadRoutes);

@@ -15,6 +15,9 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+// Public invoice view exposes only non-sensitive invoice summary fields.
+router.get("/public/:invoiceNumber", billController.getPublicInvoice);
+
 // Customer Digital Warranty & Bill Locker (authenticated; account phone is verified server-side)
 router.get("/warranty-locker", authMiddleware, billController.getWarrantyLocker);
 
