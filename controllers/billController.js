@@ -332,6 +332,8 @@ async function getBills(req, res) {
 // GET /api/bills/stats - Real-time sales and revenue statistics
 async function getBillStats(req, res) {
   try {
+    // Demo transactions before the genuine-store launch date remain in bill history, but are excluded from live revenue analytics.
+    const revenueStartAt = new Date("2026-11-14T00:00:00+05:30");
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
@@ -348,7 +350,7 @@ async function getBillStats(req, res) {
     ] = await Promise.all([
       // Total bills & total revenue
       Bill.aggregate([
-        { $match: { status: "completed" } },
+        { $match: { status: "completed", createdAt: { $gte: revenueStartAt } } },
         {
           $group: {
             _id: null,
@@ -361,7 +363,7 @@ async function getBillStats(req, res) {
 
       // Today's stats
       Bill.aggregate([
-        { $match: { status: "completed", createdAt: { $gte: todayStart } } },
+        { $match: { status: "completed", createdAt: { $gte: todayStart > revenueStartAt ? todayStart : revenueStartAt } } },
         {
           $group: {
             _id: null,
@@ -374,7 +376,7 @@ async function getBillStats(req, res) {
 
       // Yesterday's stats (for comparison)
       Bill.aggregate([
-        { $match: { status: "completed", createdAt: { $gte: yesterdayStart, $lt: todayStart } } },
+        { $match: { status: "completed", createdAt: { $gte: yesterdayStart > revenueStartAt ? yesterdayStart : revenueStartAt, $lt: todayStart } } },
         {
           $group: {
             _id: null,
@@ -386,7 +388,7 @@ async function getBillStats(req, res) {
 
       // Breakdown by payment mode
       Bill.aggregate([
-        { $match: { status: "completed" } },
+        { $match: { status: "completed", createdAt: { $gte: revenueStartAt } } },
         {
           $group: {
             _id: "$paymentMode",
@@ -401,7 +403,7 @@ async function getBillStats(req, res) {
         {
           $match: {
             status: "completed",
-            createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
+            createdAt: { $gte: new Date(Math.max(revenueStartAt.getTime(), Date.now() - 7 * 24 * 60 * 60 * 1000)) }
           }
         },
         {
@@ -416,7 +418,7 @@ async function getBillStats(req, res) {
 
       // Top 5 selling products across retail POS
       Bill.aggregate([
-        { $match: { status: "completed" } },
+        { $match: { status: "completed", createdAt: { $gte: revenueStartAt } } },
         { $unwind: "$items" },
         {
           $group: {

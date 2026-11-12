@@ -1186,11 +1186,11 @@
 
       const invoiceNo = String(activeBillForPrint.invoiceNumber || "invoice").replace(/[^a-z0-9_-]/gi, "");
       pendingInvoicePdf = new File([blob], "ZESH-TECH-" + invoiceNo + ".pdf", { type: "application/pdf" });
-      status.textContent = "PDF ready hai. Neeche button dabayein—PDF download hogi aur WhatsApp Web mein customer chat khul jayegi.";
+      status.textContent = "PDF ready hai. Mobile par Share PDF dabakar WhatsApp choose karein; desktop par PDF download hogi aur customer chat khulegi."
       generate.style.display = "none";
       share.style.display = "block";
       share.disabled = false;
-      share.textContent = "Open WhatsApp Web + Download PDF";
+      share.textContent = "Share PDF on WhatsApp";
     } catch (error) {
       console.error("Invoice PDF generation failed:", error);
       status.textContent = error.message || "PDF generate nahi hui. Please retry.";
@@ -1199,7 +1199,7 @@
     }
   }
 
-  function shareInvoicePdfOnWhatsApp() {
+  async function shareInvoicePdfOnWhatsApp() {
     if (!pendingInvoicePdf || !pendingInvoicePhone) {
       showToast("Pehle invoice PDF generate karein.", "warning");
       return;
@@ -1207,16 +1207,25 @@
     const bill = activeBillForPrint;
     const message = "ZESH TECH invoice #" + (bill.invoiceNumber || "") +
       " | Total: ₹" + Number(bill.grandTotal || 0).toLocaleString("en-IN") +
-      " | Thank you for shopping with us. Please find your invoice PDF attached.";
-    const waUrl = "https://api.whatsapp.com/send?phone=" + pendingInvoicePhone + "&text=" + encodeURIComponent(message);
-    const waLink = document.createElement("a");
-    waLink.href = waUrl;
-    waLink.target = "_blank";
-    waLink.rel = "noopener noreferrer";
-    waLink.style.display = "none";
-    document.body.appendChild(waLink);
-    waLink.click();
-    waLink.remove();
+      " | Thank you for shopping with us. Please find your invoice PDF attached."; 
+    try {
+      const filePayload = { files: [pendingInvoicePdf], title: 'ZESH-TECH Invoice', text: message };
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [pendingInvoicePdf] })) {
+        await navigator.share(filePayload);
+        const status = $("#invoice-whatsapp-status");
+        if (status) status.textContent = "PDF share sheet ko bhej di gayi. WhatsApp select karke customer chat choose karein.";
+        return;
+      }
+    } catch (error) {
+      if (error && error.name === 'AbortError') {
+        const status = $("#invoice-whatsapp-status");
+        if (status) status.textContent = "Share cancel ho gaya. Dobara Share PDF dabayein.";
+        return;
+      }
+      console.warn("Native PDF share unavailable; using download fallback:", error);
+    }
+    const waUrl = "https://wa.me/" + pendingInvoicePhone + "?text=" + encodeURIComponent(message);
+    const waWindow = window.open(waUrl, "_blank");
     const downloadUrl = URL.createObjectURL(pendingInvoicePdf);
     const link = document.createElement("a");
     link.href = downloadUrl;
@@ -1225,10 +1234,11 @@
     link.click();
     link.remove();
     window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 60000);
-
     const status = $("#invoice-whatsapp-status");
     if (status) {
-      status.textContent = "PDF download ho rahi hai. WhatsApp click-to-chat link khul raha hai for +" + pendingInvoicePhone + ". Chat mein paperclip se PDF attach karke Send karein. Agar number WhatsApp par registered nahi hai to chat nahi khulegi.";
+      status.textContent = waWindow
+        ? "PDF download ho rahi hai. WhatsApp chat khul gayi—paperclip se PDF attach karke Send karein."
+        : "PDF download ho rahi hai. Popup allow karein; phir WhatsApp chat kholkar PDF attach karein."; 
     }
   }
 
